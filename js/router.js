@@ -22,7 +22,12 @@ export function route() {
       renderMatchDetailsView();
       break;
     case 'my-bets':
-      renderMyBetsView();
+      // Guard my-bets route (redirect to login if not logged in)
+      if (!state.data.isLoggedIn) {
+        state.setPage('login');
+      } else {
+        renderMyBetsView();
+      }
       break;
     case 'promotions':
       renderPromotionsView();
