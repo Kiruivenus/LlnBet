@@ -23,8 +23,7 @@ export function renderHeader() {
           <span class="wallet-balance">${formatCurrency(userData.balance)}</span>
         </span>
         <button class="deposit-btn" id="header-deposit-btn">
-          ${getMaterialIcon('deposit', 'btn-icon')}
-          <span class="btn-text">Deposit</span>
+          Deposit
         </button>
       </div>
 
@@ -42,8 +41,7 @@ export function renderHeader() {
   } else {
     rightSideHtml = `
       <button class="deposit-btn" id="header-unauth-deposit-btn" style="margin-right:2px;">
-        ${getMaterialIcon('deposit', 'btn-icon')}
-        <span>Deposit</span>
+        Deposit
       </button>
       <div style="display:flex; align-items:center; gap:6px;">
         <button class="quick-stake-btn" id="header-login-btn" style="padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight:700; border: 1px solid var(--accent-emerald); color:var(--accent-emerald); background:none; cursor:pointer;">

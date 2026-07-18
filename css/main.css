@@ -204,25 +204,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .deposit-btn {
-  background: var(--accent-emerald);
-  color: var(--bg-obsidian);
+  background: #fdb927;
+  color: #080a0f;
   border: none;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.85rem;
-  padding: 6px var(--spacing-md);
+  padding: 8px 18px;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: var(--transition-fast);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(253, 185, 39, 0.25);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 0;
+  user-select: none;
 }
 
 .deposit-btn:hover {
-  background: var(--accent-emerald-hover);
-  box-shadow: var(--shadow-glow-emerald);
+  background: #ffe066;
+  box-shadow: 0 6px 16px rgba(253, 185, 39, 0.4);
   transform: translateY(-1px);
 }
 

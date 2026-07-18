@@ -1,43 +1,38 @@
 import { state } from '../state.js';
-import { searchDatabase } from '../data.js';
+import { simulation } from '../simulation.js';
 import { getMaterialIcon } from '../utils.js';
 
 export function renderSearchModal() {
   const container = document.getElementById('search-modal');
   if (!container) return;
 
+  const matches = simulation.getMatches();
+  const trendingMatches = matches.slice(0, 6);
+
   container.innerHTML = `
     <div class="search-modal-container">
       <div class="search-modal-header">
         ${getMaterialIcon('search')}
-        <input type="text" class="search-modal-input" placeholder="Type team, player, or league..." id="search-input-field" autocomplete="off" />
+        <input type="text" class="search-modal-input" placeholder="Search real teams, leagues, countries..." id="search-input-field" autocomplete="off" />
         <button class="search-modal-close" id="search-close-btn">${getMaterialIcon('close')}</button>
       </div>
       <div class="search-modal-results" id="search-results-area">
-        <!-- Render initial recommendations -->
-        <div class="search-result-group-title">Trending Searches</div>
+        <!-- Render initial dynamic recommendations -->
+        <div class="search-result-group-title">Trending Live & Upcoming Matches</div>
         <ul class="search-result-list" id="search-initial-list">
-          <li class="search-result-item" data-id="fb_1">
-            <div>
-              <div class="search-result-title">Arsenal vs Chelsea</div>
-              <div class="search-result-subtitle">Football • Premier League • Live</div>
+          ${trendingMatches.length === 0 ? `
+            <div style="padding:20px; color:var(--text-muted); text-align:center; font-size:0.9rem;">
+              Loading sports scoreboard calendar...
             </div>
-            ${getMaterialIcon('trend', 'trend-icon')}
-          </li>
-          <li class="search-result-item" data-id="bb_1">
-            <div>
-              <div class="search-result-title">Lakers vs Celtics</div>
-              <div class="search-result-subtitle">Basketball • NBA • Live</div>
-            </div>
-            ${getMaterialIcon('trend', 'trend-icon')}
-          </li>
-          <li class="search-result-item" data-id="fb_2">
-            <div>
-              <div class="search-result-title">Real Madrid vs Barcelona</div>
-              <div class="search-result-subtitle">Football • La Liga • Live</div>
-            </div>
-            ${getMaterialIcon('trend', 'trend-icon')}
-          </li>
+          ` : trendingMatches.map(match => `
+            <li class="search-result-item" data-id="${match.id}">
+              <div>
+                <div class="search-result-title">${match.teams.home.name} vs ${match.teams.away.name}</div>
+                <div class="search-result-subtitle">${match.sport.toUpperCase()} • ${match.league} • ${match.isLive ? 'Live In-Play' : match.kickoffTime}</div>
+              </div>
+              ${getMaterialIcon('trend', 'trend-icon')}
+            </li>
+          `).join('')}
         </ul>
       </div>
     </div>
@@ -52,7 +47,7 @@ export function renderSearchModal() {
     inputField.value = '';
   };
 
-  closeBtn.addEventListener('click', closeModal);
+  closeBtn?.addEventListener('click', closeModal);
 
   container.addEventListener('click', (e) => {
     if (e.target === container) {
@@ -71,35 +66,49 @@ export function renderSearchModal() {
     }
   });
 
-  inputField.addEventListener('input', (e) => {
+  // Dynamic Real-Time Match Search Handler
+  inputField?.addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase().trim();
     if (!q) {
       renderSearchModal();
       return;
     }
 
-    const filtered = searchDatabase.filter(item => 
-      item.title.toLowerCase().includes(q) || 
-      item.subtitle.toLowerCase().includes(q)
-    );
+    const currentMatches = simulation.getMatches();
+
+    const filtered = currentMatches.filter(match => {
+      const home = match.teams.home.name.toLowerCase();
+      const away = match.teams.away.name.toLowerCase();
+      const matchTitle = `${home} vs ${away}`;
+      const league = (match.league || '').toLowerCase();
+      const country = (match.country || '').toLowerCase();
+      const sport = (match.sport || '').toLowerCase();
+
+      return home.includes(q) || 
+             away.includes(q) || 
+             matchTitle.includes(q) || 
+             league.includes(q) || 
+             country.includes(q) || 
+             sport.includes(q);
+    });
 
     if (filtered.length === 0) {
       resultsArea.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 40px 0; color:var(--text-muted);">
           ${getMaterialIcon('info', 'info-icon')}
-          <span style="margin-top:10px; font-size:0.95rem;">No results found for "${e.target.value}"</span>
+          <span style="margin-top:10px; font-size:0.95rem;">No matching fixtures found for "${e.target.value}"</span>
         </div>
       `;
       return;
     }
 
-    let html = `<div class="search-result-group-title">Matches & Events</div><ul class="search-result-list">`;
-    filtered.forEach(item => {
+    let html = `<div class="search-result-group-title">Real-World Matches (${filtered.length})</div><ul class="search-result-list">`;
+    filtered.forEach(match => {
       html += `
-        <li class="search-result-item" data-id="${item.id}" data-type="${item.type}" data-sport="${item.sport}">
+        <li class="search-result-item" data-id="${match.id}">
           <div>
-            <div class="search-result-title">${item.title}</div>
-            <div class="search-result-subtitle">${item.subtitle}</div>
+            <div class="search-result-title">${match.teams.home.name} vs ${match.teams.away.name}</div>
+            <div class="search-result-subtitle">${match.country ? match.country + ' • ' : ''}${match.league} • ${match.isLive ? 'Live In-Play' : match.kickoffTime}</div>
           </div>
           ${getMaterialIcon('back', 'icon-rotated')}
         </li>
@@ -111,20 +120,15 @@ export function renderSearchModal() {
     resultsArea.querySelectorAll('.search-result-item').forEach(item => {
       item.addEventListener('click', () => {
         const id = item.getAttribute('data-id');
-        const sport = item.getAttribute('data-sport');
-
         closeModal();
-
         if (id) {
           state.setPage('match-details', id);
-        } else if (sport) {
-          state.setSport(sport);
-          state.setPage('home');
         }
       });
     });
   });
 
+  // Bind initial trending recommendations list items
   document.querySelectorAll('#search-initial-list .search-result-item').forEach(item => {
     item.addEventListener('click', () => {
       const id = item.getAttribute('data-id');
