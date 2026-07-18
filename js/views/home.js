@@ -277,17 +277,23 @@ export function renderMatchCard(match, selections) {
         </div>
 
         <div class="match-row-odds">
-          <button class="compact-odds-btn ${isHomeSelected ? 'selected' : ''} ${homeFlash === 'up' ? 'flash-up' : homeFlash === 'down' ? 'flash-down' : ''} ${homeOdd.isLocked ? 'locked' : ''}" 
-            data-id="${homeOdd.selectionId}" 
-            data-match-id="${match.id}"
-            data-team="${match.teams.home.name}" 
-            data-market="Home Win" 
-            data-value="${homeOdd.value}">
-            ${formatOdds(homeOdd.value)}
-          </button>
+          ${homeOdd.isSuspended || homeOdd.value === null ? `
+            <button class="compact-odds-btn suspended" disabled style="opacity:0.4; cursor:not-allowed; background:var(--bg-obsidian); border-color:var(--border-color); color:var(--text-muted); font-weight:700;">-</button>
+          ` : `
+            <button class="compact-odds-btn ${isHomeSelected ? 'selected' : ''} ${homeFlash === 'up' ? 'flash-up' : homeFlash === 'down' ? 'flash-down' : ''}" 
+              data-id="${homeOdd.selectionId}" 
+              data-match-id="${match.id}"
+              data-team="${match.teams.home.name}" 
+              data-market="Home Win" 
+              data-value="${homeOdd.value}">
+              ${formatOdds(homeOdd.value)}
+            </button>
+          `}
 
-          ${drawOdd ? `
-            <button class="compact-odds-btn ${isDrawSelected ? 'selected' : ''} ${drawFlash === 'up' ? 'flash-up' : drawFlash === 'down' ? 'flash-down' : ''} ${drawOdd.isLocked ? 'locked' : ''}" 
+          ${drawOdd ? (drawOdd.isSuspended || drawOdd.value === null ? `
+            <button class="compact-odds-btn suspended" disabled style="opacity:0.4; cursor:not-allowed; background:var(--bg-obsidian); border-color:var(--border-color); color:var(--text-muted); font-weight:700;">-</button>
+          ` : `
+            <button class="compact-odds-btn ${isDrawSelected ? 'selected' : ''} ${drawFlash === 'up' ? 'flash-up' : drawFlash === 'down' ? 'flash-down' : ''}" 
               data-id="${drawOdd.selectionId}" 
               data-match-id="${match.id}"
               data-team="Draw" 
@@ -295,12 +301,14 @@ export function renderMatchCard(match, selections) {
               data-value="${drawOdd.value}">
               ${formatOdds(drawOdd.value)}
             </button>
-          ` : `
+          `) : `
             <div style="width:54px; height:32px;"></div>
           `}
 
-          ${awayOdd ? `
-            <button class="compact-odds-btn ${isAwaySelected ? 'selected' : ''} ${awayFlash === 'up' ? 'flash-up' : awayFlash === 'down' ? 'flash-down' : ''} ${awayOdd.isLocked ? 'locked' : ''}" 
+          ${awayOdd ? (awayOdd.isSuspended || awayOdd.value === null ? `
+            <button class="compact-odds-btn suspended" disabled style="opacity:0.4; cursor:not-allowed; background:var(--bg-obsidian); border-color:var(--border-color); color:var(--text-muted); font-weight:700;">-</button>
+          ` : `
+            <button class="compact-odds-btn ${isAwaySelected ? 'selected' : ''} ${awayFlash === 'up' ? 'flash-up' : awayFlash === 'down' ? 'flash-down' : ''}" 
               data-id="${awayOdd.selectionId}" 
               data-match-id="${match.id}"
               data-team="${match.teams.away.name}" 
@@ -308,7 +316,7 @@ export function renderMatchCard(match, selections) {
               data-value="${awayOdd.value}">
               ${formatOdds(awayOdd.value)}
             </button>
-          ` : `
+          `) : `
             <div style="width:54px; height:32px;"></div>
           `}
         </div>

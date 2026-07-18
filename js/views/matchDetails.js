@@ -27,9 +27,13 @@ export function renderMatchDetailsView() {
 
   // Extract base odds for dynamic calculations
   const mainMarket = match.markets[0] || { odds: [] };
-  const r1 = mainMarket.odds[0]?.value || 2.10;
-  const rx = mainMarket.odds[1]?.value || 3.40;
-  const r2 = mainMarket.odds[2]?.value || 2.80;
+  const homeOddObj = mainMarket.odds[0] || {};
+  const drawOddObj = mainMarket.odds[1] || {};
+  const awayOddObj = mainMarket.odds[2] || {};
+
+  const r1 = homeOddObj.value;
+  const rx = drawOddObj.value;
+  const r2 = awayOddObj.value;
 
   const homeName = match.teams.home.name;
   const awayName = match.teams.away.name;
@@ -88,56 +92,6 @@ export function renderMatchDetailsView() {
     html += renderLiveTracker(match);
   }
 
-  // Fetch AI live match telemetry analysis
-  const aiTelemetry = match.aiTelemetry || {
-    homeProb: 52,
-    drawProb: 26,
-    awayProb: 22,
-    isLocked: false,
-    lockReason: null,
-    aiStatusText: 'Balanced Game Momentum'
-  };
-
-  html += `
-    <!-- AI Odds & Match Telemetry Card -->
-    <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:16px; margin-top:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <span style="display:flex; align-items:center; gap:6px; font-family:var(--font-display); font-weight:800; font-size:0.8rem; color:#a3e635; text-transform:uppercase; letter-spacing:0.05em;">
-          ${getMaterialIcon('analytics')}
-          AI Powered Odds Engine
-        </span>
-        <span style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">
-          Real-Time Telemetry Sync
-        </span>
-      </div>
-
-      <!-- AI Probability Bar -->
-      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
-          <span style="color:var(--accent-emerald);">${homeName}: ${aiTelemetry.homeProb}%</span>
-          <span style="color:var(--text-secondary);">Draw: ${aiTelemetry.drawProb}%</span>
-          <span style="color:var(--accent-orange);">${awayName}: ${aiTelemetry.awayProb}%</span>
-        </div>
-        <div style="display:flex; height:8px; width:100%; border-radius:var(--radius-full); overflow:hidden; background:rgba(255,255,255,0.05);">
-          <div style="width:${aiTelemetry.homeProb}%; background:var(--accent-emerald);"></div>
-          <div style="width:${aiTelemetry.drawProb}%; background:var(--text-muted);"></div>
-          <div style="width:${aiTelemetry.awayProb}%; background:var(--accent-orange);"></div>
-        </div>
-      </div>
-
-      <!-- Live AI Status / Threat Alert Banner -->
-      <div style="display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid ${aiTelemetry.isLocked ? '#ff4d4d' : '#a3e635'}; font-size:0.85rem; font-weight:600;">
-        ${aiTelemetry.isLocked ? `
-          <span class="pulse-dot" style="background:#ff4d4d;"></span>
-          <span style="color:#ff4d4d;">🔒 MARKET LOCKED: ${aiTelemetry.lockReason || 'VAR Event in Progress'}</span>
-        ` : `
-          <span class="pulse-dot" style="background:#a3e635;"></span>
-          <span style="color:var(--text-primary);">⚡ AI Telemetry: ${aiTelemetry.aiStatusText}</span>
-        `}
-      </div>
-    </div>
-  `;
-
   // Generate expanded list of 14 betting markets dynamically
   const marketDetailsList = [
     {
@@ -145,9 +99,9 @@ export function renderMatchDetailsView() {
       category: 'Main',
       columns: 3,
       odds: [
-        { selectionId: `${match.id}_m1`, label: '1', value: r1 },
-        { selectionId: `${match.id}_mx`, label: 'X', value: rx },
-        { selectionId: `${match.id}_m2`, label: '2', value: r2 }
+        { selectionId: `${match.id}_m1`, label: '1', value: r1, isSuspended: homeOddObj.isSuspended },
+        { selectionId: `${match.id}_mx`, label: 'X', value: rx, isSuspended: drawOddObj.isSuspended },
+        { selectionId: `${match.id}_m2`, label: '2', value: r2, isSuspended: awayOddObj.isSuspended }
       ]
     },
     {
@@ -155,8 +109,8 @@ export function renderMatchDetailsView() {
       category: 'Main',
       columns: 2,
       odds: [
-        { selectionId: `${match.id}_btts_yes`, label: 'Yes', value: parseFloat((1 / (1 - (1/r1 + 1/r2)*0.4)).toFixed(2)) || 1.65 },
-        { selectionId: `${match.id}_btts_no`, label: 'No', value: parseFloat(((r1 + r2) / 1.5).toFixed(2)) || 2.15 }
+        { selectionId: `${match.id}_btts_yes`, label: 'Yes', value: r1 && r2 ? parseFloat((1 / (1 - (1/r1 + 1/r2)*0.4)).toFixed(2)) : null },
+        { selectionId: `${match.id}_btts_no`, label: 'No', value: r1 && r2 ? parseFloat(((r1 + r2) / 1.5).toFixed(2)) : null }
       ]
     },
     {
@@ -164,9 +118,9 @@ export function renderMatchDetailsView() {
       category: 'Main',
       columns: 3,
       odds: [
-        { selectionId: `${match.id}_dc_1x`, label: '1/X', value: parseFloat((1 / (1/r1 + 1/rx) * 1.05).toFixed(2)) || 1.35 },
-        { selectionId: `${match.id}_dc_x2`, label: 'X/2', value: parseFloat((1 / (1/rx + 1/r2) * 1.05).toFixed(2)) || 1.60 },
-        { selectionId: `${match.id}_dc_12`, label: '1/2', value: parseFloat((1 / (1/r1 + 1/r2) * 1.05).toFixed(2)) || 1.25 }
+        { selectionId: `${match.id}_dc_1x`, label: '1/X', value: r1 && rx ? parseFloat((1 / (1/r1 + 1/rx) * 1.05).toFixed(2)) : null },
+        { selectionId: `${match.id}_dc_x2`, label: 'X/2', value: rx && r2 ? parseFloat((1 / (1/rx + 1/r2) * 1.05).toFixed(2)) : null },
+        { selectionId: `${match.id}_dc_12`, label: '1/2', value: r1 && r2 ? parseFloat((1 / (1/r1 + 1/r2) * 1.05).toFixed(2)) : null }
       ]
     },
     {
@@ -191,8 +145,8 @@ export function renderMatchDetailsView() {
       category: 'Main',
       columns: 2,
       odds: [
-        { selectionId: `${match.id}_dnb_1`, label: '1', value: parseFloat((r1 * 0.75).toFixed(2)) || 1.40 },
-        { selectionId: `${match.id}_dnb_2`, label: '2', value: parseFloat((r2 * 0.75).toFixed(2)) || 2.10 }
+        { selectionId: `${match.id}_dnb_1`, label: '1', value: r1 ? parseFloat((r1 * 0.75).toFixed(2)) : null },
+        { selectionId: `${match.id}_dnb_2`, label: '2', value: r2 ? parseFloat((r2 * 0.75).toFixed(2)) : null }
       ]
     },
     {
@@ -200,9 +154,9 @@ export function renderMatchDetailsView() {
       category: 'First Half',
       columns: 3,
       odds: [
-        { selectionId: `${match.id}_fh_1`, label: '1', value: parseFloat((r1 * 1.3 + 0.3).toFixed(2)) || 2.65 },
-        { selectionId: `${match.id}_fh_x`, label: 'X', value: parseFloat((rx * 0.75).toFixed(2)) || 2.55 },
-        { selectionId: `${match.id}_fh_2`, label: '2', value: parseFloat((r2 * 1.3 + 0.3).toFixed(2)) || 3.45 }
+        { selectionId: `${match.id}_fh_1`, label: '1', value: r1 ? parseFloat((r1 * 1.3 + 0.3).toFixed(2)) : null },
+        { selectionId: `${match.id}_fh_x`, label: 'X', value: rx ? parseFloat((rx * 0.75).toFixed(2)) : null },
+        { selectionId: `${match.id}_fh_2`, label: '2', value: r2 ? parseFloat((r2 * 1.3 + 0.3).toFixed(2)) : null }
       ]
     },
     {
@@ -224,8 +178,8 @@ export function renderMatchDetailsView() {
       columns: 3,
       odds: [
         { selectionId: `${match.id}_fg_none`, label: 'None', value: 23.00 },
-        { selectionId: `${match.id}_fg_1`, label: '1', value: parseFloat((r1 * 0.85).toFixed(2)) || 1.79 },
-        { selectionId: `${match.id}_fg_2`, label: '2', value: parseFloat((r2 * 0.85).toFixed(2)) || 2.14 }
+        { selectionId: `${match.id}_fg_1`, label: '1', value: r1 ? parseFloat((r1 * 0.85).toFixed(2)) : null },
+        { selectionId: `${match.id}_fg_2`, label: '2', value: r2 ? parseFloat((r2 * 0.85).toFixed(2)) : null }
       ]
     },
     {
@@ -325,17 +279,14 @@ export function renderMatchDetailsView() {
                     ${market.odds.map(odd => {
                       const isSelected = selections.some(s => s.id === odd.selectionId);
                       const flash = simulation.getFlashState(match.id, odd.selectionId);
-                      const isLocked = aiTelemetry.isLocked || odd.isLocked;
+                      const isSuspended = odd.isSuspended || odd.value === null || odd.value === undefined;
 
-                      if (isLocked) {
+                      if (isSuspended) {
                         return `
-                          <button class="odds-btn locked" disabled 
-                            style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px var(--spacing-md); background:rgba(255,77,77,0.1); border:1px solid rgba(255,77,77,0.3); border-radius:var(--radius-full); color:var(--text-muted); cursor:not-allowed; opacity:0.65; font-size:0.85rem;">
+                          <button class="odds-btn suspended" disabled 
+                            style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px var(--spacing-md); background:var(--bg-obsidian); border:1px solid var(--border-color); border-radius:var(--radius-full); color:var(--text-muted); cursor:not-allowed; opacity:0.45;">
                             <span style="font-weight:600; color:var(--text-muted);">${odd.label}</span>
-                            <span style="display:flex; align-items:center; gap:4px; font-weight:700; color:#ff4d4d;">
-                              ${getMaterialIcon('lock')}
-                              LOCKED
-                            </span>
+                            <span style="font-family:var(--font-mono); font-weight:800; color:var(--text-muted);">-</span>
                           </button>
                         `;
                       }
@@ -426,7 +377,7 @@ export function renderMatchDetailsView() {
   });
 
   document.getElementById('trigger-stats-modal')?.addEventListener('click', () => {
-    alert(`Event Statistics & AI Analysis:\n\nAI Threat Index: ${aiTelemetry.aiStatusText}\nWin Probabilities: Home ${aiTelemetry.homeProb}% | Draw ${aiTelemetry.drawProb}% | Away ${aiTelemetry.awayProb}%\nVenue: ${match.venue}`);
+    alert(`Event Statistics:\n\nMatch State: ${match.isLive ? 'Live In-Play (' + match.timer + '\')' : 'Upcoming scheduled'}\nScore: ${match.teams.home.name} ${match.scores.home} - ${match.scores.away} ${match.teams.away.name}\nVenue: ${match.venue}`);
   });
 }
 export default renderMatchDetailsView;

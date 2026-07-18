@@ -242,22 +242,9 @@ class SimulationEngine {
 
   tick() {
     this.matches.forEach(match => {
-      // Execute AI oddsmaker analysis for both live & prematch fixtures
-      const aiAnalysis = aiAnalyzer.analyzeLiveMatch(match);
-      match.aiTelemetry = aiAnalysis;
-
       if (match.isLive) {
-        match.markets.forEach(market => {
-          market.odds.forEach(odd => {
-            if (aiAnalysis.isLocked) {
-              odd.isLocked = true;
-              odd.lockReason = aiAnalysis.lockReason;
-            } else {
-              odd.isLocked = false;
-              odd.lockReason = null;
-            }
-          });
-        });
+        // Run AI Live Score & Timer Odds Engine
+        aiAnalyzer.updateMatchLiveOdds(match);
       }
 
       if (match.id.startsWith('espn_')) return;
@@ -265,7 +252,6 @@ class SimulationEngine {
 
       this.tickMatchTimer(match);
       this.simulateScoring(match);
-      this.fluctuateMatchOdds(match);
     });
 
     state.notify('matches');

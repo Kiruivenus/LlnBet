@@ -7,6 +7,9 @@ export function formatCurrency(value) {
 }
 
 export function formatOdds(value) {
+  if (value === null || value === undefined || isNaN(value) || value <= 0) {
+    return '-';
+  }
   return parseFloat(value).toFixed(2);
 }
 
