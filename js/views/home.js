@@ -43,7 +43,7 @@ export function renderHomeView() {
       </div>
     </div>
 
-    <!-- Live Matches Grid -->
+    <!-- Live Matches Section (Compact List layout) -->
     <div>
       <div class="section-header">
         <div class="section-title-area">
@@ -59,27 +59,47 @@ export function renderHomeView() {
         </button>
       </div>
 
-      <div class="match-grid">
-        ${liveMatches.length === 0 ? `
-          <div style="text-align:center; padding:30px; color:var(--text-muted); background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-color);">
-            No live matches in progress for this category.
+      <div class="matches-list-container">
+        <div class="matches-list-header">
+          <span>Teams</span>
+          <div class="matches-header-odds">
+            <span>1</span>
+            <span>X</span>
+            <span>2</span>
           </div>
-        ` : liveMatches.map(match => renderMatchCard(match, selections)).join('')}
+        </div>
+        <div class="match-list-items">
+          ${liveMatches.length === 0 ? `
+            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.9rem;">
+              No live matches in progress for this category.
+            </div>
+          ` : liveMatches.map(match => renderMatchCard(match, selections)).join('')}
+        </div>
       </div>
     </div>
 
-    <!-- Upcoming Matches Grid -->
+    <!-- Upcoming Matches Section (Compact List layout) -->
     <div>
       <div class="section-header">
         <h2 class="section-title">Upcoming Fixtures</h2>
       </div>
 
-      <div class="match-grid">
-        ${upcomingMatches.length === 0 ? `
-          <div style="text-align:center; padding:30px; color:var(--text-muted); background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-color);">
-            No upcoming fixtures for this category.
+      <div class="matches-list-container">
+        <div class="matches-list-header">
+          <span>Teams</span>
+          <div class="matches-header-odds">
+            <span>1</span>
+            <span>X</span>
+            <span>2</span>
           </div>
-        ` : upcomingMatches.map(match => renderMatchCard(match, selections)).join('')}
+        </div>
+        <div class="match-list-items">
+          ${upcomingMatches.length === 0 ? `
+            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.9rem;">
+              No upcoming fixtures for this category.
+            </div>
+          ` : upcomingMatches.map(match => renderMatchCard(match, selections)).join('')}
+        </div>
       </div>
     </div>
 
@@ -125,8 +145,8 @@ export function renderHomeView() {
           <h4 class="footer-title">Information</h4>
           <ul class="footer-links">
             <li><a href="#" class="footer-link-btn" data-page="promotions">Promotions</a></li>
-            <li><a href="#" class="footer-link-btn" data-page="dashboard">My Account</a></li>
-            <li><a href="#" class="footer-link-btn" data-page="wallet">Deposit/Withdraw</a></li>
+            <li><a href="#" class="footer-link-btn" data-page="profile">My Account</a></li>
+            <li><a href="#" class="footer-link-btn" data-page="profile">Deposit/Withdraw</a></li>
           </ul>
         </div>
         <div class="footer-col">
@@ -163,7 +183,7 @@ export function renderHomeView() {
 
   // Bind events
   document.getElementById('hero-deposit-link')?.addEventListener('click', () => {
-    state.setPage('wallet');
+    state.setPage('profile');
   });
 
   container.querySelectorAll('.sport-chip').forEach(chip => {
@@ -173,8 +193,8 @@ export function renderHomeView() {
     });
   });
 
-  // Odds buttons click
-  container.querySelectorAll('.odds-btn').forEach(btn => {
+  // Odds buttons click selection (handles compact odds button class)
+  container.querySelectorAll('.compact-odds-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       
@@ -198,9 +218,10 @@ export function renderHomeView() {
     });
   });
 
-  container.querySelectorAll('.match-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const matchId = card.getAttribute('data-id');
+  // Navigate to match details on row click
+  container.querySelectorAll('.match-list-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const matchId = row.getAttribute('data-id');
       state.setPage('match-details', matchId);
     });
   });
@@ -217,12 +238,12 @@ export function renderHomeView() {
 
   document.getElementById('footer-rg-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
-    alert("Gaming Limits:\n\nCustomize your session duration, wager size caps, and loss limits inside your Dashboard account page.");
+    alert("Gaming Limits:\n\nCustomize your session duration, wager size caps, and loss limits inside your Profile settings.");
   });
 
   document.getElementById('footer-se-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
-    alert("Self-Exclusion:\n\nYou can request permanent or temporary exclusion of your account inside dashboard.");
+    alert("Self-Exclusion:\n\nYou can request permanent or temporary exclusion of your account inside profile page.");
   });
 
   document.getElementById('footer-support-btn')?.addEventListener('click', (e) => {
@@ -237,6 +258,7 @@ export function renderHomeView() {
   });
 }
 
+// Compact match row layout renderer
 export function renderMatchCard(match, selections) {
   const isHomeSelected = selections.some(s => s.id === `${match.id}_1`);
   const isDrawSelected = selections.some(s => s.id === `${match.id}_x`);
@@ -252,96 +274,87 @@ export function renderMatchCard(match, selections) {
   const awayFlash = awayOdd ? simulation.getFlashState(match.id, awayOdd.selectionId) : null;
 
   return `
-    <div class="match-card" data-id="${match.id}">
+    <div class="match-list-row" data-id="${match.id}">
       
-      <!-- Info Left Column -->
-      <div class="match-info-side">
-        <div class="match-meta">
-          <span class="league-name">${match.league}</span>
-          <span style="color:var(--text-muted);">•</span>
+      <!-- Meta details: Icon + League + Time -->
+      <div class="match-row-meta">
+        <span style="display:flex; align-items:center; gap:6px;">
+          ${getMaterialIcon(match.sport === 'football' ? 'soccer' : match.sport === 'basketball' ? 'basketball' : 'tennis')}
+          <span>${match.league}</span>
+        </span>
+        <span>
           ${match.isLive ? `
             <span class="live-indicator">
               <span class="pulse-dot"></span>
               ${match.timer}'
             </span>
-          ` : `
-            <span>${match.kickoffTime}</span>
-          `}
-        </div>
-
-        <div class="match-teams">
-          <div class="team-row">
-            <span>
-              ${renderTeamBadge(match.teams.home.name)}
-              ${match.teams.home.name}
-            </span>
-            ${match.isLive ? `<span class="score-box">${match.scores.home}</span>` : ''}
-          </div>
-          <div class="team-row">
-            <span>
-              ${renderTeamBadge(match.teams.away.name)}
-              ${match.teams.away.name}
-            </span>
-            ${match.isLive ? `<span class="score-box">${match.scores.away}</span>` : ''}
-          </div>
-        </div>
-
-        <div class="match-footer-meta">
-          <span class="match-stat-link">
-            📊 Stats & H2H
-          </span>
-          <span style="color:var(--text-muted);">•</span>
-          <span>+${match.markets.length * 4} Markets</span>
-        </div>
+          ` : match.kickoffTime}
+        </span>
       </div>
 
-      <!-- Betting Odds Right Column -->
-      <div class="match-odds-side">
-        <div class="odds-market-title">${mainMarket.name}</div>
-        <div class="odds-grid">
-          
-          <button class="odds-btn ${isHomeSelected ? 'selected' : ''} ${homeFlash === 'up' ? 'flash-up' : homeFlash === 'down' ? 'flash-down' : ''} ${homeOdd.isLocked ? 'locked' : ''}" 
+      <!-- Main info: Stacked teams + Inline pill odds -->
+      <div class="match-row-main">
+        
+        <div class="match-row-teams">
+          <div class="match-row-team-line">
+            <span>${match.teams.home.name}</span>
+            ${match.isLive ? `<span class="match-row-score">${match.scores.home}</span>` : ''}
+          </div>
+          <div class="match-row-team-line" style="margin-top:2px;">
+            <span>${match.teams.away.name}</span>
+            ${match.isLive ? `<span class="match-row-score">${match.scores.away}</span>` : ''}
+          </div>
+        </div>
+
+        <div class="match-row-odds">
+          <button class="compact-odds-btn ${isHomeSelected ? 'selected' : ''} ${homeFlash === 'up' ? 'flash-up' : homeFlash === 'down' ? 'flash-down' : ''} ${homeOdd.isLocked ? 'locked' : ''}" 
             data-id="${homeOdd.selectionId}" 
             data-match-id="${match.id}"
             data-team="${match.teams.home.name}" 
             data-market="Home Win" 
             data-value="${homeOdd.value}">
-            <span class="odds-label">1</span>
-            <span class="odds-value">${formatOdds(homeOdd.value)}</span>
+            ${formatOdds(homeOdd.value)}
           </button>
 
           ${drawOdd ? `
-            <button class="odds-btn ${isDrawSelected ? 'selected' : ''} ${drawFlash === 'up' ? 'flash-up' : drawFlash === 'down' ? 'flash-down' : ''} ${drawOdd.isLocked ? 'locked' : ''}" 
+            <button class="compact-odds-btn ${isDrawSelected ? 'selected' : ''} ${drawFlash === 'up' ? 'flash-up' : drawFlash === 'down' ? 'flash-down' : ''} ${drawOdd.isLocked ? 'locked' : ''}" 
               data-id="${drawOdd.selectionId}" 
               data-match-id="${match.id}"
               data-team="Draw" 
               data-market="Draw" 
               data-value="${drawOdd.value}">
-              <span class="odds-label">X</span>
-              <span class="odds-value">${formatOdds(drawOdd.value)}</span>
+              ${formatOdds(drawOdd.value)}
             </button>
           ` : `
-            <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); opacity:0.3; border-radius:var(--radius-sm);"></div>
+            <div style="width:54px; height:32px;"></div>
           `}
 
           ${awayOdd ? `
-            <button class="odds-btn ${isAwaySelected ? 'selected' : ''} ${awayFlash === 'up' ? 'flash-up' : awayFlash === 'down' ? 'flash-down' : ''} ${awayOdd.isLocked ? 'locked' : ''}" 
+            <button class="compact-odds-btn ${isAwaySelected ? 'selected' : ''} ${awayFlash === 'up' ? 'flash-up' : awayFlash === 'down' ? 'flash-down' : ''} ${awayOdd.isLocked ? 'locked' : ''}" 
               data-id="${awayOdd.selectionId}" 
               data-match-id="${match.id}"
               data-team="${match.teams.away.name}" 
               data-market="Away Win" 
               data-value="${awayOdd.value}">
-              <span class="odds-label">2</span>
-              <span class="odds-value">${formatOdds(awayOdd.value)}</span>
+              ${formatOdds(awayOdd.value)}
             </button>
           ` : `
-            <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); opacity:0.3; border-radius:var(--radius-sm);"></div>
+            <div style="width:54px; height:32px;"></div>
           `}
-
         </div>
+
+      </div>
+
+      <!-- Footer: Cashout icon + Markets count -->
+      <div class="match-row-footer">
+        <span style="display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted);">
+          💰 Cash Out Active
+        </span>
+        <span class="match-row-markets">+${match.markets.length * 4} Markets</span>
       </div>
 
     </div>
   `;
 }
+
 export default renderHomeView;

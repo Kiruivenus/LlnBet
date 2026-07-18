@@ -51,15 +51,26 @@ export function renderLiveView() {
       </div>
     </div>
 
-    <div class="match-grid">
-      ${filteredLive.length === 0 ? `
-        <div style="text-align:center; padding:60px 20px; color:var(--text-muted); background:var(--bg-surface); border-radius:var(--radius-lg); border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center; gap:16px;">
-          <span class="material-icons-round" style="font-size: 3rem; color: var(--text-muted);">sensors</span>
-          <h3 style="color:var(--text-primary);">No Live ${activeSport.toUpperCase()} Matches</h3>
-          <p style="font-size:0.9rem; max-width:400px; line-height:1.5;">There are currently no active live matches in this category. Navigate to Prematch section to see upcoming events or check back shortly.</p>
-          <button class="hero-cta" id="back-prematch-btn" style="padding:10px 24px; font-size:0.9rem;">View Prematch Events</button>
+    <!-- Compact matches grid listing (Betika style) -->
+    <div class="matches-list-container">
+      <div class="matches-list-header">
+        <span>Teams</span>
+        <div class="matches-header-odds">
+          <span>1</span>
+          <span>X</span>
+          <span>2</span>
         </div>
-      ` : filteredLive.map(match => renderMatchCard(match, selections)).join('')}
+      </div>
+      <div class="match-list-items">
+        ${filteredLive.length === 0 ? `
+          <div style="text-align:center; padding:60px 20px; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:16px;">
+            <span class="material-icons-round" style="font-size: 3rem; color: var(--text-muted);">sensors</span>
+            <h3 style="color:var(--text-primary);">No Live ${activeSport.toUpperCase()} Matches</h3>
+            <p style="font-size:0.9rem; max-width:400px; line-height:1.5;">There are currently no active live matches in this category. Navigate to Prematch section to see upcoming events or check back shortly.</p>
+            <button class="hero-cta" id="back-prematch-btn" style="padding:10px 24px; font-size:0.9rem;">View Prematch Events</button>
+          </div>
+        ` : filteredLive.map(match => renderMatchCard(match, selections)).join('')}
+      </div>
     </div>
   `;
 
@@ -73,8 +84,8 @@ export function renderLiveView() {
     });
   });
 
-  // Handle odds click selection
-  container.querySelectorAll('.odds-btn').forEach(btn => {
+  // Handle odds click selection (handles compact odds button class)
+  container.querySelectorAll('.compact-odds-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const selectionId = btn.getAttribute('data-id');
@@ -97,10 +108,10 @@ export function renderLiveView() {
     });
   });
 
-  // Navigate to match details on card click
-  container.querySelectorAll('.match-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const matchId = card.getAttribute('data-id');
+  // Navigate to match details on row click
+  container.querySelectorAll('.match-list-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const matchId = row.getAttribute('data-id');
       state.setPage('match-details', matchId);
     });
   });

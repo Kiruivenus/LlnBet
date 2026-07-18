@@ -2565,4 +2565,196 @@ body.light-theme .sidebar-item.active a, body.light-theme .sidebar-item.active b
   color: #0f172a;
 }
 
+/* Compact Betika-style Match List Styles */
+.matches-list-container {
+  background: var(--bg-charcoal);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--spacing-lg);
+}
+
+.matches-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px var(--spacing-md);
+  background: var(--bg-obsidian);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.matches-header-odds {
+  display: flex;
+  width: 180px;
+  justify-content: space-between;
+  padding-right: 8px;
+}
+
+.matches-header-odds span {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.match-list-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.match-list-row {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-charcoal);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.match-list-row:last-child {
+  border-bottom: none;
+}
+
+.match-list-row:hover {
+  background: var(--bg-surface-hover);
+}
+
+.match-row-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  align-items: center;
+}
+
+.match-row-meta .material-icons-round {
+  font-size: 14px;
+}
+
+.match-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.match-row-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.match-row-team-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding-right: var(--spacing-lg);
+}
+
+.match-row-score {
+  color: var(--accent-orange);
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.match-row-odds {
+  display: flex;
+  gap: 8px;
+  width: 180px;
+  justify-content: flex-end;
+}
+
+.compact-odds-btn {
+  background: var(--bg-obsidian);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  width: 54px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  outline: none;
+}
+
+.compact-odds-btn:hover {
+  background: var(--bg-surface-active);
+  border-color: var(--border-color-light);
+}
+
+.compact-odds-btn.selected {
+  background: var(--accent-emerald) !important;
+  color: var(--bg-obsidian) !important;
+  border-color: var(--accent-emerald) !important;
+}
+
+.compact-odds-btn.locked {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.compact-odds-btn.locked::after {
+  content: 'lock';
+  font-family: 'Material Icons Round';
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.match-row-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  align-items: center;
+}
+
+.match-row-markets {
+  color: var(--accent-emerald);
+  font-weight: 700;
+}
+
+/* Light Theme overrides for compact rows */
+body.light-theme .matches-list-container {
+  border-color: #cbd5e1;
+}
+body.light-theme .matches-list-header {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+body.light-theme .match-list-row {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+body.light-theme .match-list-row:hover {
+  background: #f8fafc;
+}
+body.light-theme .compact-odds-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+body.light-theme .compact-odds-btn:hover {
+  background: #e2e8f0;
+}
+
+
 
