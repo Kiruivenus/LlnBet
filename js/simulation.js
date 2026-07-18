@@ -1,6 +1,6 @@
 import { matchesList } from './data.js';
 import { state } from './state.js';
-import { aiAnalyzer } from './aiAnalyzer.js';
+import { tradingEngine } from './trading/tradingEngine.js';
 
 // Local Date Formatter Helper
 function formatKickoff(dateObj) {
@@ -242,10 +242,8 @@ class SimulationEngine {
 
   tick() {
     this.matches.forEach(match => {
-      if (match.isLive) {
-        // Run AI Live Score & Timer Odds Engine
-        aiAnalyzer.updateMatchLiveOdds(match);
-      }
+      // Execute Modular Event-Driven Live Trading Engine Pipeline
+      tradingEngine.processMatchTrading(match);
 
       if (match.id.startsWith('espn_')) return;
       if (!match.isLive) return;
