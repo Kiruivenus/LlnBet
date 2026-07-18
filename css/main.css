@@ -3672,9 +3672,21 @@ body.light-theme .drawer-menu-item.active {
   display: none;
 }
 
+.deposit-btn {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  min-width: max-content !important;
+}
+
 @media (max-width: 992px) {
+  .header-right {
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
   .mobile-search-btn {
     display: flex !important;
+    flex-shrink: 0 !important;
   }
   
   .wallet-balance-wrap {
@@ -3685,18 +3697,24 @@ body.light-theme .drawer-menu-item.active {
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
+    flex-shrink: 0 !important;
   }
 
   .deposit-btn {
     display: inline-flex !important;
-    padding: 8px 16px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-width: max-content !important;
+    height: 38px !important;
+    padding: 0 16px !important;
     font-size: 0.85rem !important;
     font-weight: 800 !important;
-    border-radius: var(--radius-full) !important;
-  }
-
-  .deposit-btn .btn-text {
-    display: inline !important;
+    border-radius: 9999px !important;
+    background: #fdb927 !important;
+    color: #080a0f !important;
+    box-shadow: 0 4px 12px rgba(253, 185, 39, 0.3) !important;
   }
 }
 
