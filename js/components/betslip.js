@@ -35,6 +35,20 @@ export function renderBetslip() {
 
   // Header & Betika Tab System
   let html = `
+    <!-- Prominent Mobile/Desktop Header with Close Button -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #111827; border-bottom: 1px solid #1e293b; border-radius: 8px 8px 0 0; margin-bottom: 6px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button id="betslip-close-mobile-btn" aria-label="Close Betslip" style="background: transparent; border: none; color: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 2px;">
+          ${getMaterialIcon('arrow_back')}
+        </button>
+        <span style="font-weight: 800; font-size: 1.1rem; color: #ffffff;">Betslip</span>
+        ${selections.length > 0 ? `<span style="background: #fdb927; color: #080a0f; font-weight: 800; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;">${selections.length}</span>` : ''}
+      </div>
+      <button id="betslip-close-mobile-x-btn" aria-label="Close Betslip" style="background: rgba(255,255,255,0.08); border: none; color: #f8fafc; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        ${getMaterialIcon('close')}
+      </button>
+    </div>
+
     <!-- Betika Category Tabs -->
     <div style="display: flex; border-bottom: 2px solid #1e293b; margin-bottom: 8px; background: #0c121d;">
       <button style="flex: 1; padding: 10px 0; background: transparent; border: none; border-bottom: 3px solid #00e676; color: #00e676; font-weight: 700; font-size: 0.9rem; cursor: pointer;">
@@ -164,6 +178,16 @@ export function renderBetslip() {
   container.innerHTML = html;
 
   // Bind Event Handlers
+  const closeSlip = () => {
+    const slip = document.getElementById('app-betslip');
+    if (slip) {
+      slip.classList.remove('active');
+    }
+  };
+
+  document.getElementById('betslip-close-mobile-btn')?.addEventListener('click', closeSlip);
+  document.getElementById('betslip-close-mobile-x-btn')?.addEventListener('click', closeSlip);
+
   document.getElementById('betslip-remove-all-btn')?.addEventListener('click', () => {
     state.clearBetslip();
   });
