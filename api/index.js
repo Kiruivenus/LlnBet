@@ -3,21 +3,22 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Read .env from parent root directory
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const app = express();
 app.use(express.json());
 
-// Serve static frontend sportsbook files
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(__dirname));
+// Serve static frontend files from parent root directory
+app.use(express.static(path.resolve(__dirname, '..')));
 
 // In-memory map to store transaction status callback records
-// Key: CheckoutRequestID, Value: { status: 'pending'|'success'|'failed', amount, receipt, reason }
 const transactions = new Map();
 
-// Helper: Get timestamp in YYYYMMDDHHmmss format (EAT time, approx)
+// Helper: Get timestamp in YYYYMMDDHHmmss format
 function getMpesaTimestamp() {
   const now = new Date();
   const t = (val) => String(val).padStart(2, '0');
@@ -30,9 +31,9 @@ function getMpesaTimestamp() {
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 
-// Helper: Format phone number to Safaricom Daraja format (2547XXXXXXXX / 2541XXXXXXXX)
+// Helper: Format phone number
 function formatPhoneNumber(phone) {
-  let cleaned = phone.replace(/\D/g, ''); // numbers only
+  let cleaned = phone.replace(/\D/g, '');
   if (cleaned.startsWith('0')) {
     cleaned = '254' + cleaned.slice(1);
   } else if (cleaned.startsWith('+254')) {
@@ -58,7 +59,7 @@ app.post('/api/stkpush', async (req, res) => {
     const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
 
-    // Safeguard: Fallback to simulated flow if keys are not configured
+    // Safeguard fallback to simulated flow if keys are placeholders
     if (!consumerKey || consumerKey === 'your_sandbox_consumer_key' || !consumerSecret || consumerSecret === 'your_sandbox_consumer_secret') {
       console.log(`[MPESA SIMULATION] Triggered fallback for KES ${roundedAmount} to ${cleanedPhone}`);
       const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
@@ -145,7 +146,7 @@ app.post('/api/stkpush', async (req, res) => {
 app.post('/api/mpesa-callback', (req, res) => {
   try {
     const callbackData = req.body;
-    console.log("[MPESA CALLBACK RECEIVER] Received Webhook Callback Payload:", JSON.stringify(callbackData, null, 2));
+    console.log("[MPESA CALLBACK RECEIVER] Callback Payload:", JSON.stringify(callbackData, null, 2));
 
     const callbackBody = callbackData.Body?.stkCallback;
     if (!callbackBody) {
@@ -157,21 +158,19 @@ app.post('/api/mpesa-callback', (req, res) => {
     const resultDesc = callbackBody.ResultDesc;
 
     if (resultCode === 0) {
-      // Find M-Pesa receipt number from metadata items
       const metadata = callbackBody.CallbackMetadata?.Item || [];
       const receiptItem = metadata.find(item => item.Name === 'MpesaReceiptNumber');
       const amountItem = metadata.find(item => item.Name === 'Amount');
       const receipt = receiptItem ? receiptItem.Value : `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
       const amount = amountItem ? amountItem.Value : 0;
 
-      console.log(`[MPESA SUCCESS] Transaction checkout ${checkoutId} confirmed. Receipt: ${receipt}, Amount: KES ${amount}`);
+      console.log(`[MPESA SUCCESS] Checkout ${checkoutId} confirmed. Receipt: ${receipt}, Amount: KES ${amount}`);
       transactions.set(checkoutId, { status: 'success', amount, receipt });
     } else {
-      console.warn(`[MPESA FAILED] Transaction checkout ${checkoutId} rejected. Code: ${resultCode}, Desc: ${resultDesc}`);
+      console.warn(`[MPESA FAILED] Checkout ${checkoutId} rejected. Code: ${resultCode}, Desc: ${resultDesc}`);
       transactions.set(checkoutId, { status: 'failed', reason: resultDesc });
     }
 
-    // Acknowledge Safaricom Callback successfully
     return res.json({ ResultCode: 0, ResultDesc: "Success" });
 
   } catch (error) {
@@ -189,7 +188,6 @@ app.get('/api/status/:checkoutId', (req, res) => {
     return res.json({ status: 'pending' });
   }
 
-  // Once checked success/failure, clear memory slot after 10s to keep RAM clean
   if (tx.status !== 'pending') {
     setTimeout(() => {
       transactions.delete(checkoutId);
@@ -199,7 +197,7 @@ app.get('/api/status/:checkoutId', (req, res) => {
   return res.json(tx);
 });
 
-// Start Server
+// Start Server locally
 if (process.env.VERCEL !== '1') {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
