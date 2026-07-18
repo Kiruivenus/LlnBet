@@ -2756,5 +2756,137 @@ body.light-theme .compact-odds-btn:hover {
   background: #e2e8f0;
 }
 
+/* Betika-style My Bets card layout */
+.mybets-last-updated {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  margin-bottom: var(--spacing-md);
+}
+
+.mybets-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding: 0 var(--spacing-xs);
+}
+
+.mybets-filter-select {
+  background: var(--bg-charcoal);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.mybets-filter-select:focus {
+  border-color: var(--accent-emerald);
+}
+
+.mybets-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.bet-ticket-card {
+  background: var(--bg-charcoal);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.bet-ticket-card:hover {
+  border-color: var(--border-color-light);
+}
+
+.bet-ticket-header {
+  padding: 12px var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-obsidian);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bet-ticket-type {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bet-ticket-id {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.bet-ticket-summary {
+  padding: 12px var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.bet-ticket-details {
+  padding: 12px var(--spacing-md);
+  border-top: 1px dashed var(--border-color);
+  display: none; /* Collapsed by default */
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.bet-ticket-selection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 8px;
+}
+
+.bet-ticket-selection-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Light Theme overrides for tickets */
+body.light-theme .bet-ticket-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+body.light-theme .bet-ticket-card:hover {
+  border-color: #94a3b8;
+}
+body.light-theme .bet-ticket-header {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+body.light-theme .bet-ticket-details {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+body.light-theme .bet-ticket-selection-item {
+  border-bottom-color: #cbd5e1;
+}
+body.light-theme .mybets-filter-select {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+
 
 
