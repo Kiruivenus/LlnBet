@@ -38,16 +38,16 @@ export function renderMobileDrawer() {
       title: 'SUPPORT',
       items: [
         { id: 'drawer-nav-chat', label: 'Live Chat', icon: 'chat', page: 'support' },
-        { id: 'drawer-nav-telegram', label: 'Telegram', icon: 'notification', action: () => alert("Telegram Support:\n\nOpening official BetPulse Kenya Telegram Channel (@BetPulseKenya)...") }
+        { id: 'drawer-nav-telegram', label: 'Telegram', icon: 'notification', action: () => alert("Telegram Support:\n\nOpening official LlnBet Kenya Telegram Channel (@LlnBetKenya)...") }
       ]
     },
     {
       title: 'LEGAL',
       items: [
-        { id: 'drawer-nav-terms', label: 'Terms', icon: 'search', action: () => alert("Terms & Conditions:\n\nBetPulse Sportsbook operates under Kenya Betting Control & Licensing Board (BCLB) license no. BCLB-2026-A829.") },
+        { id: 'drawer-nav-terms', label: 'Terms', icon: 'search', action: () => alert("Terms & Conditions:\n\nLlnBet Sportsbook operates under Kenya Betting Control & Licensing Board (BCLB) license no. BCLB-2026-A829.") },
         { id: 'drawer-nav-privacy', label: 'Privacy', icon: 'shield', action: () => alert("Privacy Policy:\n\nAll registered user transactions and personal records are encrypted with 256-bit SSL technology.") },
         { id: 'drawer-nav-rg', label: 'Responsible Gaming', icon: 'shield', page: 'responsible-gaming' },
-        { id: 'drawer-nav-about', label: 'About', icon: 'user', action: () => alert("About BetPulse:\n\nBetPulse is Kenya's premium sportsbook platform providing state-of-the-art live feeds, M-Pesa STK push deposits, and multi-market calculators.") }
+        { id: 'drawer-nav-about', label: 'About', icon: 'user', action: () => alert("About LlnBet:\n\nLlnBet is Kenya's premium sportsbook platform providing state-of-the-art live feeds, M-Pesa STK push deposits, and multi-market calculators.") }
       ]
     }
   ];
@@ -138,7 +138,7 @@ export function renderMobileDrawer() {
   document.getElementById('drawer-logout-trigger')?.addEventListener('click', () => {
     closeDrawer();
     state.logout();
-    alert("Logged Out: You have successfully signed out of your BetPulse account.");
+    alert("Logged Out: You have successfully signed out of your LlnBet account.");
   });
 }
 

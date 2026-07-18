@@ -10,9 +10,9 @@ export function renderRegisterView() {
       <div class="auth-card">
         
         <div class="auth-header">
-          <div class="brand-logo" style="margin: 0 auto; width: 44px; height: 44px; font-size: 1.3rem;">P</div>
-          <h2 class="auth-title">Create Account</h2>
-          <p class="auth-subtitle">Register to BetPulse with your Safaricom or Airtel Kenyan number</p>
+          <img src="img/logo.png" style="display:block; margin: 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit:cover;" alt="LlnBet Logo" />
+          <h2 class="auth-title" style="margin-top: 10px;">Create Account</h2>
+          <p class="auth-subtitle">Register to LlnBet with your Safaricom or Airtel Kenyan number</p>
         </div>
 
         <div class="auth-error-badge" id="register-error-badge" style="display:none; background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#ef4444; padding:10px; border-radius:var(--radius-sm); font-size:0.85rem; margin-bottom:14px; text-align:center;"></div>
@@ -55,7 +55,7 @@ export function renderRegisterView() {
           <div class="auth-checkbox-group">
             <input type="checkbox" id="register-terms-agree" required />
             <label for="register-terms-agree">
-              I declare that I am 18 years or older and I agree to BetPulse's 
+              I declare that I am 18 years or older and I agree to LlnBet's 
               <a href="#" class="auth-link" id="auth-terms-popup-link">Terms & Conditions</a>.
             </label>
           </div>
@@ -144,7 +144,7 @@ export function renderRegisterView() {
       submitBtn.textContent = "Registering...";
 
       await state.register(phone, password);
-      alert("Registration Successful!\n\nWelcome to BetPulse. Your betting account has been created.");
+      alert("Registration Successful!\n\nWelcome to LlnBet. Your betting account has been created.");
       state.setPage('home');
     } catch (err) {
       errorBadge.textContent = err.message || "Registration failed.";

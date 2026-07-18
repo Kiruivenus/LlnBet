@@ -61,9 +61,9 @@ export function renderHeader() {
         ${getMaterialIcon('menu')}
       </button>
 
-      <a href="#" class="brand" id="header-brand-logo">
-        <div class="brand-logo desktop-logo">P</div>
-        <div class="brand-name">Bet<span>Pulse</span></div>
+      <a href="#" class="brand" id="header-brand-logo" style="display:flex; align-items:center; gap:8px;">
+        <img src="img/logo.png" alt="LlnBet Logo" class="brand-logo-img" style="height:32px; width:32px; border-radius:6px; object-fit:cover;" />
+        <div class="brand-name" style="font-family:var(--font-display); font-weight:900; font-size:1.3rem; letter-spacing:-0.03em; color:var(--text-primary); text-decoration:none;">Lln<span style="color:var(--accent-orange);">Bet</span></div>
       </a>
     </div>
 

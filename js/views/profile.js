@@ -20,7 +20,7 @@ export function renderProfileView() {
         </div>
         <div>
           <h2 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700;">+${user?.phone || '254700000000'}</h2>
-          <p style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.05em; margin-top:2px;">${user?.name || 'BetPulse Verified Player'}</p>
+          <p style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.05em; margin-top:2px;">${user?.name || 'LlnBet Verified Player'}</p>
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export function renderProfileView() {
       <div class="wallet-card" style="margin-top:16px; gap: 12px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Deposit</h3>
-          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Send money into your BetPulse account</p>
+          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Send money into your LlnBet account</p>
         </div>
 
         <!-- Editable Adjuster Input -->
@@ -106,7 +106,7 @@ export function renderProfileView() {
       <div class="wallet-card" style="margin-top:16px; gap: 12px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Withdrawal</h3>
-          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Withdraw money from your BetPulse wallet</p>
+          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Withdraw money from your LlnBet wallet</p>
         </div>
 
         <!-- Editable Adjuster Input -->
@@ -332,7 +332,7 @@ export function renderProfileView() {
             <span style="display:inline-block; width:8px; height:8px; background:#4ade80; border-radius:50%;"></span> M-PESA
           </h4>
           <p style="font-size:0.9rem; line-height:1.4; color:#374151; margin:0 0 12px 0;">
-            Do you want to pay <strong>KES ${amount}</strong> to <strong>BETPULSE LTD</strong>?<br/>
+            Do you want to pay <strong>KES ${amount}</strong> to <strong>LLNBET LTD</strong>?<br/>
             Enter 4-Digit M-Pesa PIN:
           </p>
           
@@ -403,7 +403,7 @@ export function renderProfileView() {
           </div>
           <div>
             <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Deposit Confirmed!</h3>
-            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">KES ${amount} has been successfully credited to your BetPulse wallet. Ref: ${ref}.</p>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">KES ${amount} has been successfully credited to your LlnBet wallet. Ref: ${ref}.</p>
           </div>
         </div>
       `;

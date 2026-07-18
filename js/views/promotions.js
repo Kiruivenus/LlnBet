@@ -7,7 +7,7 @@ export function renderPromotionsView() {
 
   container.innerHTML = `
     <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-      <h1 style="font-size: 1.8rem;">BetPulse Promotions</h1>
+      <h1 style="font-size: 1.8rem;">LlnBet Promotions</h1>
       <p style="color: var(--text-secondary); font-size: 0.95rem;">Boost your betting payouts with accumulator multipliers, welcome packages, and weekly rebates.</p>
     </div>
 

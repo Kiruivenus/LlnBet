@@ -25,7 +25,7 @@ export function renderSupportView() {
             <span style="position:absolute; bottom:2px; right:2px; width:8px; height:8px; background:#00e676; border-radius:50%; border:2px solid var(--bg-obsidian);"></span>
           </div>
           <div>
-            <h4 style="font-size:0.9rem; font-weight:700; color:var(--text-primary);">Alice (BetPulse Bot Helpdesk)</h4>
+            <h4 style="font-size:0.9rem; font-weight:700; color:var(--text-primary);">Alice (LlnBet Bot Helpdesk)</h4>
             <p style="font-size:0.75rem; color:var(--text-muted);">Active Online • Average reply 10s</p>
           </div>
         </div>
@@ -35,7 +35,7 @@ export function renderSupportView() {
       <!-- Message History List -->
       <div id="support-chat-history" style="flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
         <div style="align-self:flex-start; max-width:80%; background:var(--bg-obsidian); padding:12px 16px; border-radius:16px 16px 16px 4px; font-size:0.9rem; line-height:1.4; border:1px solid var(--border-color);">
-          Welcome to BetPulse live chat support desk! My name is Alice. How can I help you today?
+          Welcome to LlnBet live chat support desk! My name is Alice. How can I help you today?
         </div>
       </div>
 

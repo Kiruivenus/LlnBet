@@ -1,7 +1,7 @@
 {
   "name": "llnbet-sportsbook",
   "version": "1.0.0",
-  "description": "BetPulse Sportsbook Platform with Safaricom M-Pesa Daraja Integration",
+  "description": "LlnBet Sportsbook Platform with Safaricom M-Pesa Daraja Integration",
   "main": "api/index.js",
   "type": "module",
   "scripts": {

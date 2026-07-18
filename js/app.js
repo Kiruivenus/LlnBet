@@ -179,7 +179,7 @@ function initApp() {
     }
   }, 1500);
 
-  console.log("BetPulse Sportsbook App successfully bootstrapped!");
+  console.log("LlnBet Sportsbook App successfully bootstrapped!");
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

@@ -28,7 +28,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'betpulse_super_secret_jwt_key_2026
 const UserSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  name: { type: String, default: 'BetPulse Player' },
+  name: { type: String, default: 'LlnBet Player' },
   balance: { type: Number, default: 0.00 },
   bonusBalance: { type: Number, default: 0.00 },
   verified: { type: Boolean, default: true },
@@ -210,7 +210,7 @@ app.post('/api/auth/register', async (req, res) => {
     if (mongoose.connection.readyState === 1) {
       Notification.create({
         userId,
-        title: "Welcome to BetPulse!",
+        title: "Welcome to LlnBet!",
         message: "Your account has been registered successfully. Deposit min KES 200 to start betting!",
         type: "system"
       }).catch(() => {});
@@ -875,7 +875,7 @@ if (process.env.VERCEL !== '1') {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
     console.log(`---------------------------------------------------------------------`);
-    console.log(`BetPulse backend server running on http://localhost:${PORT}`);
+    console.log(`LlnBet backend server running on http://localhost:${PORT}`);
     console.log(`MongoDB URI: ${mongoUri ? 'Configured' : 'Missing'}`);
     console.log(`M-Pesa Env: ${process.env.MPESA_ENV || 'sandbox'}`);
     console.log(`---------------------------------------------------------------------`);

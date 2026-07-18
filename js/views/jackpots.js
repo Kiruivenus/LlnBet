@@ -22,7 +22,7 @@ export function renderJackpotsView() {
         <div style="color:var(--accent-orange); margin:0 auto 12px auto; background:rgba(253, 185, 39, 0.1); width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; z-index:2;">
           ${getMaterialIcon('jackpot', 'large-profile-icon')}
         </div>
-        <h2 style="font-size:1.4rem; font-family:var(--font-display); font-weight:800; position:relative; z-index:2;">BetPulse Jackpot Hub</h2>
+        <h2 style="font-size:1.4rem; font-family:var(--font-display); font-weight:800; position:relative; z-index:2;">LlnBet Jackpot Hub</h2>
         <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5; margin-top:6px; position:relative; z-index:2;">Predict match outcomes correctly to win multi-million KES prize pools. Low entry stakes, huge payouts.</p>
       </div>
 

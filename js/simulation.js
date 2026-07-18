@@ -106,9 +106,10 @@ class SimulationEngine {
     for (const feed of feeds) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout cap
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second timeout cap
 
-        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?limit=80`, {
+        const limit = feed.sport === 'football' ? 350 : 100;
+        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=${limit}`, {
           signal: controller.signal
         });
         clearTimeout(timeoutId);

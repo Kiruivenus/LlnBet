@@ -126,8 +126,8 @@ export function renderHomeView() {
     <footer class="app-footer">
       <div class="footer-grid">
         <div class="footer-col">
-          <h4 class="footer-title">About BetPulse</h4>
-          <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">BetPulse is a leading licensed online sports betting operator in Kenya providing state-of-the-art live feeds, secure transaction channels, and multi-market calculators.</p>
+          <h4 class="footer-title">About LlnBet</h4>
+          <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">LlnBet is a leading licensed online sports betting operator in Kenya providing state-of-the-art live feeds, secure transaction channels, and multi-market calculators.</p>
         </div>
         <div class="footer-col">
           <h4 class="footer-title">Information</h4>
@@ -147,12 +147,12 @@ export function renderHomeView() {
         </div>
         <div class="footer-col">
           <h4 class="footer-title">Licensing</h4>
-          <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">BetPulse is regulated and licensed by the Betting Control and Licensing Board. License No. BCLB-2026-A829. All software audited for fairness and random compliance.</p>
+          <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">LlnBet is regulated and licensed by the Betting Control and Licensing Board. License No. BCLB-2026-A829. All software audited for fairness and random compliance.</p>
         </div>
       </div>
       
       <div class="footer-bottom">
-        <span>© 2026 BetPulse Sportsbook. All rights reserved. Registered customer data encrypted.</span>
+        <span>© 2026 LlnBet Sportsbook. All rights reserved. Registered customer data encrypted.</span>
         <div class="footer-logos" style="display:flex; align-items:center; gap:16px;">
           <span style="display:flex; align-items:center; gap:4px;">
             ${getMaterialIcon('credit_card')}

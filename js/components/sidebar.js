@@ -107,7 +107,7 @@ export function renderSidebar() {
   });
 
   document.getElementById('nav-chat').addEventListener('click', () => {
-    alert("Support Agent: Hello! How can I assist you with BetPulse today?");
+    alert("Support Agent: Hello! How can I assist you with LlnBet today?");
   });
 }
 export default renderSidebar;

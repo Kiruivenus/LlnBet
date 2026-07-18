@@ -10,8 +10,8 @@ export function renderLoginView() {
       <div class="auth-card">
         
         <div class="auth-header">
-          <div class="brand-logo" style="margin: 0 auto; width: 44px; height: 44px; font-size: 1.3rem;">P</div>
-          <h2 class="auth-title">Login to BetPulse</h2>
+          <img src="img/logo.png" style="display:block; margin: 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit:cover;" alt="LlnBet Logo" />
+          <h2 class="auth-title" style="margin-top: 10px;">Login to LlnBet</h2>
           <p class="auth-subtitle">Enter your Kenyan mobile number and password to access your betting account</p>
         </div>
 
@@ -99,7 +99,7 @@ export function renderLoginView() {
       submitBtn.textContent = "Authenticating...";
 
       await state.login(phone, password);
-      alert("Welcome back to BetPulse! Login successful.");
+      alert("Welcome back to LlnBet! Login successful.");
       state.setPage('home');
     } catch (err) {
       errorBadge.textContent = err.message || "Invalid login credentials.";
