@@ -5,6 +5,8 @@ import { renderMatchDetailsView } from './views/matchDetails.js';
 import { renderMyBetsView } from './views/myBets.js';
 import { renderPromotionsView } from './views/promotions.js';
 import { renderProfileView } from './views/profile.js';
+import { renderLoginView } from './views/login.js';
+import { renderRegisterView } from './views/register.js';
 
 export function route() {
   const page = state.data.currentPage;
@@ -26,7 +28,18 @@ export function route() {
       renderPromotionsView();
       break;
     case 'profile':
-      renderProfileView();
+      // Guard profile route (redirect to login if not logged in)
+      if (!state.data.isLoggedIn) {
+        state.setPage('login');
+      } else {
+        renderProfileView();
+      }
+      break;
+    case 'login':
+      renderLoginView();
+      break;
+    case 'register':
+      renderRegisterView();
       break;
     default:
       renderHomeView();

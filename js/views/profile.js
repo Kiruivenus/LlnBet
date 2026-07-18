@@ -449,10 +449,8 @@ export function renderProfileView() {
     });
 
     document.getElementById('profile-signout-btn')?.addEventListener('click', () => {
-      alert("Logging out... Resetting session data.");
-      state.data.user.balance = 150000.00; // Reset balance
-      state.clearBetslip();
-      state.setPage('home');
+      alert("Logging out... Session ended.");
+      state.logoutUser();
     });
   };
 

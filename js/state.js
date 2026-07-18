@@ -2,6 +2,7 @@
 class State {
   constructor() {
     this.data = {
+      isLoggedIn: true,
       user: {
         username: "PatrikBetson",
         email: "patrik.betson@gmail.com",
@@ -254,6 +255,51 @@ class State {
   setSearch(query) {
     this.data.searchQuery = query;
     this.notify('searchQuery');
+  }
+
+  // User login authentication mock
+  loginUser(phone, password) {
+    this.data.isLoggedIn = true;
+    this.data.user = {
+      username: "User_" + phone.substring(phone.length - 4),
+      email: "user_" + phone.substring(phone.length - 4) + "@betpulse.com",
+      balance: 150000.00, // mock logged in wallet balance
+      kycVerified: true,
+      currency: "KES"
+    };
+    this.notify('user');
+    this.notify('currentPage');
+    return true;
+  }
+
+  // User signup registration mock
+  registerUser(phone, password) {
+    this.data.isLoggedIn = true;
+    this.data.user = {
+      username: "User_" + phone.substring(phone.length - 4),
+      email: "user_" + phone.substring(phone.length - 4) + "@betpulse.com",
+      balance: 1000.00, // KES 1,000 sign-up promotional bonus balance!
+      kycVerified: true,
+      currency: "KES"
+    };
+    // Initialize default transaction logs
+    this.data.transactions = [
+      { id: "TXN-" + Math.floor(Math.random() * 900 + 100), type: "Promo Bonus", date: new Date().toISOString().replace('T', ' ').substring(0, 16), amount: 1000.00, method: "Sign Up Promo", status: "success" }
+    ];
+    this.data.placedBets = []; // Reset bet slip history logs
+    this.notify('user');
+    this.notify('transactions');
+    this.notify('currentPage');
+    return true;
+  }
+
+  // User logout session reset
+  logoutUser() {
+    this.data.isLoggedIn = false;
+    this.data.user = null;
+    this.clearBetslip();
+    this.notify('user');
+    this.notify('currentPage');
   }
 }
 

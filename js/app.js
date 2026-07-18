@@ -69,6 +69,7 @@ function initApp() {
 
   state.subscribe('currentPage', () => {
     route();
+    renderHeader();
     renderSidebar();
     renderMobileNavBar();
   });
