@@ -491,6 +491,57 @@ export function renderProfileView() {
       });
     };
 
+    const renderDepositStatePolling = (amount, checkoutId) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg); animation: scale-up 0.25s ease-out;">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px;">
+            <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Awaiting Authorization</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">STK Push sent successfully! Please check your handset, enter your M-Pesa PIN, and authorize the payment.</p>
+          </div>
+          <button id="tx-cancel-polling-btn" class="place-bet-btn" style="width:100%; margin-top:10px; background:none; border:1px solid var(--border-color); color:var(--text-secondary);">Cancel Waiting</button>
+        </div>
+      `;
+
+      let isPolling = true;
+
+      document.getElementById('tx-cancel-polling-btn').addEventListener('click', () => {
+        isPolling = false;
+        renderDepositFailure("Transaction aborted by user.");
+      });
+
+      const pollStatus = () => {
+        if (!isPolling) return;
+
+        fetch(`/api/status/${checkoutId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            isPolling = false;
+            // Synchronize local frontend memory balance
+            state.deposit(amount, 'M-Pesa Mobile');
+            renderDepositSuccess(amount, data.receipt);
+          } else if (data.status === 'failed') {
+            isPolling = false;
+            renderDepositFailure(data.reason || "M-Pesa transaction rejected.");
+          } else {
+            setTimeout(pollStatus, 2000);
+          }
+        })
+        .catch(err => {
+          console.error("Polling error:", err);
+          setTimeout(pollStatus, 2000);
+        });
+      };
+
+      // Initial check delay
+      setTimeout(pollStatus, 2000);
+    };
+
     const triggerTransactionFlow = (type, amount) => {
       if (type === 'withdraw' && amount > user.balance) {
         alert("Insufficient balance for requested withdrawal.");
@@ -505,9 +556,36 @@ export function renderProfileView() {
 
       if (type === 'deposit') {
         renderDepositState1(amount);
-        setTimeout(() => {
-          renderDepositState2(amount);
-        }, 1500);
+
+        // Fetch STK Push API from Express server backend
+        fetch('/api/stkpush', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phone: user.phone || '0794424486',
+            amount: amount
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || 'Server error'); });
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.simulated) {
+            // Keys are not configured in .env - load mock STK PIN dialog overlay
+            renderDepositState2(amount);
+          } else {
+            // Real Sandbox/Live STK Push successfully initiated
+            renderDepositStatePolling(amount, data.CheckoutRequestID);
+          }
+        })
+        .catch(err => {
+          renderDepositFailure(err.message || "Failed to trigger M-Pesa STK Push.");
+        });
       } else {
         renderWithdrawalState1(amount);
         setTimeout(() => {
