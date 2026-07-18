@@ -1,5 +1,6 @@
 import { matchesList } from './data.js';
 import { state } from './state.js';
+import { aiAnalyzer } from './aiAnalyzer.js';
 
 // Local Date Formatter Helper
 function formatKickoff(dateObj) {
@@ -240,8 +241,25 @@ class SimulationEngine {
   }
 
   tick() {
-    // Avoid modifying real ESPN matches with mock timers/goals
     this.matches.forEach(match => {
+      // Execute AI oddsmaker analysis for both live & prematch fixtures
+      const aiAnalysis = aiAnalyzer.analyzeLiveMatch(match);
+      match.aiTelemetry = aiAnalysis;
+
+      if (match.isLive) {
+        match.markets.forEach(market => {
+          market.odds.forEach(odd => {
+            if (aiAnalysis.isLocked) {
+              odd.isLocked = true;
+              odd.lockReason = aiAnalysis.lockReason;
+            } else {
+              odd.isLocked = false;
+              odd.lockReason = null;
+            }
+          });
+        });
+      }
+
       if (match.id.startsWith('espn_')) return;
       if (!match.isLive) return;
 

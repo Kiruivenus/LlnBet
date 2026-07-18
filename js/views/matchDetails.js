@@ -57,7 +57,7 @@ export function renderMatchDetailsView() {
         <!-- Score Center / Kickoff Time -->
         <div class="hero-score-center" style="display:flex; flex-direction:column; align-items:center; gap:4px;">
           <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">VS</span>
-          <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">${match.kickoffTime || '18/07 19:00'}</span>
+          <span style="font-size:0.9rem; font-weight:600; color:var(--accent-orange);">${match.kickoffTime || '18/07 19:00'}</span>
           <span style="font-size:0.75rem; color:var(--text-muted);">#${match.id.replace(/\D/g, '') || Math.floor(Math.random() * 90000 + 10000)}</span>
         </div>
 
@@ -87,6 +87,56 @@ export function renderMatchDetailsView() {
   if (match.isLive) {
     html += renderLiveTracker(match);
   }
+
+  // Fetch AI live match telemetry analysis
+  const aiTelemetry = match.aiTelemetry || {
+    homeProb: 52,
+    drawProb: 26,
+    awayProb: 22,
+    isLocked: false,
+    lockReason: null,
+    aiStatusText: 'Balanced Game Momentum'
+  };
+
+  html += `
+    <!-- AI Odds & Match Telemetry Card -->
+    <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:16px; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="display:flex; align-items:center; gap:6px; font-family:var(--font-display); font-weight:800; font-size:0.8rem; color:#a3e635; text-transform:uppercase; letter-spacing:0.05em;">
+          ${getMaterialIcon('analytics')}
+          AI Powered Odds Engine
+        </span>
+        <span style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">
+          Real-Time Telemetry Sync
+        </span>
+      </div>
+
+      <!-- AI Probability Bar -->
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+          <span style="color:var(--accent-emerald);">${homeName}: ${aiTelemetry.homeProb}%</span>
+          <span style="color:var(--text-secondary);">Draw: ${aiTelemetry.drawProb}%</span>
+          <span style="color:var(--accent-orange);">${awayName}: ${aiTelemetry.awayProb}%</span>
+        </div>
+        <div style="display:flex; height:8px; width:100%; border-radius:var(--radius-full); overflow:hidden; background:rgba(255,255,255,0.05);">
+          <div style="width:${aiTelemetry.homeProb}%; background:var(--accent-emerald);"></div>
+          <div style="width:${aiTelemetry.drawProb}%; background:var(--text-muted);"></div>
+          <div style="width:${aiTelemetry.awayProb}%; background:var(--accent-orange);"></div>
+        </div>
+      </div>
+
+      <!-- Live AI Status / Threat Alert Banner -->
+      <div style="display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--bg-surface); border-radius:var(--radius-md); border-left:3px solid ${aiTelemetry.isLocked ? '#ff4d4d' : '#a3e635'}; font-size:0.85rem; font-weight:600;">
+        ${aiTelemetry.isLocked ? `
+          <span class="pulse-dot" style="background:#ff4d4d;"></span>
+          <span style="color:#ff4d4d;">🔒 MARKET LOCKED: ${aiTelemetry.lockReason || 'VAR Event in Progress'}</span>
+        ` : `
+          <span class="pulse-dot" style="background:#a3e635;"></span>
+          <span style="color:var(--text-primary);">⚡ AI Telemetry: ${aiTelemetry.aiStatusText}</span>
+        `}
+      </div>
+    </div>
+  `;
 
   // Generate expanded list of 14 betting markets dynamically
   const marketDetailsList = [
@@ -275,6 +325,20 @@ export function renderMatchDetailsView() {
                     ${market.odds.map(odd => {
                       const isSelected = selections.some(s => s.id === odd.selectionId);
                       const flash = simulation.getFlashState(match.id, odd.selectionId);
+                      const isLocked = aiTelemetry.isLocked || odd.isLocked;
+
+                      if (isLocked) {
+                        return `
+                          <button class="odds-btn locked" disabled 
+                            style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px var(--spacing-md); background:rgba(255,77,77,0.1); border:1px solid rgba(255,77,77,0.3); border-radius:var(--radius-full); color:var(--text-muted); cursor:not-allowed; opacity:0.65; font-size:0.85rem;">
+                            <span style="font-weight:600; color:var(--text-muted);">${odd.label}</span>
+                            <span style="display:flex; align-items:center; gap:4px; font-weight:700; color:#ff4d4d;">
+                              ${getMaterialIcon('lock')}
+                              LOCKED
+                            </span>
+                          </button>
+                        `;
+                      }
                       
                       return `
                         <button class="odds-btn ${isSelected ? 'selected' : ''} ${flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : ''}" 
@@ -362,7 +426,7 @@ export function renderMatchDetailsView() {
   });
 
   document.getElementById('trigger-stats-modal')?.addEventListener('click', () => {
-    alert(`Event Statistics:\n\nVenue: ${match.venue}\nMatch State: ${match.isLive ? 'Live In-Play' : 'Upcoming scheduled'}\nPossession: 50% - 50%\nShots on Target: 4 - 3`);
+    alert(`Event Statistics & AI Analysis:\n\nAI Threat Index: ${aiTelemetry.aiStatusText}\nWin Probabilities: Home ${aiTelemetry.homeProb}% | Draw ${aiTelemetry.drawProb}% | Away ${aiTelemetry.awayProb}%\nVenue: ${match.venue}`);
   });
 }
 export default renderMatchDetailsView;
