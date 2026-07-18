@@ -3718,6 +3718,24 @@ body.light-theme .drawer-menu-item.active {
   }
 }
 
+/* Skeleton Loading Shimmer Effect */
+.skeleton-box {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.03) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s infinite ease-in-out;
+  border-radius: var(--radius-xs);
+}
+
+body.light-theme .skeleton-box {
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.12) 50%, rgba(0,0,0,0.04) 100%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 
 
 

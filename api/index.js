@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +15,57 @@ app.use(express.json());
 
 // Serve static frontend files from parent root directory
 app.use(express.static(path.resolve(__dirname, '..')));
+
+// MongoDB Schema for storing last calculated odds history
+const OddsHistorySchema = new mongoose.Schema({
+  matchId: { type: String, required: true, unique: true },
+  r1: Number,
+  rx: Number,
+  r2: Number,
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
+
+// Connect to MongoDB if MONGO_URI is set in process.env
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (mongoUri) {
+  mongoose.connect(mongoUri)
+    .then(() => console.log("[MONGODB] Connected successfully to MongoDB Odds Database!"))
+    .catch(err => console.warn("[MONGODB] MongoDB Connection warning:", err.message));
+}
+
+// Endpoint: Save / Sync Odds Memory to MongoDB
+app.post('/api/odds', async (req, res) => {
+  try {
+    const { matchId, r1, rx, r2 } = req.body;
+    if (!matchId) return res.status(400).json({ error: "matchId required" });
+
+    if (mongoUri && mongoose.connection.readyState === 1) {
+      await OddsHistory.findOneAndUpdate(
+        { matchId },
+        { r1, rx, r2, updatedAt: new Date() },
+        { upsert: true, new: true }
+      );
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint: Fetch Saved Odds Memory from MongoDB
+app.get('/api/odds', async (req, res) => {
+  try {
+    if (mongoUri && mongoose.connection.readyState === 1) {
+      const records = await OddsHistory.find({}).lean();
+      return res.json(records);
+    }
+    return res.json([]);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // In-memory map to store transaction status callback records
 const transactions = new Map();

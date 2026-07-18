@@ -65,8 +65,26 @@ export function renderHomeView() {
         </div>
         <div class="match-list-items">
           ${upcomingMatches.length === 0 ? `
-            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.9rem;">
-              No upcoming fixtures for this category.
+            <div class="skeleton-matches-list" style="padding:10px;">
+              ${[1, 2, 3, 4, 5].map(() => `
+                <div class="skeleton-match-row" style="padding:14px var(--spacing-md); margin-bottom:10px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); display:flex; flex-direction:column; gap:10px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="skeleton-box" style="width: 100px; height: 12px;"></div>
+                    <div class="skeleton-box" style="width: 65px; height: 12px;"></div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                      <div class="skeleton-box" style="width: 150px; height: 16px;"></div>
+                      <div class="skeleton-box" style="width: 120px; height: 16px;"></div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                      <div class="skeleton-box" style="width: 54px; height: 32px; border-radius: var(--radius-sm);"></div>
+                      <div class="skeleton-box" style="width: 54px; height: 32px; border-radius: var(--radius-sm);"></div>
+                      <div class="skeleton-box" style="width: 54px; height: 32px; border-radius: var(--radius-sm);"></div>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
             </div>
           ` : upcomingMatches.map(match => renderMatchCard(match, selections)).join('')}
         </div>
