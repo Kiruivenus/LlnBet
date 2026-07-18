@@ -778,8 +778,8 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal; /* Allow wrapping on small screens */
+  line-height: 1.25;
 }
 
 .odds-value {
@@ -2352,10 +2352,6 @@ h1, h2, h3, h4, h5, h6 {
 
   .wallet-balance {
     font-size: 0.85rem !important;
-  }
-
-  .odds-grid {
-    grid-template-columns: 1fr !important;
   }
 }
 
