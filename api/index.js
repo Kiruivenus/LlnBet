@@ -110,19 +110,29 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// In-memory fallback maps when Mongo is connecting
-const memoryTransactions = new Map();
-const memoryUsers = new Map();
+// In-memory fallback maps when Mongo is connecting (Persisted on globalThis)
+if (!globalThis.__betpulse_memory_users) globalThis.__betpulse_memory_users = new Map();
+if (!globalThis.__betpulse_memory_txs) globalThis.__betpulse_memory_txs = new Map();
+
+const memoryUsers = globalThis.__betpulse_memory_users;
+const memoryTransactions = globalThis.__betpulse_memory_txs;
 
 // Resilience Helpers: Query MongoDB with In-Memory fallback
 async function findUserByPhone(phone) {
+  if (memoryUsers.has(phone)) {
+    return memoryUsers.get(phone);
+  }
+
   if (mongoose.connection.readyState === 1) {
     try {
       const u = await User.findOne({ phone }).maxTimeMS(3000);
-      if (u) return u;
+      if (u) {
+        memoryUsers.set(phone, u);
+        return u;
+      }
     } catch (e) {}
   }
-  return memoryUsers.get(phone) || null;
+  return null;
 }
 
 async function findUserById(id) {
@@ -139,21 +149,26 @@ async function findUserById(id) {
 }
 
 async function createUser(data) {
+  let createdUser = null;
   if (mongoose.connection.readyState === 1) {
     try {
-      return await User.create(data);
+      createdUser = await User.create(data);
     } catch (e) {}
   }
-  const id = 'mem_' + Date.now();
-  const newUser = {
-    _id: id,
-    id,
-    ...data,
-    verified: true,
-    createdAt: new Date()
-  };
-  memoryUsers.set(data.phone, newUser);
-  return newUser;
+
+  if (!createdUser) {
+    const id = 'mem_' + Date.now();
+    createdUser = {
+      _id: id,
+      id,
+      ...data,
+      verified: true,
+      createdAt: new Date()
+    };
+  }
+
+  memoryUsers.set(data.phone, createdUser);
+  return createdUser;
 }
 
 // Endpoint: Register User
