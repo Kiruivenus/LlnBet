@@ -412,9 +412,9 @@ export function renderProfileView() {
     });
 
     document.getElementById('profile-del-btn')?.addEventListener('click', () => {
-      if (confirm("Warning: Are you sure you wish to delete your account? This action is permanent.")) {
+      window.showConfirm("Warning: Are you sure you wish to delete your account? This action is permanent.", () => {
         alert("Under GCC compliance guidelines, account deletion requires 7 days cool-down period. Request logged.");
-      }
+      });
     });
 
     document.getElementById('profile-signout-btn')?.addEventListener('click', () => {

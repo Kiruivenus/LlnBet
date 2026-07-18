@@ -83,10 +83,10 @@ export function renderResponsibleGamingView() {
     const timeout = document.getElementById('rg-timeout-select').value;
 
     if (timeout === 'exclude') {
-      if (confirm("Caution: Permanent Self-Exclusion will immediately log you out and terminate your profile database listing. Proceed?")) {
+      window.showConfirm("Caution: Permanent Self-Exclusion will immediately log you out and terminate your profile database listing. Proceed?", () => {
         alert("Account excluded successfully. Logging out...");
         state.logoutUser();
-      }
+      });
     } else {
       let timeoutMsg = '';
       if (timeout === '24h') timeoutMsg = '24-hour timeout initialized.';
