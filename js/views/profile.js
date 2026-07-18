@@ -71,21 +71,21 @@ export function renderProfileView() {
         </div>
       </div>
 
-      <!-- DEPOSIT BOX (Betika style) -->
+      <!-- DEPOSIT BOX (Betika style, Cashia removed) -->
       <div class="wallet-card" style="margin-top:16px; gap: 12px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Deposit</h3>
           <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Send money into your BetPulse account</p>
         </div>
 
-        <!-- Adjuster Input -->
-        <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; justify-content:space-between; height:48px;">
-          <button class="sidebar-item-content" id="dep-decrement-btn" style="background:none; border:none; width:48px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700;">-</button>
-          <div style="display:flex; align-items:center; gap:4px; font-family:var(--font-mono); font-weight:800; font-size:1.15rem; color:var(--text-primary);">
-            <span style="font-size:0.85rem; color:var(--text-secondary);">KES</span>
-            <span id="dep-val-display">${depositAmount}</span>
+        <!-- Editable Adjuster Input -->
+        <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; justify-content:space-between; height:48px; padding:0 12px;">
+          <button id="dep-decrement-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">-</button>
+          <div style="display:flex; align-items:center; gap:4px; flex:1; justify-content:center;">
+            <span style="font-size:0.85rem; color:var(--text-secondary); font-family:var(--font-mono); font-weight:800;">KES</span>
+            <input type="number" id="dep-val-input" value="${depositAmount}" style="background:none; border:none; color:var(--text-primary); font-family:var(--font-mono); font-weight:800; font-size:1.15rem; width:100px; text-align:center; outline:none; -moz-appearance: textfield;" min="10" />
           </div>
-          <button class="sidebar-item-content" id="dep-increment-btn" style="background:none; border:none; width:48px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700;">+</button>
+          <button id="dep-increment-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">+</button>
         </div>
         <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES 10. All transactions are subject to 5% tax.</p>
 
@@ -97,44 +97,34 @@ export function renderProfileView() {
           <button class="quick-stake-btn profile-dep-quick" data-val="1000">+1000</button>
         </div>
 
-        <!-- Deposit Action Buttons -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <button class="wallet-submit-btn" id="profile-dep-cashia-btn" style="background:#e91e63; color:#fff; font-size:0.85rem; padding:10px 4px;">
-            ${getMaterialIcon('deposit')} Deposit Cashia
-          </button>
-          <button class="wallet-submit-btn" id="profile-dep-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.85rem; padding:10px 4px;">
-            ${getMaterialIcon('smartphone')} Deposit Mpesa
-          </button>
-        </div>
+        <!-- Single clean full-width M-Pesa Deposit button -->
+        <button class="wallet-submit-btn" id="profile-dep-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.9rem; padding:12px; font-weight:800; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; width:100%;">
+          ${getMaterialIcon('smartphone')} Deposit with Mpesa
+        </button>
       </div>
 
-      <!-- WITHDRAWAL BOX (Betika style) -->
+      <!-- WITHDRAWAL BOX (Betika style, Cashia removed) -->
       <div class="wallet-card" style="margin-top:16px; gap: 12px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Withdrawal</h3>
           <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Withdraw money from your BetPulse wallet</p>
         </div>
 
-        <!-- Adjuster Input -->
-        <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; justify-content:space-between; height:48px;">
-          <button class="sidebar-item-content" id="with-decrement-btn" style="background:none; border:none; width:48px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700;">-</button>
-          <div style="display:flex; align-items:center; gap:4px; font-family:var(--font-mono); font-weight:800; font-size:1.15rem; color:var(--text-primary);">
-            <span style="font-size:0.85rem; color:var(--text-secondary);">KES</span>
-            <span id="with-val-display">${withdrawAmount}</span>
+        <!-- Editable Adjuster Input -->
+        <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; justify-content:space-between; height:48px; padding:0 12px;">
+          <button id="with-decrement-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">-</button>
+          <div style="display:flex; align-items:center; gap:4px; flex:1; justify-content:center;">
+            <span style="font-size:0.85rem; color:var(--text-secondary); font-family:var(--font-mono); font-weight:800;">KES</span>
+            <input type="number" id="with-val-input" value="${withdrawAmount}" style="background:none; border:none; color:var(--text-primary); font-family:var(--font-mono); font-weight:800; font-size:1.15rem; width:100px; text-align:center; outline:none; -moz-appearance: textfield;" min="50" />
           </div>
-          <button class="sidebar-item-content" id="with-increment-btn" style="background:none; border:none; width:48px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700;">+</button>
+          <button id="with-increment-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">+</button>
         </div>
         <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES 50, Maximum KES 300,000. All transactions are subject to 5% tax.</p>
 
-        <!-- Withdraw Action Buttons -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <button class="wallet-submit-btn" id="profile-with-cashia-btn" style="background:#e91e63; color:#fff; font-size:0.85rem; padding:10px 4px;">
-            ${getMaterialIcon('withdraw')} Withdraw Cashia
-          </button>
-          <button class="wallet-submit-btn" id="profile-with-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.85rem; padding:10px 4px;">
-            ${getMaterialIcon('smartphone')} Withdraw Mpesa
-          </button>
-        </div>
+        <!-- Single clean full-width M-Pesa Withdraw button -->
+        <button class="wallet-submit-btn" id="profile-with-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.9rem; padding:12px; font-weight:800; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; width:100%;">
+          ${getMaterialIcon('smartphone')} Withdraw with Mpesa
+        </button>
       </div>
 
       <!-- MY TRANSACTIONS LINK -->
@@ -241,82 +231,165 @@ export function renderProfileView() {
           Sign Out
         </button>
       </div>
+
+      <!-- Custom Transaction Processing Modal Overlay (Betika / BetPulse style) -->
+      <div id="tx-processing-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(8,10,15,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center; z-index:9999; padding: 20px;">
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div id="tx-modal-icon" style="display:flex; align-items:center; justify-content:center; width:80px; height:80px;">
+            <!-- Loading Spinner SVG -->
+            <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
+            </svg>
+          </div>
+          <div>
+            <h3 id="tx-modal-heading" style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Processing</h3>
+            <p id="tx-modal-message" style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;"></p>
+          </div>
+          <button id="tx-modal-close" class="place-bet-btn" style="width:100%; display:none; margin-top:10px;">Close</button>
+        </div>
+      </div>
+
+      <!-- CSS styling rules for spin animations -->
+      <style>
+        @keyframes spin-loop {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
     `;
+
+    const depValInput = document.getElementById('dep-val-input');
+    const withValInput = document.getElementById('with-val-input');
 
     // 1. Hook up adjuster buttons for deposit amount
     document.getElementById('dep-decrement-btn')?.addEventListener('click', () => {
-      if (depositAmount > 50) {
-        depositAmount -= 100;
-        document.getElementById('dep-val-display').textContent = depositAmount;
+      let amt = parseInt(depValInput.value) || 0;
+      if (amt > 100) {
+        depositAmount = amt - 100;
+        depValInput.value = depositAmount;
       }
     });
 
     document.getElementById('dep-increment-btn')?.addEventListener('click', () => {
-      depositAmount += 100;
-      document.getElementById('dep-val-display').textContent = depositAmount;
+      let amt = parseInt(depValInput.value) || 0;
+      depositAmount = amt + 100;
+      depValInput.value = depositAmount;
+    });
+
+    // Handle typing inside deposit input directly
+    depValInput?.addEventListener('input', (e) => {
+      depositAmount = parseInt(e.target.value) || 0;
     });
 
     // Quick deposit buttons
     container.querySelectorAll('.profile-dep-quick').forEach(btn => {
       btn.addEventListener('click', () => {
         const added = parseInt(btn.getAttribute('data-val'));
-        depositAmount += added;
-        document.getElementById('dep-val-display').textContent = depositAmount;
+        let amt = parseInt(depValInput.value) || 0;
+        depositAmount = amt + added;
+        depValInput.value = depositAmount;
       });
     });
 
     // 2. Hook up adjuster buttons for withdrawals
     document.getElementById('with-decrement-btn')?.addEventListener('click', () => {
-      if (withdrawAmount > 100) {
-        withdrawAmount -= 100;
-        document.getElementById('with-val-display').textContent = withdrawAmount;
+      let amt = parseInt(withValInput.value) || 0;
+      if (amt > 100) {
+        withdrawAmount = amt - 100;
+        withValInput.value = withdrawAmount;
       }
     });
 
     document.getElementById('with-increment-btn')?.addEventListener('click', () => {
-      withdrawAmount += 100;
-      document.getElementById('with-val-display').textContent = withdrawAmount;
+      let amt = parseInt(withValInput.value) || 0;
+      withdrawAmount = amt + 100;
+      withValInput.value = withdrawAmount;
     });
 
-    // 3. Deposit Submissions handlers
-    const processDeposit = (method) => {
-      const parentBtnId = method === 'Mpesa' ? 'profile-dep-mpesa-btn' : 'profile-dep-cashia-btn';
-      const submitBtn = document.getElementById(parentBtnId);
-      const originalHtml = submitBtn.innerHTML;
+    // Handle typing inside withdraw input directly
+    withValInput?.addEventListener('input', (e) => {
+      withdrawAmount = parseInt(e.target.value) || 0;
+    });
 
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `Sending STK...`;
 
-      setTimeout(() => {
-        const success = state.deposit(depositAmount, `${method} Mobile`);
-        if (success) {
-          alert(`M-Pesa STK Push Received!\n\nReference: MP-${Math.floor(Math.random() * 900000 + 100000)}\nAmount: KES ${depositAmount}\nStatus: Deposited Successfully.`);
-          renderProfileView(); // Redraw
-        }
-      }, 1500);
-    };
+    // 3. Custom Modal Transaction Trigger Routine
+    const modal = document.getElementById('tx-processing-modal');
+    const modalIcon = document.getElementById('tx-modal-icon');
+    const modalHeading = document.getElementById('tx-modal-heading');
+    const modalMsg = document.getElementById('tx-modal-message');
+    const modalCloseBtn = document.getElementById('tx-modal-close');
 
-    document.getElementById('profile-dep-cashia-btn')?.addEventListener('click', () => processDeposit('Cashia'));
-    document.getElementById('profile-dep-mpesa-btn')?.addEventListener('click', () => processDeposit('M-Pesa'));
-
-    // 4. Withdrawal Submissions
-    const processWithdrawal = (method) => {
-      if (withdrawAmount > user.balance) {
+    const triggerTransactionFlow = (type, amount) => {
+      // Validate withdrawal limit
+      if (type === 'withdraw' && amount > user.balance) {
         alert("Insufficient balance for requested withdrawal.");
         return;
       }
-
-      const success = state.withdraw(withdrawAmount, `${method} Mobile`);
-      if (success) {
-        alert(`Withdrawal Approved!\n\nAmount: KES ${withdrawAmount}\nMethod: ${method}\nStatus: Processing Completed.`);
-        renderProfileView(); // Redraw
+      if (amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
       }
+
+      // Initial state: Processing
+      modalCloseBtn.style.display = 'none';
+      modalIcon.innerHTML = `
+        <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
+          <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
+        </svg>
+      `;
+      modalHeading.textContent = type === 'deposit' ? 'Processing Deposit' : 'Processing Withdrawal';
+      modalMsg.textContent = type === 'deposit' 
+        ? `Sending KES ${amount} STK Push... Please check your handset and enter your M-Pesa PIN prompt.` 
+        : `Initiating KES ${amount} withdrawal to Safaricom M-Pesa... Please wait while we authorize the transaction.`;
+      
+      modal.style.display = 'flex';
+
+      // Wait 2 seconds (simulate payment authorization)
+      setTimeout(() => {
+        let success = false;
+        let referenceCode = '';
+
+        if (type === 'deposit') {
+          success = state.deposit(amount, 'M-Pesa Mobile');
+          referenceCode = `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
+          modalHeading.textContent = 'Deposit Successful!';
+          modalMsg.textContent = `KES ${amount} has been successfully credited to your BetPulse wallet. Ref: ${referenceCode}.`;
+        } else {
+          success = state.withdraw(amount, 'M-Pesa Mobile');
+          referenceCode = `WT-${Math.floor(Math.random() * 900000 + 100000)}`;
+          modalHeading.textContent = 'Withdrawal Approved!';
+          modalMsg.textContent = `KES ${amount} has been sent to your M-Pesa account. Funds will reflect shortly. Ref: ${referenceCode}.`;
+        }
+
+        if (success) {
+          // Success State
+          modalIcon.innerHTML = `
+            <span class="material-icons-round" style="font-size: 5rem; color: var(--accent-emerald);">check_circle</span>
+          `;
+          modalCloseBtn.style.display = 'block';
+        }
+      }, 2000);
     };
 
-    document.getElementById('profile-with-cashia-btn')?.addEventListener('click', () => processWithdrawal('Cashia'));
-    document.getElementById('profile-with-mpesa-btn')?.addEventListener('click', () => processWithdrawal('M-Pesa'));
+    // Bind triggers to M-Pesa Buttons
+    document.getElementById('profile-dep-mpesa-btn')?.addEventListener('click', () => {
+      const amt = parseInt(depValInput.value) || 0;
+      triggerTransactionFlow('deposit', amt);
+    });
 
-    // 5. Expandable Transactions List
+    document.getElementById('profile-with-mpesa-btn')?.addEventListener('click', () => {
+      const amt = parseInt(withValInput.value) || 0;
+      triggerTransactionFlow('withdraw', amt);
+    });
+
+    // Close modal trigger
+    modalCloseBtn?.addEventListener('click', () => {
+      modal.style.display = 'none';
+      renderProfileView(); // Refresh page data (w/ updated balance)
+    });
+
+
+    // 4. Expandable Transactions List
     const txRowBtn = document.getElementById('profile-transactions-row-btn');
     const txListBox = document.getElementById('profile-transactions-list-box');
     txRowBtn?.addEventListener('click', () => {
@@ -327,13 +400,13 @@ export function renderProfileView() {
       }
     });
 
-    // 6. View shortcuts
+    // 5. View shortcuts
     document.getElementById('profile-view-promos-btn')?.addEventListener('click', () => state.setPage('promotions'));
     document.getElementById('profile-view-jackpots-btn')?.addEventListener('click', () => {
       alert("Jackpot Streaks: Standings table loading... [No active jackpot tickets found.]");
     });
 
-    // 7. Preferences switches (Light theme switch)
+    // 6. Preferences switches (Light theme switch)
     const themeSwitch = document.getElementById('theme-toggle-switch');
     themeSwitch?.addEventListener('change', (e) => {
       if (e.target.checked) {
@@ -347,7 +420,7 @@ export function renderProfileView() {
       alert(`Data Saver Mode: ${e.target.checked ? 'Enabled. Images compressed.' : 'Disabled.'}`);
     });
 
-    // 8. Other Preferences Links
+    // 7. Other Preferences Links
     document.getElementById('profile-livechat-btn')?.addEventListener('click', () => {
       alert("Support: Hello! Welcome to BetPulse Live Chat assistance. How can we help?");
     });
