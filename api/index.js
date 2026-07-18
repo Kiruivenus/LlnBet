@@ -110,8 +110,184 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// In-memory fallback map for transactions when Mongo is connecting
+// In-memory fallback maps when Mongo is connecting
 const memoryTransactions = new Map();
+const memoryUsers = new Map();
+
+// Resilience Helpers: Query MongoDB with In-Memory fallback
+async function findUserByPhone(phone) {
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const u = await User.findOne({ phone }).maxTimeMS(3000);
+      if (u) return u;
+    } catch (e) {}
+  }
+  return memoryUsers.get(phone) || null;
+}
+
+async function findUserById(id) {
+  if (mongoose.connection.readyState === 1 && !String(id).startsWith('mem_')) {
+    try {
+      const u = await User.findById(id).maxTimeMS(3000);
+      if (u) return u;
+    } catch (e) {}
+  }
+  for (const u of memoryUsers.values()) {
+    if (String(u._id) === String(id) || String(u.id) === String(id)) return u;
+  }
+  return null;
+}
+
+async function createUser(data) {
+  if (mongoose.connection.readyState === 1) {
+    try {
+      return await User.create(data);
+    } catch (e) {}
+  }
+  const id = 'mem_' + Date.now();
+  const newUser = {
+    _id: id,
+    id,
+    ...data,
+    verified: true,
+    createdAt: new Date()
+  };
+  memoryUsers.set(data.phone, newUser);
+  return newUser;
+}
+
+// Endpoint: Register User
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { phone, password, name } = req.body;
+
+    if (!phone || !password) {
+      return res.status(400).json({ error: "Phone number and password are required." });
+    }
+
+    const cleanedPhone = formatPhoneNumber(phone);
+    if (!cleanedPhone || cleanedPhone.length < 10) {
+      return res.status(400).json({ error: "Invalid Kenyan phone number format. Must be e.g. 0712345678 or 254712345678." });
+    }
+
+    if (password.length < 4) {
+      return res.status(400).json({ error: "Password must be at least 4 characters long." });
+    }
+
+    // Check if user exists
+    const existingUser = await findUserByPhone(cleanedPhone);
+    if (existingUser) {
+      return res.status(400).json({ error: "Phone number is already registered. Please login." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await createUser({
+      phone: cleanedPhone,
+      password: hashedPassword,
+      name: name || `Player_${cleanedPhone.slice(-4)}`,
+      balance: 0.00,
+      bonusBalance: 0.00
+    });
+
+    const userId = newUser._id ? newUser._id.toString() : newUser.id;
+
+    if (mongoose.connection.readyState === 1) {
+      Notification.create({
+        userId,
+        title: "Welcome to BetPulse!",
+        message: "Your account has been registered successfully. Deposit min KES 200 to start betting!",
+        type: "system"
+      }).catch(() => {});
+    }
+
+    const token = jwt.sign({ id: userId, phone: newUser.phone }, JWT_SECRET, { expiresIn: '14d' });
+
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: userId,
+        phone: newUser.phone,
+        name: newUser.name,
+        balance: newUser.balance,
+        bonusBalance: newUser.bonusBalance,
+        verified: newUser.verified !== false
+      }
+    });
+
+  } catch (error) {
+    console.error("[AUTH REGISTER ERROR]:", error);
+    return res.status(500).json({ error: "Registration failed.", details: error.message });
+  }
+});
+
+// Endpoint: Login User
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+
+    if (!phone || !password) {
+      return res.status(400).json({ error: "Phone number and password are required." });
+    }
+
+    const cleanedPhone = formatPhoneNumber(phone);
+    const user = await findUserByPhone(cleanedPhone);
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid phone number or password." });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid phone number or password." });
+    }
+
+    const userId = user._id ? user._id.toString() : user.id;
+    const token = jwt.sign({ id: userId, phone: user.phone }, JWT_SECRET, { expiresIn: '14d' });
+
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: userId,
+        phone: user.phone,
+        name: user.name,
+        balance: user.balance,
+        bonusBalance: user.bonusBalance,
+        verified: user.verified !== false
+      }
+    });
+
+  } catch (error) {
+    console.error("[AUTH LOGIN ERROR]:", error);
+    return res.status(500).json({ error: "Login failed.", details: error.message });
+  }
+});
+
+// Endpoint: Get Current Authenticated User Profile & Balance
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userId = user._id ? user._id.toString() : user.id;
+
+    return res.json({
+      user: {
+        id: userId,
+        phone: user.phone,
+        name: user.name,
+        balance: user.balance,
+        bonusBalance: user.bonusBalance,
+        verified: user.verified !== false
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch user profile." });
+  }
+});
 
 // Helper: Format phone number
 function formatPhoneNumber(phone) {
