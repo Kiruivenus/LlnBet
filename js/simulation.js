@@ -90,7 +90,7 @@ class SimulationEngine {
     return this.matches.find(m => m.id === id);
   }
 
-  // Live real-world scores fetcher (ESPN scoreboard APIs with AbortController timeout)
+  // Live real-world scores fetcher (ESPN scoreboard APIs in parallel with 3s timeout cap)
   async fetchRealWorldMatches() {
     const feeds = [
       { url: 'soccer/all', sport: 'football', name: 'Soccer Match', country: 'International' },
@@ -100,13 +100,13 @@ class SimulationEngine {
       { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' }
     ];
 
-    const parsedMatches = [];
     const dateRange = getEspnDateRange();
 
-    for (const feed of feeds) {
+    const promises = feeds.map(async (feed) => {
+      const feedMatches = [];
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second timeout cap
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout cap
 
         const limit = feed.sport === 'football' ? 350 : 100;
         const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=${limit}`, {
@@ -114,7 +114,7 @@ class SimulationEngine {
         });
         clearTimeout(timeoutId);
 
-        if (!response.ok) continue;
+        if (!response.ok) return [];
         const data = await response.json();
         
         const leagueMap = {};
@@ -175,7 +175,7 @@ class SimulationEngine {
             }
           ];
 
-          parsedMatches.push({
+          feedMatches.push({
             id: matchId,
             sport: feed.sport,
             league: leagueInfo.name,
@@ -203,9 +203,13 @@ class SimulationEngine {
           });
         });
       } catch (e) {
-        // Silently catch feed timeouts
+        // Silently catch timeouts
       }
-    }
+      return feedMatches;
+    });
+
+    const results = await Promise.all(promises);
+    const parsedMatches = results.flat();
 
     if (parsedMatches.length > 0) {
       console.log(`[ESPN FEED SUCCESS] Fetched ${parsedMatches.length} real-world matches.`);
