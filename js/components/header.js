@@ -16,9 +16,9 @@ export function renderHeader() {
 
   if (isLoggedIn && userData) {
     rightSideHtml = `
-      <!-- Wallet Panel Indicator -->
+      <!-- Wallet / Deposit Area -->
       <div class="wallet-badge" id="header-wallet-trigger">
-        <span style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
+        <span class="wallet-balance-wrap" style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
           ${getMaterialIcon('wallet')}
           <span class="wallet-balance">${formatCurrency(userData.balance)}</span>
         </span>
@@ -41,11 +41,15 @@ export function renderHeader() {
     `;
   } else {
     rightSideHtml = `
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button class="quick-stake-btn" id="header-login-btn" style="padding: 8px 16px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight:700; border: 1px solid var(--accent-emerald); color:var(--accent-emerald); background:none; cursor:pointer;">
+      <button class="deposit-btn" id="header-unauth-deposit-btn" style="margin-right:2px;">
+        ${getMaterialIcon('deposit', 'btn-icon')}
+        <span>Deposit</span>
+      </button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="quick-stake-btn" id="header-login-btn" style="padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight:700; border: 1px solid var(--accent-emerald); color:var(--accent-emerald); background:none; cursor:pointer;">
           Login
         </button>
-        <button class="hero-cta" id="header-register-btn" style="padding: 8px 16px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight:700; background:linear-gradient(to right, var(--accent-emerald), var(--accent-orange)); border:none; color:var(--bg-obsidian); cursor:pointer; min-height:auto; box-shadow:none;">
+        <button class="hero-cta" id="header-register-btn" style="padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight:700; background:linear-gradient(to right, var(--accent-emerald), var(--accent-orange)); border:none; color:var(--bg-obsidian); cursor:pointer; min-height:auto; box-shadow:none;">
           Register
         </button>
       </div>
@@ -65,7 +69,7 @@ export function renderHeader() {
       </a>
     </div>
 
-    <!-- Global Search Trigger -->
+    <!-- Desktop Search Trigger -->
     <div class="header-center">
       <button class="search-trigger" id="header-search-btn">
         <span style="display:flex; align-items:center;">
@@ -76,13 +80,18 @@ export function renderHeader() {
       </button>
     </div>
 
-    <!-- Header Operations / User Info -->
-    <div class="header-right">
+    <!-- Header Operations / User Info & Mobile Actions -->
+    <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+      <!-- Mobile Compact Search Button -->
+      <button class="icon-btn mobile-search-btn" id="header-mobile-search-btn" aria-label="Search">
+        ${getMaterialIcon('search')}
+      </button>
+
       ${rightSideHtml}
     </div>
   `;
 
-  // Bind Events
+  // Bind Hamburger Drawer Event
   document.getElementById('mobile-hamburger-trigger')?.addEventListener('click', () => {
     openDrawer();
   });
@@ -92,14 +101,34 @@ export function renderHeader() {
     state.setPage('home');
   });
 
-  document.getElementById('header-search-btn').addEventListener('click', () => {
+  // Search Modal Trigger (Both Desktop & Mobile Buttons)
+  const openSearch = () => {
     const searchModal = document.getElementById('search-modal');
     if (searchModal) {
       searchModal.classList.add('active');
       const input = searchModal.querySelector('input');
       if (input) input.focus();
     }
+  };
+
+  document.getElementById('header-search-btn')?.addEventListener('click', openSearch);
+  document.getElementById('header-mobile-search-btn')?.addEventListener('click', openSearch);
+
+  // Deposit Button Trigger
+  const triggerDeposit = () => {
+    if (state.data.isLoggedIn) {
+      state.setPage('profile');
+    } else {
+      state.setPage('login');
+    }
+  };
+
+  document.getElementById('header-deposit-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    triggerDeposit();
   });
+
+  document.getElementById('header-unauth-deposit-btn')?.addEventListener('click', triggerDeposit);
 
   if (isLoggedIn) {
     document.getElementById('header-wallet-trigger')?.addEventListener('click', () => {

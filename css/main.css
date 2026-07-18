@@ -3665,6 +3665,39 @@ body.light-theme .drawer-menu-item.active {
   color: #059669;
 }
 
+/* Small Device Header Adjustments: Hide top balance, show mobile search & deposit buttons */
+.mobile-search-btn {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .mobile-search-btn {
+    display: flex !important;
+  }
+  
+  .wallet-balance-wrap {
+    display: none !important;
+  }
+
+  .wallet-badge {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .deposit-btn {
+    display: inline-flex !important;
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
+    font-weight: 800 !important;
+    border-radius: var(--radius-full) !important;
+  }
+
+  .deposit-btn .btn-text {
+    display: inline !important;
+  }
+}
+
 
 
 
