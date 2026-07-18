@@ -307,10 +307,189 @@ export function renderProfileView() {
 
     // Custom Modal Transaction Trigger Routine
     const modal = document.getElementById('tx-processing-modal');
-    const modalIcon = document.getElementById('tx-modal-icon');
-    const modalHeading = document.getElementById('tx-modal-heading');
-    const modalMsg = document.getElementById('tx-modal-message');
-    const modalCloseBtn = document.getElementById('tx-modal-close');
+
+    const renderDepositState1 = (amount) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px;">
+            <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Requesting STK Push</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">Sending secure payment prompt to your Kenyan mobile phone...</p>
+          </div>
+        </div>
+      `;
+    };
+
+    const renderDepositState2 = (amount) => {
+      modal.innerHTML = `
+        <!-- Custom Simulated Mobile SIM ToolKit Dialog Box -->
+        <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; width:310px; padding:20px; color:#111827; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3); text-align:left; animation: scale-up 0.2s ease-out;">
+          <h4 style="font-size:0.85rem; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 8px 0; display:flex; align-items:center; gap:6px;">
+            <span style="display:inline-block; width:8px; height:8px; background:#4ade80; border-radius:50%;"></span> M-PESA
+          </h4>
+          <p style="font-size:0.9rem; line-height:1.4; color:#374151; margin:0 0 12px 0;">
+            Do you want to pay <strong>KES ${amount}</strong> to <strong>BETPULSE LTD</strong>?<br/>
+            Enter 4-Digit M-Pesa PIN:
+          </p>
+          
+          <input type="password" id="stk-pin-input" maxlength="4" placeholder="••••" style="background:#f3f4f6; color:#111827; border:1px solid #d1d5db; border-radius:6px; font-size:1.4rem; letter-spacing:10px; text-align:center; height:44px; width:100%; display:block; margin: 12px 0; outline:none; font-family:monospace; box-sizing:border-box;" autofocus />
+          <div id="stk-error-hint" style="color:#ef4444; font-size:0.75rem; font-weight:700; margin-bottom:8px; display:none;">PIN must be 4 digits</div>
+
+          <div style="display:flex; border-top:1px solid #e5e7eb; margin-top:16px; padding-top:12px; gap:16px;">
+            <button id="stk-cancel-btn" style="background:none; border:none; color:#2563eb; font-weight:800; cursor:pointer; font-size:0.95rem; flex:1; text-align:center; outline:none; padding:8px 0;">Cancel</button>
+            <button id="stk-send-btn" style="background:none; border:none; color:#2563eb; font-weight:800; cursor:pointer; font-size:0.95rem; flex:1; text-align:center; outline:none; padding:8px 0;">Send</button>
+          </div>
+        </div>
+      `;
+
+      const pinInput = document.getElementById('stk-pin-input');
+      const errHint = document.getElementById('stk-error-hint');
+
+      // Focus PIN prompt input
+      pinInput.focus();
+
+      document.getElementById('stk-cancel-btn').addEventListener('click', () => {
+        renderDepositFailure("Transaction cancelled by user (Incorrect PIN / Request timeout).");
+      });
+
+      document.getElementById('stk-send-btn').addEventListener('click', () => {
+        const val = pinInput.value;
+        if (val.length !== 4 || isNaN(val)) {
+          errHint.style.display = 'block';
+          pinInput.value = '';
+          pinInput.focus();
+          return;
+        }
+
+        renderDepositState3(amount);
+
+        setTimeout(() => {
+          const success = state.deposit(amount, 'M-Pesa Mobile');
+          const referenceCode = `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
+          if (success) {
+            renderDepositSuccess(amount, referenceCode);
+          } else {
+            renderDepositFailure("API Callback timeout. Please try again.");
+          }
+        }, 2000);
+      });
+    };
+
+    const renderDepositState3 = (amount) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px;">
+            <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Verifying PIN</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">Validating M-Pesa transaction with Safaricom callback status...</p>
+          </div>
+        </div>
+      `;
+    };
+
+    const renderDepositSuccess = (amount, ref) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px; color:var(--accent-emerald);">
+            <span class="material-icons-round" style="font-size:5rem;">check_circle</span>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Deposit Confirmed!</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">KES ${amount} has been successfully credited to your BetPulse wallet. Ref: ${ref}.</p>
+          </div>
+        </div>
+      `;
+
+      // Automatically close modal and reload profile balance on confirmation success
+      setTimeout(() => {
+        modal.style.display = 'none';
+        renderProfileView();
+      }, 2000);
+    };
+
+    const renderDepositFailure = (reason) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px; color:var(--accent-live);">
+            <span class="material-icons-round" style="font-size:5rem;">cancel</span>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Deposit Failed</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">${reason}</p>
+          </div>
+          <button id="tx-failure-close-btn" class="place-bet-btn" style="width:100%; margin-top:10px;">Close</button>
+        </div>
+      `;
+
+      document.getElementById('tx-failure-close-btn').addEventListener('click', () => {
+        modal.style.display = 'none';
+        renderProfileView();
+      });
+    };
+
+    const renderWithdrawalState1 = (amount) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px;">
+            <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Processing Withdrawal</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">Initiating withdrawal to Safaricom M-Pesa... Please wait while we authorize the transaction.</p>
+          </div>
+        </div>
+      `;
+    };
+
+    const renderWithdrawalSuccess = (amount, ref) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px; color:var(--accent-emerald);">
+            <span class="material-icons-round" style="font-size:5rem;">check_circle</span>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Withdrawal Approved!</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">KES ${amount} has been successfully sent to your M-Pesa. Reference: ${ref}.</p>
+          </div>
+          <button id="with-success-close-btn" class="place-bet-btn" style="width:100%; margin-top:10px;">Close</button>
+        </div>
+      `;
+
+      document.getElementById('with-success-close-btn').addEventListener('click', () => {
+        modal.style.display = 'none';
+        renderProfileView();
+      });
+    };
+
+    const renderWithdrawalFailure = (reason) => {
+      modal.innerHTML = `
+        <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
+          <div style="display:flex; align-items:center; justify-content:center; width:80px; height:80px; color:var(--accent-live);">
+            <span class="material-icons-round" style="font-size:5rem;">cancel</span>
+          </div>
+          <div>
+            <h3 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700; color:var(--text-primary);">Withdrawal Failed</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5; margin-top:8px;">${reason}</p>
+          </div>
+          <button id="with-failure-close-btn" class="place-bet-btn" style="width:100%; margin-top:10px;">Close</button>
+        </div>
+      `;
+
+      document.getElementById('with-failure-close-btn').addEventListener('click', () => {
+        modal.style.display = 'none';
+        renderProfileView();
+      });
+    };
 
     const triggerTransactionFlow = (type, amount) => {
       if (type === 'withdraw' && amount > user.balance) {
@@ -322,42 +501,25 @@ export function renderProfileView() {
         return;
       }
 
-      modalCloseBtn.style.display = 'none';
-      modalIcon.innerHTML = `
-        <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
-          <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
-        </svg>
-      `;
-      modalHeading.textContent = type === 'deposit' ? 'Processing Deposit' : 'Processing Withdrawal';
-      modalMsg.textContent = type === 'deposit' 
-        ? `Sending KES ${amount} STK Push... Please check your handset and enter your M-Pesa PIN prompt.` 
-        : `Initiating KES ${amount} withdrawal to Safaricom M-Pesa... Please wait while we authorize the transaction.`;
-      
       modal.style.display = 'flex';
 
-      setTimeout(() => {
-        let success = false;
-        let referenceCode = '';
-
-        if (type === 'deposit') {
-          success = state.deposit(amount, 'M-Pesa Mobile');
-          referenceCode = `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
-          modalHeading.textContent = 'Deposit Successful!';
-          modalMsg.textContent = `KES ${amount} has been successfully credited to your BetPulse wallet. Ref: ${referenceCode}.`;
-        } else {
-          success = state.withdraw(amount, 'M-Pesa Mobile');
-          referenceCode = `WT-${Math.floor(Math.random() * 900000 + 100000)}`;
-          modalHeading.textContent = 'Withdrawal Approved!';
-          modalMsg.textContent = `KES ${amount} has been sent to your M-Pesa account. Funds will reflect shortly. Ref: ${referenceCode}.`;
-        }
-
-        if (success) {
-          modalIcon.innerHTML = `
-            <span class="material-icons-round" style="font-size: 5rem; color: var(--accent-emerald);">check_circle</span>
-          `;
-          modalCloseBtn.style.display = 'block';
-        }
-      }, 2000);
+      if (type === 'deposit') {
+        renderDepositState1(amount);
+        setTimeout(() => {
+          renderDepositState2(amount);
+        }, 1500);
+      } else {
+        renderWithdrawalState1(amount);
+        setTimeout(() => {
+          const success = state.withdraw(amount, 'M-Pesa Mobile');
+          const referenceCode = `WT-${Math.floor(Math.random() * 900000 + 100000)}`;
+          if (success) {
+            renderWithdrawalSuccess(amount, referenceCode);
+          } else {
+            renderWithdrawalFailure("Authorization failed.");
+          }
+        }, 2000);
+      }
     };
 
     // Bind M-Pesa Buttons
@@ -369,11 +531,6 @@ export function renderProfileView() {
     document.getElementById('profile-with-mpesa-btn')?.addEventListener('click', () => {
       const amt = parseInt(withValInput.value) || 0;
       triggerTransactionFlow('withdraw', amt);
-    });
-
-    modalCloseBtn?.addEventListener('click', () => {
-      modal.style.display = 'none';
-      renderProfileView(); // Refresh page data
     });
 
     // Dedicated Transaction Page redirection
