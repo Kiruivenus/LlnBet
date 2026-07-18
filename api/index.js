@@ -175,6 +175,7 @@ async function createUser(data) {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { phone, password, name } = req.body;
+    console.log("[REGISTER REQUEST] Phone:", phone, "MongoDB readyState:", mongoose.connection.readyState);
 
     if (!phone || !password) {
       return res.status(400).json({ error: "Phone number and password are required." });

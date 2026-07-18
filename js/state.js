@@ -253,6 +253,10 @@ class State {
     this.setPage('home');
   }
 
+  logoutUser() {
+    this.logout();
+  }
+
   // Real Bet Placement against MongoDB (Deducts real balance)
   async placeBet(stake, totalOdds, possiblePayout) {
     if (!this.data.isLoggedIn || !this.data.token) {
