@@ -2,14 +2,23 @@
 
 class State {
   constructor() {
+    let savedSelections = [];
+    let savedStakes = {};
+    try {
+      const s = localStorage.getItem('betpulse_betslip_selections');
+      const st = localStorage.getItem('betpulse_betslip_stakes');
+      if (s) savedSelections = JSON.parse(s);
+      if (st) savedStakes = JSON.parse(st);
+    } catch (e) {}
+
     this.data = {
       isLoggedIn: false,
       token: localStorage.getItem('betpulse_token') || null,
       user: null, // { id, phone, name, balance, bonusBalance, verified }
       betslip: {
         mode: 'single', // 'single', 'multi'
-        selections: [], // { id, matchId, matchName, team, market, odds }
-        stakes: {}
+        selections: savedSelections, // { id, matchId, matchName, team, market, odds }
+        stakes: savedStakes
       },
       currentPage: 'home',
       selectedMatchId: null,
@@ -22,6 +31,13 @@ class State {
 
     this.listeners = {};
     this.initSession();
+  }
+
+  persistBetslip() {
+    try {
+      localStorage.setItem('betpulse_betslip_selections', JSON.stringify(this.data.betslip.selections));
+      localStorage.setItem('betpulse_betslip_stakes', JSON.stringify(this.data.betslip.stakes));
+    } catch (e) {}
   }
 
   // Restore authenticated user session from MongoDB on boot
@@ -147,28 +163,33 @@ class State {
       this.data.betslip.stakes[selection.id] = 200; // Default KES 200 stake
     }
 
+    this.persistBetslip();
     this.notify('betslip');
   }
 
   removeSelection(selectionId) {
     this.data.betslip.selections = this.data.betslip.selections.filter(s => s.id !== selectionId);
     delete this.data.betslip.stakes[selectionId];
+    this.persistBetslip();
     this.notify('betslip');
   }
 
   clearBetslip() {
     this.data.betslip.selections = [];
     this.data.betslip.stakes = {};
+    this.persistBetslip();
     this.notify('betslip');
   }
 
   setBetslipMode(mode) {
     this.data.betslip.mode = mode;
+    this.persistBetslip();
     this.notify('betslip');
   }
 
   setSelectionStake(selectionId, stake) {
     this.data.betslip.stakes[selectionId] = parseFloat(stake) || 0;
+    this.persistBetslip();
     this.notify('betslip');
   }
 

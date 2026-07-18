@@ -254,7 +254,87 @@ class SimulationEngine {
       this.simulateScoring(match);
     });
 
+    this.checkAndSettlePlacedBets();
     state.notify('matches');
+  }
+
+  checkAndSettlePlacedBets() {
+    const placedBets = state.data.placedBets || [];
+    const openBets = placedBets.filter(b => b.status === 'OPEN' || b.status === 'active');
+    if (openBets.length === 0) return;
+
+    openBets.forEach(bet => {
+      const selections = bet.selections || [];
+      if (selections.length === 0) return;
+
+      let allFinished = true;
+      let allWon = true;
+
+      selections.forEach(sel => {
+        const match = this.matches.find(m => m.id === sel.matchId);
+        if (!match) return;
+
+        const isFinished = !match.isLive || match.timer === 'FT' || match.timer === '90+' || (typeof match.timer === 'string' && parseInt(match.timer) >= 90);
+        if (!isFinished) {
+          allFinished = false;
+          return;
+        }
+
+        const homeScore = match.scores ? match.scores.home : 0;
+        const awayScore = match.scores ? match.scores.away : 0;
+        const target = (sel.team || sel.label || '').toLowerCase();
+        const market = (sel.market || '').toLowerCase();
+
+        let selWon = false;
+
+        if (target.includes('home') || target === '1' || (match.teams && target === match.teams.home.name.toLowerCase())) {
+          selWon = homeScore > awayScore;
+        } else if (target.includes('draw') || target === 'x') {
+          selWon = homeScore === awayScore;
+        } else if (target.includes('away') || target === '2' || (match.teams && target === match.teams.away.name.toLowerCase())) {
+          selWon = awayScore > homeScore;
+        } else if (target.includes('yes') && market.includes('btts')) {
+          selWon = homeScore > 0 && awayScore > 0;
+        } else if (target.includes('no') && market.includes('btts')) {
+          selWon = homeScore === 0 || awayScore === 0;
+        } else if (target.includes('over 1.5')) {
+          selWon = (homeScore + awayScore) > 1.5;
+        } else if (target.includes('under 1.5')) {
+          selWon = (homeScore + awayScore) < 1.5;
+        } else if (target.includes('over 2.5')) {
+          selWon = (homeScore + awayScore) > 2.5;
+        } else if (target.includes('under 2.5')) {
+          selWon = (homeScore + awayScore) < 2.5;
+        } else {
+          selWon = homeScore >= awayScore;
+        }
+
+        if (!selWon) {
+          allWon = false;
+        }
+      });
+
+      if (allFinished) {
+        if (allWon) {
+          bet.status = 'WON';
+          const winAmt = bet.possiblePayout || (bet.stake * (bet.totalOdds || bet.odds || 2));
+          bet.winnings = winAmt;
+          
+          if (state.data.user) {
+            state.data.user.balance += winAmt;
+            state.notify('user');
+          }
+          state.refreshUserData();
+          state.notify('placedBets');
+
+          alert(`🎉 CONGRATULATIONS! Your Bet Ticket ${bet.betId || bet.id} WON!\n\nKES ${winAmt.toLocaleString()} has been credited automatically to your wallet.`);
+        } else {
+          bet.status = 'LOST';
+          bet.winnings = 0;
+          state.notify('placedBets');
+        }
+      }
+    });
   }
 
   tickMatchTimer(match) {

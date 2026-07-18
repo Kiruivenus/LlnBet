@@ -148,6 +148,7 @@ function initApp() {
   state.subscribe('betslip', () => {
     renderBetslip();
     renderMobileNavBar();
+    route();
   });
 
   state.subscribe('user', () => {
