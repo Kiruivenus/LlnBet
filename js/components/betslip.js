@@ -6,8 +6,8 @@ export function renderBetslip() {
   if (!container) return;
 
   const selections = state.data.betslip.selections;
-  const mode = state.data.betslip.mode;
-  const balance = state.data.user.balance;
+  const user = state.data.user;
+  const balance = user ? user.balance : 0;
 
   // Header with Mobile Close button
   let html = `

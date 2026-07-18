@@ -92,7 +92,8 @@ export function renderJackpotsView() {
         return;
       }
 
-      if (state.data.user.balance < stake) {
+      const userBalance = state.data.user ? state.data.user.balance : 0;
+      if (userBalance < stake) {
         alert("Insufficient balance to buy a Jackpot ticket.");
         return;
       }
