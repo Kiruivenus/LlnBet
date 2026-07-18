@@ -28,6 +28,22 @@ function formatKickoff(dateObj) {
   return `${dayName}, ${dateNum} ${monthName}, ${timeStr}`;
 }
 
+// Generate ESPN YYYYMMDD date range string for the next 7 days
+function getEspnDateRange() {
+  const now = new Date();
+  const future = new Date();
+  future.setDate(now.getDate() + 7);
+
+  const format = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}`;
+  };
+
+  return `${format(now)}-${format(future)}`;
+}
+
 class SimulationEngine {
   constructor() {
     this.matches = []; // Initialized as empty list to receive real games
@@ -73,29 +89,35 @@ class SimulationEngine {
     return this.matches.find(m => m.id === id);
   }
 
-  // Live real-world scores fetcher (ESPN scoreboard APIs)
+  // Live real-world scores fetcher (ESPN scoreboard APIs with 8-day dates ranges)
   async fetchRealWorldMatches() {
     const feeds = [
-      // Football Soccer
+      // Football Soccer (9 leagues)
       { url: 'soccer/eng.1', sport: 'football', name: 'Premier League', country: 'England' },
       { url: 'soccer/esp.1', sport: 'football', name: 'La Liga', country: 'Spain' },
       { url: 'soccer/ita.1', sport: 'football', name: 'Serie A', country: 'Italy' },
+      { url: 'soccer/ger.1', sport: 'football', name: 'Bundesliga', country: 'Germany' },
+      { url: 'soccer/fra.1', sport: 'football', name: 'Ligue 1', country: 'France' },
+      { url: 'soccer/usa.1', sport: 'football', name: 'Major League Soccer', country: 'USA' },
       { url: 'soccer/uefa.champions', sport: 'football', name: 'Champions League', country: 'Europe' },
-      // Basketball
+      { url: 'soccer/uefa.europa', sport: 'football', name: 'Europa League', country: 'Europe' },
+      { url: 'soccer/mex.1', sport: 'football', name: 'Liga MX', country: 'Mexico' },
+      // Basketball (2 leagues)
       { url: 'basketball/nba', sport: 'basketball', name: 'NBA', country: 'USA' },
-      // Tennis
+      { url: 'basketball/wnba', sport: 'basketball', name: 'WNBA', country: 'USA' },
+      // Tennis (1 league)
       { url: 'tennis/atp', sport: 'tennis', name: 'ATP Tour', country: 'International' },
-      // Ice Hockey
-      { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' },
-      // Rugby
-      { url: 'rugby/united-rugby-championship', sport: 'rugby', name: 'URC', country: 'Europe' }
+      // Ice Hockey (1 league)
+      { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' }
     ];
 
     const parsedMatches = [];
+    const dateRange = getEspnDateRange();
 
     for (const feed of feeds) {
       try {
-        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard`);
+        // Query both live and scheduled matches for the next 7 days in a single batch
+        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=200`);
         if (!response.ok) continue;
 
         const data = await response.json();
