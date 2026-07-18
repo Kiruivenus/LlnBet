@@ -98,6 +98,17 @@ function initApp() {
     }
   });
 
+  // Dynamic splash loader fade-out and removal
+  setTimeout(() => {
+    const loader = document.getElementById('app-splash-loader');
+    if (loader) {
+      loader.classList.add('fade-out');
+      setTimeout(() => {
+        loader.remove();
+      }, 400);
+    }
+  }, 1500);
+
   console.log("BetPulse Sportsbook App successfully bootstrapped!");
 }
 

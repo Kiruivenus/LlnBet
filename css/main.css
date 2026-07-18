@@ -3219,6 +3219,107 @@ body.light-theme .auth-btn {
   color: #ffffff;
 }
 
+/* App Splash Loader Overlay */
+.splash-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #080a0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.4s;
+  opacity: 1;
+  visibility: visible;
+}
+
+.splash-loader-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+/* Slanted Betika-style P! logo */
+.splash-logo {
+  background: #141b27;
+  border: 3px solid var(--accent-emerald);
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.6rem;
+  font-weight: 900;
+  color: #fdb927; /* Golden-yellow P */
+  font-family: var(--font-display);
+  transform: rotate(-10deg);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  position: relative;
+  user-select: none;
+  animation: pulse-logo 1.5s infinite alternate;
+}
+
+.splash-logo .excl {
+  color: #ffffff; /* White exclamation mark */
+  margin-left: 2px;
+}
+
+@keyframes pulse-logo {
+  0% {
+    transform: rotate(-10deg) scale(1);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  }
+  100% {
+    transform: rotate(-8deg) scale(1.04);
+    box-shadow: 0 16px 40px rgba(0, 230, 118, 0.15);
+  }
+}
+
+/* Horizontal line loader */
+.splash-line-loader {
+  width: 160px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.splash-line-progress {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(to right, var(--accent-emerald), var(--accent-orange));
+  border-radius: var(--radius-full);
+  animation: splash-load-anim 1.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes splash-load-anim {
+  0% {
+    width: 0%;
+  }
+  40% {
+    width: 45%;
+  }
+  80% {
+    width: 92%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+
 
 
 
