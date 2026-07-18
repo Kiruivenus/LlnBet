@@ -90,156 +90,48 @@ class SimulationEngine {
     return this.matches.find(m => m.id === id);
   }
 
-  // Live real-world scores fetcher (ESPN scoreboard APIs in parallel with 3s timeout cap)
+  // Live real-world scores fetcher (from backend cached MongoDB matches in <100ms)
   async fetchRealWorldMatches() {
-    const feeds = [
-      { url: 'soccer/all', sport: 'football', name: 'Soccer Match', country: 'International' },
-      { url: 'basketball/nba', sport: 'basketball', name: 'NBA', country: 'USA' },
-      { url: 'basketball/wnba', sport: 'basketball', name: 'WNBA', country: 'USA' },
-      { url: 'tennis/atp', sport: 'tennis', name: 'ATP Tour', country: 'International' },
-      { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' }
-    ];
+    try {
+      const response = await fetch('/api/matches');
+      if (response.ok) {
+        const backendMatches = await response.json();
+        if (Array.isArray(backendMatches) && backendMatches.length > 0) {
+          this.matches = [...backendMatches, ...matchesList];
 
-    const dateRange = getEspnDateRange();
-
-    const promises = feeds.map(async (feed) => {
-      const feedMatches = [];
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout cap
-
-        const limit = feed.sport === 'football' ? 350 : 100;
-        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=${limit}`, {
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) return [];
-        const data = await response.json();
-        
-        const leagueMap = {};
-        if (data.leagues) {
-          data.leagues.forEach(l => {
-            leagueMap[l.id] = {
-              name: l.name || l.abbreviation || feed.name,
-              country: l.midsizeName || feed.country
-            };
-          });
+          // Async index new real team names in global search database
+          import('./data.js').then(dataModule => {
+            dataModule.searchDatabase.length = 0;
+            backendMatches.forEach(match => {
+              dataModule.searchDatabase.push({
+                title: match.teams.home.name,
+                subtitle: `${match.sport.charAt(0).toUpperCase() + match.sport.slice(1)} Team (${match.league})`,
+                type: 'team',
+                id: match.id
+              });
+              dataModule.searchDatabase.push({
+                title: match.teams.away.name,
+                subtitle: `${match.sport.charAt(0).toUpperCase() + match.sport.slice(1)} Team (${match.league})`,
+                type: 'team',
+                id: match.id
+              });
+            });
+          }).catch(() => {});
+          
+          state.notify('matches');
+          return;
         }
-
-        const events = data.events || [];
-
-        events.forEach(event => {
-          const comp = event.competitions?.[0];
-          if (!comp) return;
-
-          const competitors = comp.competitors || [];
-          const homeComp = competitors.find(c => c.homeAway === 'home');
-          const awayComp = competitors.find(c => c.homeAway === 'away');
-          if (!homeComp || !awayComp) return;
-
-          const homeName = homeComp.team?.displayName || homeComp.team?.name;
-          const awayName = awayComp.team?.displayName || awayComp.team?.name;
-          if (!homeName || !awayName) return;
-
-          const isLive = event.status?.type?.state === 'in';
-          const isFinished = event.status?.type?.state === 'post';
-          
-          if (isFinished) return;
-
-          const kickoffDate = new Date(event.date);
-          const matchId = `espn_${event.id}`;
-          
-          const homeScore = parseInt(homeComp.score) || 0;
-          const awayScore = parseInt(awayComp.score) || 0;
-          
-          const timer = event.status?.displayClock ? event.status.displayClock.replace("'", "") : (isLive ? 'Live' : '0');
-
-          const leagueId = event.uid?.split('~l:')[1]?.split('~')[0] || '';
-          const leagueInfo = leagueMap[leagueId] || { name: feed.name, country: feed.country };
-
-          const r1 = parseFloat((Math.random() * 2 + 1.2).toFixed(2));
-          const rx = parseFloat((Math.random() * 1.5 + 2.5).toFixed(2));
-          const r2 = parseFloat((Math.random() * 3 + 1.8).toFixed(2));
-
-          const markets = [
-            {
-              name: feed.sport === 'football' || feed.sport === 'rugby' || feed.sport === 'ice_hockey' ? 'Match Outcome (1X2)' : 'Money Line (Winner)',
-              odds: [
-                { selectionId: `${matchId}_1`, label: `1 (${homeName})`, value: r1 },
-                ...(feed.sport === 'football' || feed.sport === 'rugby' || feed.sport === 'ice_hockey' ? [
-                  { selectionId: `${matchId}_x`, label: 'X (Draw)', value: rx }
-                ] : []),
-                { selectionId: `${matchId}_2`, label: `2 (${awayName})`, value: r2 }
-              ]
-            }
-          ];
-
-          feedMatches.push({
-            id: matchId,
-            sport: feed.sport,
-            league: leagueInfo.name,
-            country: leagueInfo.country,
-            isLive: isLive,
-            timer: timer,
-            scores: { home: homeScore, away: awayScore },
-            kickoffTime: formatKickoff(kickoffDate),
-            teams: {
-              home: { name: homeName },
-              away: { name: awayName }
-            },
-            venue: comp.venue?.fullName || leagueInfo.name,
-            stats: {
-              possession: { home: 50, away: 50 },
-              shots: { home: 10, away: 8 },
-              shotsOnTarget: { home: 4, away: 3 },
-              corners: { home: 5, away: 4 },
-              yellowCards: { home: 1, away: 1 },
-              redCards: { home: 0, away: 0 }
-            },
-            lineups: { home: [], away: [] },
-            h2h: [],
-            markets
-          });
-        });
-      } catch (e) {
-        // Silently catch timeouts
       }
-      return feedMatches;
-    });
-
-    const results = await Promise.all(promises);
-    const parsedMatches = results.flat();
-
-    if (parsedMatches.length > 0) {
-      console.log(`[ESPN FEED SUCCESS] Fetched ${parsedMatches.length} real-world matches.`);
-      this.matches = [...parsedMatches, ...matchesList];
-
-      // Async index new real team names in global search database
-      import('./data.js').then(dataModule => {
-        // Clear search database first to keep it clean
-        dataModule.searchDatabase.length = 0;
-        parsedMatches.forEach(match => {
-          dataModule.searchDatabase.push({
-            title: match.teams.home.name,
-            subtitle: `${match.sport.charAt(0).toUpperCase() + match.sport.slice(1)} Team (${match.league})`,
-            type: 'team',
-            id: match.id
-          });
-          dataModule.searchDatabase.push({
-            title: match.teams.away.name,
-            subtitle: `${match.sport.charAt(0).toUpperCase() + match.sport.slice(1)} Team (${match.league})`,
-            type: 'team',
-            id: match.id
-          });
-        });
-      }).catch(() => {});
-    } else {
-      this.matches = matchesList;
+    } catch (e) {
+      console.warn("[CLIENT MATCH FETCH ERROR]:", e.message);
     }
-
+    
+    // Fallback if backend returns empty or fails
+    this.matches = matchesList;
     state.notify('matches');
   }
+
+
 
   tick() {
     this.matches.forEach(match => {

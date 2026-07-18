@@ -78,11 +78,32 @@ const OddsHistorySchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// Match Cache Schema
+const MatchSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  sport: String,
+  league: String,
+  country: String,
+  isLive: Boolean,
+  timer: String,
+  scores: { home: Number, away: Number },
+  kickoffTime: String,
+  teams: {
+    home: { name: String },
+    away: { name: String }
+  },
+  venue: String,
+  stats: mongoose.Schema.Types.Mixed,
+  markets: mongoose.Schema.Types.Mixed,
+  updatedAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
 const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
 const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
 const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
+const Match = mongoose.models.Match || mongoose.model('Match', MatchSchema);
 
 // Connect to MongoDB with Serverless Connection Caching (Official Vercel & Atlas best practices)
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -875,11 +896,168 @@ app.post('/api/odds', async (req, res) => {
   }
 });
 
-app.get('/api/odds', async (req, res) => {
+// ---------------------------------------------------------------------
+// DYNAMIC MATCH CACHING & BACKGROUND SYNCHRONIZATION
+// ---------------------------------------------------------------------
+function getEspnDateRange() {
+  const dates = [];
+  const start = new Date();
+  start.setDate(start.getDate() - 1);
+  for (let i = 0; i < 9; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    dates.push(`${yyyy}${mm}${dd}`);
+  }
+  return `${dates[0]}-${dates[dates.length - 1]}`;
+}
+
+async function syncMatchesFromEspn() {
+  const feeds = [
+    { url: 'soccer/all', sport: 'football', name: 'Soccer Match', country: 'International' },
+    { url: 'basketball/nba', sport: 'basketball', name: 'NBA', country: 'USA' },
+    { url: 'basketball/wnba', sport: 'basketball', name: 'WNBA', country: 'USA' },
+    { url: 'tennis/atp', sport: 'tennis', name: 'ATP Tour', country: 'International' },
+    { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' }
+  ];
+
+  const dateRange = getEspnDateRange();
+  const promises = feeds.map(async (feed) => {
+    const feedMatches = [];
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout cap
+
+      const limit = feed.sport === 'football' ? 200 : 50; // Keep payload light and fast
+      const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=${limit}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) return [];
+      const data = await response.json();
+      
+      const leagueMap = {};
+      if (data.leagues) {
+        data.leagues.forEach(l => {
+          leagueMap[l.id] = {
+            name: l.name || l.abbreviation || feed.name,
+            country: l.midsizeName || feed.country
+          };
+        });
+      }
+
+      const events = data.events || [];
+      events.forEach(event => {
+        const comp = event.competitions?.[0];
+        if (!comp) return;
+
+        const competitors = comp.competitors || [];
+        const homeComp = competitors.find(c => c.homeAway === 'home');
+        const awayComp = competitors.find(c => c.homeAway === 'away');
+        if (!homeComp || !awayComp) return;
+
+        const homeName = homeComp.team?.displayName || homeComp.team?.name;
+        const awayName = awayComp.team?.displayName || awayComp.team?.name;
+        if (!homeName || !awayName) return;
+
+        const isLive = event.status?.type?.state === 'in';
+        const isFinished = event.status?.type?.state === 'post';
+        
+        if (isFinished) return;
+
+        const kickoffDate = new Date(event.date);
+        const matchId = `espn_${event.id}`;
+        
+        const homeScore = parseInt(homeComp.score) || 0;
+        const awayScore = parseInt(awayComp.score) || 0;
+        
+        const timer = event.status?.displayClock ? event.status.displayClock.replace("'", "") : (isLive ? 'Live' : '0');
+        const leagueId = event.uid?.split('~l:')[1]?.split('~')[0] || '';
+        const leagueInfo = leagueMap[leagueId] || { name: feed.name, country: feed.country };
+
+        const r1 = parseFloat((Math.random() * 2 + 1.2).toFixed(2));
+        const rx = parseFloat((Math.random() * 1.5 + 2.5).toFixed(2));
+        const r2 = parseFloat((Math.random() * 3 + 1.8).toFixed(2));
+
+        const markets = [
+          {
+            name: feed.sport === 'football' || feed.sport === 'rugby' || feed.sport === 'ice_hockey' ? 'Match Outcome (1X2)' : 'Money Line (Winner)',
+            odds: [
+              { selectionId: `${matchId}_1`, label: `1 (${homeName})`, value: r1 },
+              ...(feed.sport === 'football' || feed.sport === 'rugby' || feed.sport === 'ice_hockey' ? [
+                { selectionId: `${matchId}_x`, label: 'X (Draw)', value: rx }
+              ] : []),
+              { selectionId: `${matchId}_2`, label: `2 (${awayName})`, value: r2 }
+            ]
+          }
+        ];
+
+        feedMatches.push({
+          id: matchId,
+          sport: feed.sport,
+          league: leagueInfo.name,
+          country: leagueInfo.country,
+          isLive: isLive,
+          timer: timer,
+          scores: { home: homeScore, away: awayScore },
+          kickoffTime: kickoffDate.toISOString(),
+          teams: {
+            home: { name: homeName },
+            away: { name: awayName }
+          },
+          venue: comp.venue?.fullName || leagueInfo.name,
+          stats: {
+            possession: { home: 50, away: 50 },
+            shots: { home: 10, away: 8 },
+            shotsOnTarget: { home: 4, away: 3 },
+            corners: { home: 5, away: 4 },
+            yellowCards: { home: 1, away: 1 },
+            redCards: { home: 0, away: 0 }
+          },
+          markets
+        });
+      });
+    } catch (e) {}
+    return feedMatches;
+  });
+
+  const results = await Promise.all(promises);
+  const parsedMatches = results.flat();
+
+  if (parsedMatches.length > 0) {
+    const ops = parsedMatches.map(m => ({
+      updateOne: {
+        filter: { id: m.id },
+        update: { $set: { ...m, updatedAt: new Date() } },
+        upsert: true
+      }
+    }));
+    await Match.bulkWrite(ops);
+    console.log(`[BACKEND SYNC] Successfully upserted ${parsedMatches.length} matches to MongoDB.`);
+  }
+}
+
+let lastSyncTime = 0;
+
+app.get('/api/matches', async (req, res) => {
   try {
-    if (mongoUri && mongoose.connection.readyState === 1) {
-      const records = await OddsHistory.find({}).lean();
-      return res.json(records);
+    if (mongoose.connection.readyState === 1) {
+      const now = Date.now();
+      // Auto-trigger non-blocking sync in background if last fetch was > 45 seconds ago
+      if (now - lastSyncTime > 45000) {
+        lastSyncTime = now;
+        syncMatchesFromEspn().catch((err) => {
+          console.warn("[BACKEND SYNC ERROR]:", err.message);
+        });
+      }
+
+      const cachedMatches = await Match.find({}).lean();
+      if (cachedMatches.length > 0) {
+        return res.json(cachedMatches);
+      }
     }
     return res.json([]);
   } catch (err) {
