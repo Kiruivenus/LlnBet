@@ -416,6 +416,7 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  flex-shrink: 0; /* Prevent shrinking in flex layout */
 }
 
 .hero-bg {
@@ -2310,6 +2311,7 @@ h1, h2, h3, h4, h5, h6 {
   .hero-slider {
     padding: var(--spacing-lg);
     min-height: auto !important;
+    flex-shrink: 0 !important;
   }
   
   .hero-title {
