@@ -200,11 +200,15 @@ app.get('/api/status/:checkoutId', (req, res) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`---------------------------------------------------------------------`);
-  console.log(`BetPulse backend server running on http://localhost:${PORT}`);
-  console.log(`M-Pesa Env: ${process.env.MPESA_ENV || 'sandbox'}`);
-  console.log(`Callback Endpoint registered on /api/mpesa-callback`);
-  console.log(`---------------------------------------------------------------------`);
-});
+if (process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 8080;
+  app.listen(PORT, () => {
+    console.log(`---------------------------------------------------------------------`);
+    console.log(`BetPulse backend server running on http://localhost:${PORT}`);
+    console.log(`M-Pesa Env: ${process.env.MPESA_ENV || 'sandbox'}`);
+    console.log(`Callback Endpoint registered on /api/mpesa-callback`);
+    console.log(`---------------------------------------------------------------------`);
+  });
+}
+
+export default app;
