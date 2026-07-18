@@ -47,11 +47,11 @@ function getEspnDateRange() {
 
 class SimulationEngine {
   constructor() {
-    this.matches = []; // Initialized as empty list to receive real games
+    this.matches = matchesList;
     this.timerId = null;
     this.feedIntervalId = null;
-    this.oddsFlashDuration = 1500;
     this.flashStates = {};
+    this.oddsFlashDuration = 1200;
   }
 
   async start() {

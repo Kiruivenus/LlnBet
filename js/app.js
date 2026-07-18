@@ -166,6 +166,8 @@ function initApp() {
     }
   });
 
+  state.notify('matches');
+
   // Dynamic splash loader fade-out and removal
   setTimeout(() => {
     const loader = document.getElementById('app-splash-loader');
