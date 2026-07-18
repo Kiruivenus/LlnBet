@@ -1,0 +1,5 @@
+.qodo/
+.DS_Store
+Thumbs.db
+.gemini/
+.agents/

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BetPulse | Premium Live Sportsbook & Betting Platform</title>
+  <meta name="description" content="BetPulse offers a premium, modern, and ultra-fast sports betting experience with live score updates, flashing odds, instantly syncable betslips, and customized user dashboards. Play responsibly.">
+  
+  <!-- SEO & OpenGraph Meta Tags -->
+  <meta property="og:title" content="BetPulse | Premium Live Sportsbook">
+  <meta property="og:description" content="Experience premium online sports betting. Live timers, interactive stats, real-time payouts, and advanced betslip parlay calculators.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/hero_banner.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BetPulse | Premium Live Sportsbook">
+  
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/main.css">
+  <!-- Google Material Icons Round -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsActivityLocation",
+      "name": "BetPulse Sportsbook",
+      "description": "Premium Sports Betting Platform",
+      "url": "https://betpulse.com",
+      "logo": "https://betpulse.com/logo.png",
+      "knowsAbout": ["Sports Betting", "Live Betting", "Casino", "Jackpots"]
+    }
+  </script>
+</head>
+<body>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+    
+    <!-- Sticky Header -->
+    <header class="app-header" id="app-header"></header>
+    
+    <!-- Left Sidebar Navigation -->
+    <aside class="app-sidebar" id="app-sidebar"></aside>
+    
+    <!-- Main Betting Content Area -->
+    <main class="app-main" id="app-main">
+      <!-- Loading Skeleton / Dynamic content renders here -->
+      <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">
+        <div class="brand-logo" style="width: 60px; height: 60px; font-size: 2rem;">B</div>
+        <p style="font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.1em; text-transform: uppercase; animation: pulse-opacity 1s infinite alternate;">Connecting to BetPulse...</p>
+      </div>
+    </main>
+    
+    <!-- Right Betslip Panel -->
+    <aside class="app-betslip" id="app-betslip"></aside>
+    
+    <!-- Mobile Bottom Navigation Bar (Visible on <= 1200px viewports) -->
+    <nav class="mobile-nav-bar" id="mobile-nav-bar"></nav>
+    
+  </div>
+
+  <!-- Search Modal Overlay -->
+  <div class="search-modal" id="search-modal"></div>
+
+  <!-- JS Bootstrapper Module -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

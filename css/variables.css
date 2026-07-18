@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-obsidian: #080a0f;
+  --bg-charcoal: #0e121a;
+  --bg-surface: #141b27;
+  --bg-surface-hover: #1e2838;
+  --bg-surface-active: #28354a;
+  
+  --border-color: #1c2635;
+  --border-color-light: #28374d;
+  
+  --accent-emerald: #00e676;
+  --accent-emerald-hover: #33f091;
+  --accent-emerald-glow: rgba(0, 230, 118, 0.15);
+  
+  --accent-orange: #ff9100;
+  --accent-orange-hover: #ffaa33;
+  --accent-orange-glow: rgba(255, 145, 0, 0.15);
+  
+  --accent-live: #ff3d00;
+  --accent-live-glow: rgba(255, 61, 0, 0.2);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-emerald: #00e676;
+  --text-orange: #ff9100;
+  
+  /* Fonts */
+  --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Manrope', monospace;
+  
+  /* Layout */
+  --header-height: 72px;
+  --sidebar-width: 280px;
+  --betslip-width: 360px;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  /* Border Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Shadows & Blur */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow-emerald: 0 0 15px rgba(0, 230, 118, 0.3);
+  --shadow-glow-orange: 0 0 15px rgba(255, 145, 0, 0.3);
+  --glass-bg: rgba(14, 18, 26, 0.85);
+  --glass-blur: blur(12px);
+  --glass-border: 1px solid rgba(28, 38, 53, 0.6);
+  
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
