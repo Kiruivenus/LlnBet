@@ -630,7 +630,7 @@ app.post('/api/odds', async (req, res) => {
       await OddsHistory.findOneAndUpdate(
         { matchId },
         { r1, rx, r2, updatedAt: new Date() },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
     }
     return res.json({ success: true });

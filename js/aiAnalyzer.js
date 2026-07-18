@@ -32,7 +32,7 @@ class AIAnalyzerEngine {
     }
   }
 
-  // Save updated odds to local cache and MongoDB
+  // Save updated odds to local cache and MongoDB (throttled backend sync)
   saveOddsMemory(matchId, oddsObj) {
     this.oddsMemoryMap.set(matchId, oddsObj);
     try {
@@ -40,12 +40,19 @@ class AIAnalyzerEngine {
       this.oddsMemoryMap.forEach((v, k) => obj[k] = v);
       localStorage.setItem('betpulse_odds_memory', JSON.stringify(obj));
 
-      // Async sync to backend MongoDB API
-      fetch('/api/odds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId, ...oddsObj })
-      }).catch(() => {});
+      // Throttle backend MongoDB sync to once every 10 seconds per match
+      if (!this.lastSyncMap) this.lastSyncMap = new Map();
+      const now = Date.now();
+      const lastSync = this.lastSyncMap.get(matchId) || 0;
+
+      if (now - lastSync > 10000) {
+        this.lastSyncMap.set(matchId, now);
+        fetch('/api/odds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchId, ...oddsObj })
+        }).catch(() => {});
+      }
     } catch (e) {}
   }
 
