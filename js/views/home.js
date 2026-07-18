@@ -46,40 +46,7 @@ export function renderHomeView() {
       </div>
     </div>
 
-    <!-- Live Matches Section (Compact List layout) -->
-    <div>
-      <div class="section-header">
-        <div class="section-title-area">
-          <h2 class="section-title">Live In-Play Matches</h2>
-          <span class="section-badge">
-            <span class="pulse-dot"></span>
-            Live
-          </span>
-        </div>
-        <button class="text-link" id="view-all-live-link">
-          Live Hub
-          ${getMaterialIcon('back', 'icon-rotated-right')}
-        </button>
-      </div>
 
-      <div class="matches-list-container">
-        <div class="matches-list-header">
-          <span>Teams</span>
-          <div class="matches-header-odds">
-            <span>1</span>
-            <span>X</span>
-            <span>2</span>
-          </div>
-        </div>
-        <div class="match-list-items">
-          ${liveMatches.length === 0 ? `
-            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.9rem;">
-              No live matches in progress for this category.
-            </div>
-          ` : liveMatches.map(match => renderMatchCard(match, selections)).join('')}
-        </div>
-      </div>
-    </div>
 
     <!-- Upcoming Matches Section (Compact List layout) -->
     <div>
@@ -237,7 +204,7 @@ export function renderHomeView() {
     });
   });
 
-  document.getElementById('view-all-live-link')?.addEventListener('click', () => state.setPage('live'));
+
 
   document.getElementById('footer-rg-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
