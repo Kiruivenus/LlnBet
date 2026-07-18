@@ -34,11 +34,6 @@ export function renderHeader() {
       <button class="profile-trigger" id="header-profile-btn" aria-label="Profile">
         <img class="avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Profile" />
       </button>
-
-      <!-- Dedicated Header Logout Button -->
-      <button class="icon-btn" id="header-logout-btn" aria-label="Logout" style="color:var(--accent-live); margin-left: 4px;">
-        ${getMaterialIcon('logout')}
-      </button>
     `;
   } else {
     rightSideHtml = `
@@ -103,12 +98,6 @@ export function renderHeader() {
 
     document.getElementById('header-profile-btn')?.addEventListener('click', () => {
       state.setPage('profile');
-    });
-
-    document.getElementById('header-logout-btn')?.addEventListener('click', () => {
-      if (confirm("Confirm Logout?")) {
-        state.logoutUser();
-      }
     });
   } else {
     document.getElementById('header-login-btn')?.addEventListener('click', () => {
