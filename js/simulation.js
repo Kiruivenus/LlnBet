@@ -90,17 +90,13 @@ class SimulationEngine {
     return this.matches.find(m => m.id === id);
   }
 
-  // Live real-world scores fetcher (ESPN scoreboard APIs with 8-day dates ranges)
+  // Live real-world scores fetcher (ESPN scoreboard APIs with AbortController timeout)
   async fetchRealWorldMatches() {
     const feeds = [
-      // Football Soccer (All worldwide matches combined!)
       { url: 'soccer/all', sport: 'football', name: 'Soccer Match', country: 'International' },
-      // Basketball (2 leagues)
       { url: 'basketball/nba', sport: 'basketball', name: 'NBA', country: 'USA' },
       { url: 'basketball/wnba', sport: 'basketball', name: 'WNBA', country: 'USA' },
-      // Tennis (1 league)
       { url: 'tennis/atp', sport: 'tennis', name: 'ATP Tour', country: 'International' },
-      // Ice Hockey (1 league)
       { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' }
     ];
 
@@ -109,13 +105,17 @@ class SimulationEngine {
 
     for (const feed of feeds) {
       try {
-        // Query both live and scheduled matches for the next 7 days in a single batch
-        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=350`);
-        if (!response.ok) continue;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout cap
 
+        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?limit=80`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) continue;
         const data = await response.json();
         
-        // Map available leagues in this feed response
         const leagueMap = {};
         if (data.leagues) {
           data.leagues.forEach(l => {
@@ -144,7 +144,6 @@ class SimulationEngine {
           const isLive = event.status?.type?.state === 'in';
           const isFinished = event.status?.type?.state === 'post';
           
-          // Skip completed games to keep the active sportsbook clean
           if (isFinished) return;
 
           const kickoffDate = new Date(event.date);
@@ -155,11 +154,9 @@ class SimulationEngine {
           
           const timer = event.status?.displayClock ? event.status.displayClock.replace("'", "") : (isLive ? 'Live' : '0');
 
-          // Dynamically resolve league name and country from mapping
           const leagueId = event.uid?.split('~l:')[1]?.split('~')[0] || '';
           const leagueInfo = leagueMap[leagueId] || { name: feed.name, country: feed.country };
 
-          // Generate randomized odds (seeded around standard distributions)
           const r1 = parseFloat((Math.random() * 2 + 1.2).toFixed(2));
           const rx = parseFloat((Math.random() * 1.5 + 2.5).toFixed(2));
           const r2 = parseFloat((Math.random() * 3 + 1.8).toFixed(2));
@@ -205,15 +202,18 @@ class SimulationEngine {
           });
         });
       } catch (e) {
-        console.warn(`[ESPN FEED ERROR] Failed to fetch feed ${feed.url}:`, e);
+        // Silently catch feed timeouts
       }
     }
 
     if (parsedMatches.length > 0) {
       console.log(`[ESPN FEED SUCCESS] Fetched ${parsedMatches.length} real-world matches.`);
-      
-      // Override matches list completely with parsed real-world matches
-      this.matches = parsedMatches;
+      this.matches = [...parsedMatches, ...matchesList];
+    } else {
+      this.matches = matchesList;
+    }
+
+    state.notify('matches');
 
       // Async index new real team names in global search database
       import('./data.js').then(dataModule => {
