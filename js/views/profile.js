@@ -158,7 +158,7 @@ export function renderProfileView() {
         `).join('')}
       </div>
 
-      <!-- PREFERENCES SECTION (iOS Custom Switches) -->
+      <!-- PREFERENCES SECTION -->
       <div class="wallet-card" style="margin-top:20px; gap:16px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700;">Preferences</h3>
@@ -192,7 +192,7 @@ export function renderProfileView() {
         </div>
       </div>
 
-      <!-- OTHER INFO & PREFERENCES (iOS settings rows list) -->
+      <!-- OTHER INFO & PREFERENCES -->
       <div style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
         <div style="margin-bottom:8px;">
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Other Info & Preferences</h3>
@@ -239,9 +239,9 @@ export function renderProfileView() {
           </span>
         </div>
 
-        <!-- Sign Out Button -->
-        <button id="profile-signout-btn" style="background:none; border:none; color:var(--accent-emerald); font-weight:800; font-family:var(--font-display); cursor:pointer; text-align:left; padding:12px 4px; font-size:0.95rem; display:flex; align-items:center; gap:8px; align-self:flex-start; margin-top:8px; outline:none;">
-          ${getMaterialIcon('close')} Sign Out
+        <!-- Logout Button -->
+        <button id="profile-signout-btn" style="background:none; border:none; color:var(--accent-live); font-weight:800; font-family:var(--font-display); cursor:pointer; text-align:left; padding:12px 4px; font-size:0.95rem; display:flex; align-items:center; gap:8px; align-self:flex-start; margin-top:8px; outline:none;">
+          ${getMaterialIcon('logout')} Logout
         </button>
       </div>
 
@@ -449,7 +449,7 @@ export function renderProfileView() {
     });
 
     document.getElementById('profile-signout-btn')?.addEventListener('click', () => {
-      alert("Signing out. Resetting session data...");
+      alert("Logging out... Resetting session data.");
       state.data.user.balance = 150000.00; // Reset balance
       state.clearBetslip();
       state.setPage('home');

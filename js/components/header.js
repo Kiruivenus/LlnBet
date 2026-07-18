@@ -28,7 +28,7 @@ export function renderHeader() {
     <!-- Header Operations / User Info -->
     <div class="header-right">
       
-      <!-- Wallet Panel Indicator (Routes to Profile Cashier) -->
+      <!-- Wallet Panel Indicator -->
       <div class="wallet-badge" id="header-wallet-trigger">
         <span style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
           ${getMaterialIcon('wallet')}
@@ -49,6 +49,11 @@ export function renderHeader() {
       <!-- Account Settings / Profile Dropdown -->
       <button class="profile-trigger" id="header-profile-btn" aria-label="Profile">
         <img class="avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Profile" />
+      </button>
+
+      <!-- Dedicated Header Logout Button -->
+      <button class="icon-btn" id="header-logout-btn" aria-label="Logout" style="color:var(--accent-live); margin-left: 4px;">
+        ${getMaterialIcon('logout')}
       </button>
     </div>
   `;
@@ -78,6 +83,13 @@ export function renderHeader() {
 
   document.getElementById('header-profile-btn').addEventListener('click', () => {
     state.setPage('profile');
+  });
+
+  document.getElementById('header-logout-btn').addEventListener('click', () => {
+    alert("Logging out... Resetting session data.");
+    state.data.user.balance = 150000.00; // Reset balance
+    state.clearBetslip();
+    state.setPage('home');
   });
 }
 export default renderHeader;
