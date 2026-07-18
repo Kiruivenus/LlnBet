@@ -1,27 +1,67 @@
 import { matchesList } from './data.js';
 import { state } from './state.js';
 
-class SimulationEngine {
-  constructor() {
-    this.matches = JSON.parse(JSON.stringify(matchesList)); // Mutable copy of initial mock data
-    this.timerId = null;
-    this.oddsFlashDuration = 1500; // time in ms that the green/red flashing persists
-    this.flashStates = {}; // key -> 'up' | 'down' | null
+// Local Date Formatter Helper
+function formatKickoff(dateObj) {
+  const now = new Date();
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  const timeStr = `${hours}:${minutes}`;
+
+  if (dateObj.toDateString() === now.toDateString()) {
+    return `Today, ${timeStr}`;
+  }
+  
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (dateObj.toDateString() === tomorrow.toDateString()) {
+    return `Tomorrow, ${timeStr}`;
   }
 
-  start() {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const dayName = days[dateObj.getDay()];
+  const dateNum = dateObj.getDate();
+  const monthName = months[dateObj.getMonth()];
+  
+  return `${dayName}, ${dateNum} ${monthName}, ${timeStr}`;
+}
+
+class SimulationEngine {
+  constructor() {
+    this.matches = JSON.parse(JSON.stringify(matchesList)); // Mutable copy of generated matches
+    this.timerId = null;
+    this.feedIntervalId = null;
+    this.oddsFlashDuration = 1500;
+    this.flashStates = {};
+  }
+
+  async start() {
     if (this.timerId) return;
+
+    // 1. Fetch real-world soccer fixtures dynamically at boot
+    await this.fetchRealWorldMatches();
     
-    // Core simulation loop running every 3.5 seconds
+    // Core simulation tick loop running every 3.5 seconds
     this.timerId = setInterval(() => {
       this.tick();
     }, 3500);
+
+    // Live refetch polling loop running every 60 seconds
+    this.feedIntervalId = setInterval(async () => {
+      await this.fetchRealWorldMatches();
+    }, 60000);
   }
 
   stop() {
     if (this.timerId) {
       clearInterval(this.timerId);
       this.timerId = null;
+    }
+    if (this.feedIntervalId) {
+      clearInterval(this.feedIntervalId);
+      this.feedIntervalId = null;
     }
   }
 
@@ -33,21 +73,142 @@ class SimulationEngine {
     return this.matches.find(m => m.id === id);
   }
 
+  // Live real-world scores fetcher (ESPN scoreboard API)
+  async fetchRealWorldMatches() {
+    const leagues = [
+      { id: 'eng.1', name: 'Premier League', country: 'England' },
+      { id: 'esp.1', name: 'La Liga', country: 'Spain' },
+      { id: 'uefa.champions', name: 'Champions League', country: 'Europe' }
+    ];
+
+    const parsedMatches = [];
+
+    for (const league of leagues) {
+      try {
+        const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${league.id}/scoreboard`);
+        if (!response.ok) continue;
+
+        const data = await response.json();
+        const events = data.events || [];
+
+        events.forEach(event => {
+          const comp = event.competitions?.[0];
+          if (!comp) return;
+
+          const competitors = comp.competitors || [];
+          const homeComp = competitors.find(c => c.homeAway === 'home');
+          const awayComp = competitors.find(c => c.homeAway === 'away');
+          if (!homeComp || !awayComp) return;
+
+          const homeName = homeComp.team?.displayName || homeComp.team?.name;
+          const awayName = awayComp.team?.displayName || awayComp.team?.name;
+          if (!homeName || !awayName) return;
+
+          const isLive = event.status?.type?.state === 'in';
+          const isFinished = event.status?.type?.state === 'post';
+          
+          // Skip completed games to keep the sportsbook dashboard active
+          if (isFinished) return;
+
+          const kickoffDate = new Date(event.date);
+          const matchId = `espn_${event.id}`;
+          
+          const homeScore = parseInt(homeComp.score) || 0;
+          const awayScore = parseInt(awayComp.score) || 0;
+          
+          const timer = event.status?.displayClock ? event.status.displayClock.replace("'", "") : '0';
+
+          // Generate randomized odds (seeded around standard distributions)
+          const r1 = parseFloat((Math.random() * 2 + 1.2).toFixed(2));
+          const rx = parseFloat((Math.random() * 1.5 + 2.5).toFixed(2));
+          const r2 = parseFloat((Math.random() * 3 + 1.8).toFixed(2));
+
+          const markets = [
+            {
+              name: 'Match Outcome (1X2)',
+              odds: [
+                { selectionId: `${matchId}_1`, label: `1 (${homeName})`, value: r1 },
+                { selectionId: `${matchId}_x`, label: 'X (Draw)', value: rx },
+                { selectionId: `${matchId}_2`, label: `2 (${awayName})`, value: r2 }
+              ]
+            }
+          ];
+
+          parsedMatches.push({
+            id: matchId,
+            sport: 'football',
+            league: league.name,
+            country: league.country,
+            isLive: isLive,
+            timer: timer,
+            scores: { home: homeScore, away: awayScore },
+            kickoffTime: formatKickoff(kickoffDate),
+            teams: {
+              home: { name: homeName },
+              away: { name: awayName }
+            },
+            venue: comp.venue?.fullName || league.name,
+            stats: {
+              possession: { home: 50, away: 50 },
+              shots: { home: 10, away: 8 },
+              shotsOnTarget: { home: 4, away: 3 },
+              corners: { home: 5, away: 4 },
+              yellowCards: { home: 1, away: 1 },
+              redCards: { home: 0, away: 0 }
+            },
+            lineups: { home: [], away: [] },
+            h2h: [],
+            markets
+          });
+        });
+      } catch (e) {
+        console.warn(`[ESPN FEED ERROR] Failed to fetch league ${league.id}:`, e);
+      }
+    }
+
+    if (parsedMatches.length > 0) {
+      console.log(`[ESPN FEED SUCCESS] Fetched ${parsedMatches.length} real-world matches.`);
+      
+      // Merge parsed real matches into main match list, filtering out older ESPN IDs
+      this.matches = this.matches.filter(m => !m.id.startsWith('espn_')).concat(parsedMatches);
+
+      // Async index new real team names in global search database
+      import('./data.js').then(dataModule => {
+        parsedMatches.forEach(match => {
+          const exists = dataModule.searchDatabase.some(s => s.id === match.id);
+          if (!exists) {
+            dataModule.searchDatabase.push({
+              title: match.teams.home.name,
+              subtitle: `Football Team (${match.league})`,
+              type: 'team',
+              id: match.id
+            });
+            dataModule.searchDatabase.push({
+              title: match.teams.away.name,
+              subtitle: `Football Team (${match.league})`,
+              type: 'team',
+              id: match.id
+            });
+          }
+        });
+      });
+
+      // Notify UI state to update
+      state.notify('matches');
+    }
+  }
+
   tick() {
     this.matches.forEach(match => {
+      // Avoid modifying real espn-loaded matches with mock timers/goals
+      if (match.id.startsWith('espn_')) return;
       if (!match.isLive) return;
 
-      // 1. Advance the timer
       this.tickMatchTimer(match);
-
-      // 2. Simulate random goals / scores
       this.simulateScoring(match);
-
-      // 3. Fluctuate odds
       this.fluctuateMatchOdds(match);
     });
 
-    // Notify listeners that matches state updated
     state.notify('matches');
   }
 
@@ -61,7 +222,6 @@ class SimulationEngine {
         match.timer = "90+";
       }
     } else if (match.sport === 'basketball') {
-      // e.g. "Q3 - 08:12"
       let parts = match.timer.split(' - ');
       if (parts.length === 2) {
         let q = parts[0];
@@ -70,14 +230,13 @@ class SimulationEngine {
         let min = parseInt(timeParts[0]);
         let sec = parseInt(timeParts[1]);
         
-        sec -= 15; // Speed up basketball timer
+        sec -= 15;
         if (sec < 0) {
           sec = 59;
           min -= 1;
         }
         
         if (min < 0) {
-          // Next quarter
           let qNum = parseInt(q.substring(1));
           if (qNum < 4) {
             match.timer = `Q${qNum + 1} - 12:00`;
@@ -92,10 +251,8 @@ class SimulationEngine {
         }
       }
     } else if (match.sport === 'tennis') {
-      // Tennis uses sets/games. Random game point increments.
       if (Math.random() < 0.15) {
-        let parts = match.timer.split(', '); // e.g. "Set 3, Game 4"
-        // Simply increment game count
+        let parts = match.timer.split(', ');
         let gamePart = parts[1] || 'Game 0';
         let gameNum = parseInt(gamePart.replace('Game ', '')) || 0;
         gameNum += 1;
@@ -110,36 +267,32 @@ class SimulationEngine {
   }
 
   simulateScoring(match) {
-    const scoreChance = 0.025; // 2.5% chance per tick
+    const scoreChance = 0.025;
     
     if (Math.random() < scoreChance) {
       const scoringTeam = Math.random() < 0.5 ? 'home' : 'away';
       match.scores[scoringTeam] += (match.sport === 'basketball') ? Math.floor(Math.random() * 3) + 2 : 1;
       
-      // If team scored, dramatically shift odds
       match.markets.forEach(market => {
         market.odds.forEach(odd => {
           let shift = 0;
           if (odd.selectionId.includes(scoringTeam)) {
-            shift = -0.3; // Odds drop for scoring team
+            shift = -0.3;
           } else {
-            shift = 0.5; // Odds spike for opposing team
+            shift = 0.5;
           }
           this.adjustOddValue(odd, shift, match.id);
         });
       });
       
-      // Trigger user notification or update state if needed
       console.log(`[GOAL/SCORE] ${match.teams.home.name} ${match.scores.home} - ${match.scores.away} ${match.teams.away.name}`);
     }
   }
 
   fluctuateMatchOdds(match) {
-    // Fluctuate about 30% of odds in each tick
     match.markets.forEach(market => {
       market.odds.forEach(odd => {
         if (Math.random() < 0.35) {
-          // Locked odds simulation (5% chance to lock/unlock)
           if (Math.random() < 0.05) {
             odd.isLocked = !odd.isLocked;
             return;
@@ -148,7 +301,7 @@ class SimulationEngine {
           if (odd.isLocked) return;
 
           const changeDir = Math.random() < 0.5 ? -1 : 1;
-          const pct = Math.random() * 0.08; // Max 8% change
+          const pct = Math.random() * 0.08;
           const shift = odd.value * pct * changeDir;
           this.adjustOddValue(odd, shift, match.id);
         }
@@ -160,7 +313,6 @@ class SimulationEngine {
     const oldVal = odd.value;
     let newVal = oldVal + shift;
     
-    // Bound odds between 1.01 and 50.00
     if (newVal < 1.01) newVal = 1.01;
     if (newVal > 50.00) newVal = 50.00;
     
@@ -171,17 +323,13 @@ class SimulationEngine {
       const flashKey = `${matchId}_${odd.selectionId}`;
       const direction = newVal < oldVal ? 'down' : 'up';
       
-      // Set flash state
       this.flashStates[flashKey] = direction;
-      
-      // Update betslip selection if it was active
       state.updateSelectionOdds(odd.selectionId, newVal);
       
-      // Clear flash state after duration
       setTimeout(() => {
         if (this.flashStates[flashKey] === direction) {
           delete this.flashStates[flashKey];
-          state.notify('matches'); // Re-trigger redraw without flash classes
+          state.notify('matches');
         }
       }, this.oddsFlashDuration);
     }
