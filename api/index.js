@@ -830,10 +830,10 @@ app.post('/api/odds', async (req, res) => {
     if (!matchId) return res.status(400).json({ error: "matchId required" });
 
     if (mongoUri && mongoose.connection.readyState === 1) {
-      await OddsHistory.findOneAndUpdate(
+      await OddsHistory.updateOne(
         { matchId },
-        { r1, rx, r2, updatedAt: new Date() },
-        { upsert: true, returnDocument: 'after' }
+        { $set: { r1, rx, r2, updatedAt: new Date() } },
+        { upsert: true }
       );
     }
     return res.json({ success: true });

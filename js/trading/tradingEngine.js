@@ -52,7 +52,7 @@ export class TradingEngine {
 
       const now = Date.now();
       const lastSync = this.lastBackendSync.get(matchId) || 0;
-      if (now - lastSync > 10000) {
+      if (now - lastSync > 60000) {
         this.lastBackendSync.set(matchId, now);
         fetch('/api/odds', {
           method: 'POST',
