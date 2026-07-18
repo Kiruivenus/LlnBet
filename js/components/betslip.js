@@ -6,6 +6,7 @@ export function renderBetslip() {
   if (!container) return;
 
   const selections = state.data.betslip.selections;
+  const mode = state.data.betslip.mode || 'single';
   const user = state.data.user;
   const balance = user ? user.balance : 0;
 
