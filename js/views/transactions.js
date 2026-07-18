@@ -48,8 +48,10 @@ export function renderTransactionsView() {
               No transaction logs found for this filter.
             </div>
           ` : filteredTx.map(t => {
-            const isCredit = t.type.toLowerCase().includes('dep') || t.type.toLowerCase().includes('promo');
-            const refCode = t.id || `TXN-${Math.floor(Math.random()*900+100)}`;
+            const isCredit = t.type.toUpperCase().includes('DEP') || t.type.toUpperCase().includes('PROMO') || t.type.toUpperCase().includes('WON');
+            const refCode = t.reference || t.id || `TXN-${Math.floor(Math.random()*900+100)}`;
+            const dateStr = t.date || (t.createdAt ? new Date(t.createdAt).toLocaleString('en-KE') : 'Just now');
+
             return `
               <div style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; display:flex; justify-content:space-between; align-items:center; transition:border-color 0.2s;">
                 <div style="display:flex; align-items:center; gap:12px;">
@@ -57,8 +59,8 @@ export function renderTransactionsView() {
                     ${getMaterialIcon(isCredit ? 'deposit' : 'smartphone')}
                   </div>
                   <div>
-                    <strong style="font-size:0.95rem; color:var(--text-primary); display:block;">${t.type} (${t.method || 'M-Pesa Mobile'})</strong>
-                    <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;">Date: ${t.date} • Ref: <span style="font-family:var(--font-mono);">${refCode}</span></span>
+                    <strong style="font-size:0.95rem; color:var(--text-primary); display:block;">${t.type}</strong>
+                    <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;">Date: ${dateStr} • Ref: <span style="font-family:var(--font-mono);">${refCode}</span></span>
                   </div>
                 </div>
 
@@ -66,7 +68,7 @@ export function renderTransactionsView() {
                   <strong style="font-family:var(--font-mono); font-size:1.05rem; color:${isCredit ? 'var(--accent-emerald)' : 'var(--accent-orange)'};">
                     ${isCredit ? '+' : '-'}${formatCurrency(t.amount)}
                   </strong>
-                  <span style="display:block; font-size:0.65rem; color:var(--accent-emerald); font-weight:800; text-transform:uppercase; margin-top:2px;">SUCCESS</span>
+                  <span style="display:block; font-size:0.65rem; color:var(--accent-emerald); font-weight:800; text-transform:uppercase; margin-top:2px;">${t.status || 'COMPLETED'}</span>
                 </div>
               </div>
             `;

@@ -16,6 +16,14 @@ import { renderNotificationsView } from './views/notifications.js';
 export function route() {
   const page = state.data.currentPage;
 
+  const protectedPages = ['profile', 'my-bets', 'transactions', 'notifications', 'jackpot-streak'];
+
+  if (protectedPages.includes(page) && !state.data.isLoggedIn) {
+    alert("Authentication Required: Please login or register to access your account dashboard.");
+    state.setPage('login');
+    return;
+  }
+
   switch (page) {
     case 'home':
       renderHomeView();
@@ -27,23 +35,13 @@ export function route() {
       renderMatchDetailsView();
       break;
     case 'my-bets':
-      // Guard route (redirect to login if not logged in)
-      if (!state.data.isLoggedIn) {
-        state.setPage('login');
-      } else {
-        renderMyBetsView();
-      }
+      renderMyBetsView();
       break;
     case 'promotions':
       renderPromotionsView();
       break;
     case 'profile':
-      // Guard route (redirect to login if not logged in)
-      if (!state.data.isLoggedIn) {
-        state.setPage('login');
-      } else {
-        renderProfileView();
-      }
+      renderProfileView();
       break;
     case 'login':
       renderLoginView();
@@ -58,12 +56,7 @@ export function route() {
       renderResponsibleGamingView();
       break;
     case 'transactions':
-      // Guard route (redirect to login if not logged in)
-      if (!state.data.isLoggedIn) {
-        state.setPage('login');
-      } else {
-        renderTransactionsView();
-      }
+      renderTransactionsView();
       break;
     case 'jackpot-streak':
       renderJackpotsView();

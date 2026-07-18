@@ -234,12 +234,25 @@ export function renderBetslip() {
   });
 
   // Place Bet submission handler
-  document.getElementById('betslip-place-bet-btn')?.addEventListener('click', () => {
-    const betResult = state.placeBet(totalStake);
-    if (betResult) {
-      alert(`Success!\n\nBet placed successfully!\nBet ID: ${betResult.id}\nStake: ${formatCurrency(totalStake)}\nOdds: ${formatOdds(totalOdds)}`);
-    } else {
-      alert("Error: Bet placement failed. Please verify stake amount and balance.");
+  document.getElementById('betslip-place-bet-btn')?.addEventListener('click', async () => {
+    if (!state.data.isLoggedIn) {
+      alert("Authentication Required: Please login or register to place bets.");
+      state.setPage('login');
+      return;
+    }
+
+    const btn = document.getElementById('betslip-place-bet-btn');
+    try {
+      btn.disabled = true;
+      btn.textContent = "Placing Bet...";
+
+      const bet = await state.placeBet(totalStake, totalOdds, totalPayout);
+      alert(`Success!\n\nBet placed successfully!\nBet ID: ${bet.betId || bet.id}\nStake: ${formatCurrency(totalStake)}\nOdds: ${formatOdds(totalOdds)}\nPossible Payout: ${formatCurrency(totalPayout)}`);
+    } catch (err) {
+      alert(err.message || "Failed to place bet.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Place Bet";
     }
   });
 }

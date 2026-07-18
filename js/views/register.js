@@ -12,10 +12,10 @@ export function renderRegisterView() {
         <div class="auth-header">
           <div class="brand-logo" style="margin: 0 auto; width: 44px; height: 44px; font-size: 1.3rem;">P</div>
           <h2 class="auth-title">Create Account</h2>
-          <p class="auth-subtitle">Register to BetPulse with your Safaricom or Airtel Kenyan number to get KES 1,000 Signup Bonus</p>
+          <p class="auth-subtitle">Register to BetPulse with your Safaricom or Airtel Kenyan number</p>
         </div>
 
-        <div class="auth-error-badge" id="register-error-badge"></div>
+        <div class="auth-error-badge" id="register-error-badge" style="display:none; background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#ef4444; padding:10px; border-radius:var(--radius-sm); font-size:0.85rem; margin-bottom:14px; text-align:center;"></div>
 
         <form id="register-form" onsubmit="return false;">
           
@@ -81,6 +81,7 @@ export function renderRegisterView() {
   const confirmPasswordInput = document.getElementById('register-confirm-password-val');
   const termsCheckbox = document.getElementById('register-terms-agree');
   const errorBadge = document.getElementById('register-error-badge');
+  const submitBtn = document.getElementById('register-submit-btn');
   
   const togglePwBtn = document.getElementById('register-pw-toggle-btn');
   const toggleConfirmPwBtn = document.getElementById('register-confirm-pw-toggle-btn');
@@ -105,56 +106,60 @@ export function renderRegisterView() {
   });
 
   // Handle Form Submission
-  document.getElementById('register-form')?.addEventListener('submit', (e) => {
+  document.getElementById('register-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     errorBadge.style.display = 'none';
 
-    const phone = phoneInput.value;
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
+    const phone = phoneInput.value.trim();
+    const password = passwordInput.value.trim();
+    const confirmPassword = confirmPasswordInput.value.trim();
     const termsChecked = termsCheckbox.checked;
 
-    // Kenyan phone prefix check
     if (phone.length !== 9 || !(/^[17]\d{8}$/.test(phone))) {
       errorBadge.textContent = "Please enter a valid 9-digit Kenyan phone number starting with 7 or 1.";
       errorBadge.style.display = 'block';
       return;
     }
 
-    // Password strength check
-    if (password.length < 6) {
-      errorBadge.textContent = "Password must be at least 6 characters long.";
+    if (password.length < 4) {
+      errorBadge.textContent = "Password must be at least 4 characters long.";
       errorBadge.style.display = 'block';
       return;
     }
 
-    // Passwords mismatch check
     if (password !== confirmPassword) {
       errorBadge.textContent = "Passwords do not match. Please verify.";
       errorBadge.style.display = 'block';
       return;
     }
 
-    // Terms verification check
     if (!termsChecked) {
       errorBadge.textContent = "You must agree to the Terms & Conditions to proceed.";
       errorBadge.style.display = 'block';
       return;
     }
 
-    // Success registration mock
-    state.registerUser(phone, password);
-    alert("Registration Successful!\n\nWelcome to BetPulse. Your promotional KES 1,000 sign-up bonus has been credited.");
-    state.setPage('home');
+    try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Registering...";
+
+      await state.register(phone, password);
+      alert("Registration Successful!\n\nWelcome to BetPulse. Your betting account has been created.");
+      state.setPage('home');
+    } catch (err) {
+      errorBadge.textContent = err.message || "Registration failed.";
+      errorBadge.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Register Account";
+    }
   });
 
-  // Terms and Conditions pop up link click
   document.getElementById('auth-terms-popup-link')?.addEventListener('click', (e) => {
     e.preventDefault();
-    alert("Terms & Conditions:\n\n1. All registrants must be 18 years or older.\n2. One registration account per mobile user.\n3. Transactions are governed by BCLB licensing policies.");
+    alert("Terms & Conditions:\n\n1. All registrants must be 18 years or older.\n2. One registration account per mobile user.\n3. Minimum Deposit KES 200 | Minimum Withdrawal KES 200.");
   });
 
-  // Login link redirection
   document.getElementById('register-to-login-link')?.addEventListener('click', (e) => {
     e.preventDefault();
     state.setPage('login');

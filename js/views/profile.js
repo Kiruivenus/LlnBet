@@ -8,8 +8,8 @@ export function renderProfileView() {
   const user = state.data.user;
 
   // Track deposit and withdrawal values locally in view state
-  let depositAmount = 1000;
-  let withdrawAmount = 500;
+  let depositAmount = 200;
+  let withdrawAmount = 200;
 
   const drawProfile = () => {
     container.innerHTML = `
@@ -19,8 +19,8 @@ export function renderProfileView() {
           ${getMaterialIcon('user', 'large-profile-icon')}
         </div>
         <div>
-          <h2 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700;">(254) 794-424486</h2>
-          <p style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.05em; margin-top:2px;">BetPulse Verified Profile</p>
+          <h2 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700;">+${user?.phone || '254700000000'}</h2>
+          <p style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.05em; margin-top:2px;">${user?.name || 'BetPulse Verified Player'}</p>
         </div>
       </div>
 
@@ -542,14 +542,21 @@ export function renderProfileView() {
       setTimeout(pollStatus, 2000);
     };
 
-    const triggerTransactionFlow = (type, amount) => {
-      if (type === 'withdraw' && amount > user.balance) {
-        alert("Insufficient balance for requested withdrawal.");
-        return;
-      }
-      if (amount <= 0) {
-        alert("Please enter a valid amount.");
-        return;
+    const triggerTransactionFlow = async (type, amount) => {
+      if (type === 'deposit') {
+        if (amount < 200) {
+          alert("Minimum deposit amount is KES 200.");
+          return;
+        }
+      } else {
+        if (amount < 200) {
+          alert("Minimum withdrawal amount is KES 200.");
+          return;
+        }
+        if (amount > (user?.balance || 0)) {
+          alert(`Insufficient balance for withdrawal. Available: KES ${(user?.balance || 0).toFixed(2)}`);
+          return;
+        }
       }
 
       modal.style.display = 'flex';
@@ -557,15 +564,13 @@ export function renderProfileView() {
       if (type === 'deposit') {
         renderDepositState1(amount);
 
-        // Fetch STK Push API from Express server backend
         fetch('/api/stkpush', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phone: user.phone || '0794424486',
-            amount: amount
+            phone: user?.phone || '',
+            amount: amount,
+            userId: user?.id
           })
         })
         .then(response => {
@@ -576,10 +581,8 @@ export function renderProfileView() {
         })
         .then(data => {
           if (data.simulated) {
-            // Keys are not configured in .env - load mock STK PIN dialog overlay
             renderDepositState2(amount);
           } else {
-            // Real Sandbox/Live STK Push successfully initiated
             renderDepositStatePolling(amount, data.CheckoutRequestID);
           }
         })
@@ -588,15 +591,12 @@ export function renderProfileView() {
         });
       } else {
         renderWithdrawalState1(amount);
-        setTimeout(() => {
-          const success = state.withdraw(amount, 'M-Pesa Mobile');
-          const referenceCode = `WT-${Math.floor(Math.random() * 900000 + 100000)}`;
-          if (success) {
-            renderWithdrawalSuccess(amount, referenceCode);
-          } else {
-            renderWithdrawalFailure("Authorization failed.");
-          }
-        }, 2000);
+        try {
+          const res = await state.withdraw(amount, user?.phone);
+          renderWithdrawalSuccess(amount, res.reference || `WD-${Math.floor(Math.random()*900000+100000)}`);
+        } catch (err) {
+          renderWithdrawalFailure(err.message || "Withdrawal failed.");
+        }
       }
     };
 

@@ -1,61 +1,112 @@
-// Global Application State
+// Global Application State (MongoDB & JWT Session Integration)
+
 class State {
   constructor() {
     this.data = {
-      isLoggedIn: true,
-      user: {
-        username: "PatrikBetson",
-        email: "patrik.betson@gmail.com",
-        balance: 150000.00, // KES 150,000.00
-        kycVerified: true,
-        currency: "KES"
-      },
+      isLoggedIn: false,
+      token: localStorage.getItem('betpulse_token') || null,
+      user: null, // { id, phone, name, balance, bonusBalance, verified }
       betslip: {
-        mode: 'single', // 'single', 'multi', 'system'
-        selections: [], // { id, matchId, matchName, team, market, odds, selectedOddIndex }
-        stakes: {} // matchId/selectionId -> stake value
+        mode: 'single', // 'single', 'multi'
+        selections: [], // { id, matchId, matchName, team, market, odds }
+        stakes: {}
       },
-      currentPage: 'home', // 'home', 'live', 'match-details', 'wallet', 'promotions', 'dashboard'
+      currentPage: 'home',
       selectedMatchId: null,
       searchQuery: '',
-      placedBets: [
-        {
-          id: "TX-7821A",
-          date: "2026-07-17 19:40",
-          type: "Multi (2 Fold)",
-          stake: 5000.00,
-          odds: 3.42,
-          winnings: 17100.00,
-          status: "won",
-          selections: [
-            { team: "Arsenal", market: "Match Result (1)", odds: 1.80, matchName: "Arsenal vs Chelsea" },
-            { team: "Real Madrid", market: "Match Result (1)", odds: 1.90, matchName: "Real Madrid vs Barcelona" }
-          ]
-        },
-        {
-          id: "TX-9902B",
-          date: "2026-07-18 10:15",
-          type: "Single",
-          stake: 1000.00,
-          odds: 2.10,
-          winnings: 0.00,
-          status: "active",
-          selections: [
-            { team: "Lakers", market: "Money Line (1)", odds: 2.10, matchName: "Lakers vs Celtics" }
-          ]
-        }
-      ],
-      transactions: [
-        { id: "TXN-887", type: "Deposit", date: "2026-07-17 14:30", amount: 5000.00, method: "M-Pesa Mobile", status: "success" },
-        { id: "TXN-886", type: "Deposit", date: "2026-07-16 09:12", amount: 15000.00, method: "M-Pesa Mobile", status: "success" }
-      ],
+      placedBets: [],
+      transactions: [],
+      notifications: [],
       activeSport: 'football'
     };
 
     this.listeners = {};
+    this.initSession();
   }
 
-  // Subscribe to changes in specific state keys
+  // Restore authenticated user session from MongoDB on boot
+  async initSession() {
+    const token = localStorage.getItem('betpulse_token');
+    if (!token) {
+      this.data.isLoggedIn = false;
+      this.data.user = null;
+      this.notify('user');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        this.data.isLoggedIn = true;
+        this.data.token = token;
+        this.data.user = data.user;
+        this.notify('user');
+        this.fetchUserData();
+      } else {
+        // Token invalid or expired
+        this.logout();
+      }
+    } catch (e) {
+      console.warn("Session restore error:", e);
+    }
+  }
+
+  // Fetch user bets, transactions, and notifications from MongoDB
+  async fetchUserData() {
+    if (!this.data.isLoggedIn || !this.data.token) return;
+
+    try {
+      const headers = { 'Authorization': `Bearer ${this.data.token}` };
+
+      // Fetch bets
+      fetch('/api/bets/my-bets', { headers })
+        .then(r => r.ok ? r.json() : [])
+        .then(bets => {
+          this.data.placedBets = bets;
+          this.notify('placedBets');
+        }).catch(() => {});
+
+      // Fetch transactions
+      fetch('/api/wallet/transactions', { headers })
+        .then(r => r.ok ? r.json() : [])
+        .then(txs => {
+          this.data.transactions = txs;
+          this.notify('transactions');
+        }).catch(() => {});
+
+      // Fetch notifications
+      fetch('/api/notifications', { headers })
+        .then(r => r.ok ? r.json() : [])
+        .then(notifs => {
+          this.data.notifications = notifs;
+          this.notify('notifications');
+        }).catch(() => {});
+
+    } catch (e) {
+      console.warn("Error fetching user MongoDB records:", e);
+    }
+  }
+
+  // Refresh user profile & balance from MongoDB
+  async refreshUserData() {
+    if (!this.data.token) return;
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${this.data.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        this.data.user = data.user;
+        this.notify('user');
+      }
+    } catch (e) {}
+  }
+
+  // Subscribe to state changes
   subscribe(key, callback) {
     if (!this.listeners[key]) {
       this.listeners[key] = [];
@@ -63,7 +114,7 @@ class State {
     this.listeners[key].push(callback);
   }
 
-  // Notify all subscribers of a key
+  // Notify subscribers
   notify(key) {
     if (this.listeners[key]) {
       this.listeners[key].forEach(callback => callback(this.data[key], this.data));
@@ -73,7 +124,7 @@ class State {
     }
   }
 
-  // Set page and trigger navigation updates
+  // Navigation page switcher
   setPage(page, matchId = null) {
     this.data.currentPage = page;
     this.data.selectedMatchId = matchId;
@@ -81,7 +132,7 @@ class State {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Add a betting selection
+  // Betslip selections management
   addSelection(selection) {
     const existingIndex = this.data.betslip.selections.findIndex(s => s.id === selection.id);
     if (existingIndex > -1) {
@@ -93,213 +144,172 @@ class State {
     this.data.betslip.selections.push(selection);
     
     if (!this.data.betslip.stakes[selection.id]) {
-      this.data.betslip.stakes[selection.id] = 1000; // Default KES 1,000 stake
+      this.data.betslip.stakes[selection.id] = 200; // Default KES 200 stake
     }
 
     this.notify('betslip');
   }
 
-  // Remove a betting selection
   removeSelection(selectionId) {
     this.data.betslip.selections = this.data.betslip.selections.filter(s => s.id !== selectionId);
     delete this.data.betslip.stakes[selectionId];
     this.notify('betslip');
   }
 
-  // Update odds of an existing selection
-  updateSelectionOdds(selectionId, newOdds) {
-    const selection = this.data.betslip.selections.find(s => s.id === selectionId);
-    if (selection) {
-      selection.odds = newOdds;
-      this.notify('betslip');
-    }
-  }
-
-  // Clear all selections
   clearBetslip() {
     this.data.betslip.selections = [];
     this.data.betslip.stakes = {};
     this.notify('betslip');
   }
 
-  // Set betslip mode
   setBetslipMode(mode) {
     this.data.betslip.mode = mode;
     this.notify('betslip');
   }
 
-  // Update selection stake
   setSelectionStake(selectionId, stake) {
     this.data.betslip.stakes[selectionId] = parseFloat(stake) || 0;
     this.notify('betslip');
   }
 
-  // Deposit funds
-  deposit(amount, method) {
-    const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0) return false;
-    
-    this.data.user.balance += amt;
-    
-    const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    this.data.transactions.unshift({
-      id: "TXN-" + Math.floor(Math.random() * 900 + 100),
-      type: "Deposit",
-      date: dateStr,
-      amount: amt,
-      method: method,
-      status: "success"
+  // User Login Action against MongoDB
+  async login(phone, password) {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
     });
 
-    this.notify('user');
-    this.notify('transactions');
-    return true;
-  }
-
-  // Withdraw funds
-  withdraw(amount, method) {
-    const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0 || amt > this.data.user.balance) return false;
-
-    this.data.user.balance -= amt;
-
-    const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    this.data.transactions.unshift({
-      id: "TXN-" + Math.floor(Math.random() * 900 + 100),
-      type: "Withdrawal",
-      date: dateStr,
-      amount: amt,
-      method: method,
-      status: "success"
-    });
-
-    this.notify('user');
-    this.notify('transactions');
-    return true;
-  }
-
-  // Place bet
-  placeBet(totalStake) {
-    const amt = parseFloat(totalStake);
-    if (isNaN(amt) || amt <= 0 || amt > this.data.user.balance || this.data.betslip.selections.length === 0) {
-      return false;
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Login failed.");
     }
 
-    this.data.user.balance -= amt;
+    localStorage.setItem('betpulse_token', data.token);
+    this.data.isLoggedIn = true;
+    this.data.token = data.token;
+    this.data.user = data.user;
 
-    const selectionsCopy = JSON.parse(JSON.stringify(this.data.betslip.selections));
-    const isMulti = this.data.betslip.mode === 'multi' && selectionsCopy.length > 1;
-    
-    let combinedOdds = 1.0;
-    selectionsCopy.forEach(s => {
-      combinedOdds *= s.odds;
+    this.notify('user');
+    this.fetchUserData();
+    return data;
+  }
+
+  // User Registration Action against MongoDB
+  async register(phone, password, name) {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password, name })
     });
-    
-    const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    const newBet = {
-      id: "TX-" + Math.floor(Math.random() * 9000 + 1000) + "K",
-      date: dateStr,
-      type: isMulti ? `Multi (${selectionsCopy.length} Fold)` : "Single",
-      stake: amt,
-      odds: isMulti ? parseFloat(combinedOdds.toFixed(2)) : selectionsCopy[0].odds,
-      winnings: 0.00,
-      status: "active",
-      selections: selectionsCopy.map(s => ({
-        team: s.team,
-        market: s.market,
-        odds: s.odds,
-        matchName: s.matchName
-      }))
-    };
 
-    this.data.placedBets.unshift(newBet);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Registration failed.");
+    }
+
+    localStorage.setItem('betpulse_token', data.token);
+    this.data.isLoggedIn = true;
+    this.data.token = data.token;
+    this.data.user = data.user;
+
+    this.notify('user');
+    this.fetchUserData();
+    return data;
+  }
+
+  // User Logout Action
+  logout() {
+    localStorage.removeItem('betpulse_token');
+    this.data.isLoggedIn = false;
+    this.data.token = null;
+    this.data.user = null;
+    this.data.placedBets = [];
+    this.data.transactions = [];
+    this.data.notifications = [];
     this.clearBetslip();
     this.notify('user');
-    this.notify('placedBets');
-    return newBet;
+    this.setPage('home');
   }
 
-  // Cash out a bet early
-  cashOutBet(betId, cashOutValue) {
-    const bet = this.data.placedBets.find(b => b.id === betId);
-    if (bet && bet.status === 'active') {
-      bet.status = 'won';
-      bet.winnings = cashOutValue;
-      this.data.user.balance += cashOutValue;
-
-      const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-      this.data.transactions.unshift({
-        id: "TXN-" + Math.floor(Math.random() * 900 + 100),
-        type: "Cashout",
-        date: dateStr,
-        amount: cashOutValue,
-        method: "Bet Cashout",
-        status: "success"
-      });
-
-      this.notify('user');
-      this.notify('placedBets');
-      this.notify('transactions');
-      return true;
+  // Real Bet Placement against MongoDB (Deducts real balance)
+  async placeBet(stake, totalOdds, possiblePayout) {
+    if (!this.data.isLoggedIn || !this.data.token) {
+      throw new Error("Please login to place bets.");
     }
-    return false;
+
+    const res = await fetch('/api/bets/place', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.data.token}`
+      },
+      body: JSON.stringify({
+        selections: this.data.betslip.selections,
+        stake: Number(stake),
+        totalOdds: Number(totalOdds),
+        possiblePayout: Number(possiblePayout)
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Bet placement failed.");
+    }
+
+    // Update real balance
+    if (this.data.user) {
+      this.data.user.balance = data.newBalance;
+    }
+
+    this.clearBetslip();
+    this.notify('user');
+    this.fetchUserData();
+    return data.bet;
   }
 
-  // Select sport category
+  // Real Withdrawal Request against MongoDB (MIN KES 200)
+  async withdraw(amount, phone) {
+    if (!this.data.isLoggedIn || !this.data.token) {
+      throw new Error("Please login to request a withdrawal.");
+    }
+
+    const numericAmount = Number(amount);
+    if (numericAmount < 200) {
+      throw new Error("Minimum withdrawal amount is KES 200.");
+    }
+
+    const res = await fetch('/api/wallet/withdraw', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.data.token}`
+      },
+      body: JSON.stringify({ amount: numericAmount, phone })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Withdrawal failed.");
+    }
+
+    if (this.data.user) {
+      this.data.user.balance = data.newBalance;
+    }
+
+    this.notify('user');
+    this.fetchUserData();
+    return data;
+  }
+
   setSport(sportKey) {
     this.data.activeSport = sportKey;
     this.notify('activeSport');
   }
 
-  // Set Search Query
   setSearch(query) {
     this.data.searchQuery = query;
     this.notify('searchQuery');
-  }
-
-  // User login authentication mock
-  loginUser(phone, password) {
-    this.data.isLoggedIn = true;
-    this.data.user = {
-      username: "User_" + phone.substring(phone.length - 4),
-      email: "user_" + phone.substring(phone.length - 4) + "@betpulse.com",
-      balance: 150000.00, // mock logged in wallet balance
-      kycVerified: true,
-      currency: "KES"
-    };
-    this.notify('user');
-    this.notify('currentPage');
-    return true;
-  }
-
-  // User signup registration mock
-  registerUser(phone, password) {
-    this.data.isLoggedIn = true;
-    this.data.user = {
-      username: "User_" + phone.substring(phone.length - 4),
-      email: "user_" + phone.substring(phone.length - 4) + "@betpulse.com",
-      balance: 1000.00, // KES 1,000 sign-up promotional bonus balance!
-      kycVerified: true,
-      currency: "KES"
-    };
-    // Initialize default transaction logs
-    this.data.transactions = [
-      { id: "TXN-" + Math.floor(Math.random() * 900 + 100), type: "Promo Bonus", date: new Date().toISOString().replace('T', ' ').substring(0, 16), amount: 1000.00, method: "Sign Up Promo", status: "success" }
-    ];
-    this.data.placedBets = []; // Reset bet slip history logs
-    this.notify('user');
-    this.notify('transactions');
-    this.notify('currentPage');
-    return true;
-  }
-
-  // User logout session reset
-  logoutUser() {
-    this.data.isLoggedIn = false;
-    this.data.user = null;
-    this.clearBetslip();
-    this.notify('user');
-    this.notify('currentPage');
   }
 }
 

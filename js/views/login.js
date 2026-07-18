@@ -15,7 +15,7 @@ export function renderLoginView() {
           <p class="auth-subtitle">Enter your Kenyan mobile number and password to access your betting account</p>
         </div>
 
-        <div class="auth-error-badge" id="login-error-badge"></div>
+        <div class="auth-error-badge" id="login-error-badge" style="display:none; background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#ef4444; padding:10px; border-radius:var(--radius-sm); font-size:0.85rem; margin-bottom:14px; text-align:center;"></div>
 
         <form id="login-form" onsubmit="return false;">
           
@@ -60,6 +60,7 @@ export function renderLoginView() {
   const passwordInput = document.getElementById('login-password-val');
   const errorBadge = document.getElementById('login-error-badge');
   const togglePwBtn = document.getElementById('login-pw-toggle-btn');
+  const submitBtn = document.getElementById('login-submit-btn');
 
   // Toggle password visibility
   togglePwBtn?.addEventListener('click', () => {
@@ -74,30 +75,39 @@ export function renderLoginView() {
   });
 
   // Handle Form Submission
-  document.getElementById('login-form')?.addEventListener('submit', (e) => {
+  document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     errorBadge.style.display = 'none';
 
-    const phone = phoneInput.value;
-    const password = passwordInput.value;
+    const phone = phoneInput.value.trim();
+    const password = passwordInput.value.trim();
 
-    // Kenyan phone prefix check (starts with 7 or 1, length exactly 9 digits)
     if (phone.length !== 9 || !(/^[17]\d{8}$/.test(phone))) {
       errorBadge.textContent = "Please enter a valid 9-digit Kenyan phone number starting with 7 or 1.";
       errorBadge.style.display = 'block';
       return;
     }
 
-    if (password.trim().length === 0) {
+    if (password.length === 0) {
       errorBadge.textContent = "Please enter your password.";
       errorBadge.style.display = 'block';
       return;
     }
 
-    // Success login mock
-    state.loginUser(phone, password);
-    alert("Welcome back! Login successful.");
-    state.setPage('home');
+    try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Authenticating...";
+
+      await state.login(phone, password);
+      alert("Welcome back to BetPulse! Login successful.");
+      state.setPage('home');
+    } catch (err) {
+      errorBadge.textContent = err.message || "Invalid login credentials.";
+      errorBadge.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Login";
+    }
   });
 
   // Register link redirection
