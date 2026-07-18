@@ -785,30 +785,39 @@ app.post('/api/bets/place', authenticateToken, async (req, res) => {
 // Endpoint: Fetch User's Bets
 app.get('/api/bets/my-bets', authenticateToken, async (req, res) => {
   try {
-    const bets = await Bet.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
-    return res.json(bets);
+    if (mongoose.connection.readyState === 1) {
+      const bets = await Bet.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
+      return res.json(bets);
+    }
+    return res.json([]);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.json([]);
   }
 });
 
 // Endpoint: Fetch User's Transaction History
 app.get('/api/wallet/transactions', authenticateToken, async (req, res) => {
   try {
-    const txs = await Transaction.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
-    return res.json(txs);
+    if (mongoose.connection.readyState === 1) {
+      const txs = await Transaction.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
+      return res.json(txs);
+    }
+    return res.json([]);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.json([]);
   }
 });
 
 // Endpoint: Fetch User's Notifications
 app.get('/api/notifications', authenticateToken, async (req, res) => {
   try {
-    const notifs = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
-    return res.json(notifs);
+    if (mongoose.connection.readyState === 1) {
+      const notifs = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
+      return res.json(notifs);
+    }
+    return res.json([]);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.json([]);
   }
 });
 
