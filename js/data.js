@@ -1,11 +1,11 @@
 export const sportsList = [
-  { id: 'football', name: 'Football', icon: 'soccer', count: 18 },
-  { id: 'basketball', name: 'Basketball', icon: 'basketball', count: 12 },
-  { id: 'tennis', name: 'Tennis', icon: 'tennis', count: 9 },
-  { id: 'rugby', name: 'Rugby', icon: 'rugby', count: 4 },
-  { id: 'cricket', name: 'Cricket', icon: 'cricket', count: 7 },
-  { id: 'ice_hockey', name: 'Ice Hockey', icon: 'ice_hockey', count: 6 },
-  { id: 'esports', name: 'Esports', icon: 'esports', count: 14 }
+  { id: 'football', name: 'Football', icon: 'soccer', count: 0 },
+  { id: 'basketball', name: 'Basketball', icon: 'basketball', count: 0 },
+  { id: 'tennis', name: 'Tennis', icon: 'tennis', count: 0 },
+  { id: 'rugby', name: 'Rugby', icon: 'rugby', count: 0 },
+  { id: 'cricket', name: 'Cricket', icon: 'cricket', count: 0 },
+  { id: 'ice_hockey', name: 'Ice Hockey', icon: 'ice_hockey', count: 0 },
+  { id: 'esports', name: 'Esports', icon: 'esports', count: 0 }
 ];
 
 export const promotionsList = [
@@ -39,403 +39,252 @@ export const promotionsList = [
   }
 ];
 
-export const matchesList = [
-  // FOOTBALL Matches
-  {
-    id: 'fb_1',
-    sport: 'football',
-    league: 'Premier League',
-    country: 'England',
+// Helper structures for generating matches dynamically
+const sportLeagues = {
+  football: { name: 'Premier League', country: 'England', venue: 'Emirates Stadium, London' },
+  basketball: { name: 'NBA', country: 'USA', venue: 'Crypto.com Arena, Los Angeles' },
+  tennis: { name: 'Wimbledon', country: 'Great Britain', venue: 'Centre Court, London' },
+  rugby: { name: 'Super Rugby', country: 'New Zealand', venue: 'Eden Park, Auckland' },
+  cricket: { name: 'T20 World Cup', country: 'India', venue: 'Wankhede Stadium, Mumbai' },
+  ice_hockey: { name: 'NHL Playoffs', country: 'Canada', venue: 'Scotiabank Arena, Toronto' },
+  esports: { name: 'LCK Summer', country: 'South Korea', venue: 'LoL Park, Seoul' }
+};
+
+const sportTeams = {
+  football: [
+    ['Arsenal', 'Chelsea'],
+    ['Liverpool', 'Man City'],
+    ['Man United', 'Tottenham'],
+    ['Real Madrid', 'Barcelona'],
+    ['Bayern Munich', 'Dortmund'],
+    ['Juventus', 'Inter Milan'],
+    ['AC Milan', 'Napoli'],
+    ['PSG', 'Marseille']
+  ],
+  basketball: [
+    ['Lakers', 'Celtics'],
+    ['Warriors', 'Suns'],
+    ['Bucks', 'Nuggets'],
+    ['Clippers', 'Mavericks'],
+    ['Heat', 'Sixers'],
+    ['Hawks', 'Pacers']
+  ],
+  tennis: [
+    ['Jannik Sinner', 'Carlos Alcaraz'],
+    ['Novak Djokovic', 'Daniil Medvedev'],
+    ['Alexander Zverev', 'Holger Rune'],
+    ['Taylor Fritz', 'Stefanos Tsitsipas']
+  ],
+  rugby: [
+    ['All Blacks', 'Springboks'],
+    ['Wallabies', 'England Rugby'],
+    ['Ireland', 'Wales'],
+    ['France', 'Scotland']
+  ],
+  cricket: [
+    ['Mumbai Indians', 'Chennai Super Kings'],
+    ['Royal Challengers', 'Kolkata Knight Riders'],
+    ['Delhi Capitals', 'Rajasthan Royals'],
+    ['Sunrisers', 'Gujarat Titans']
+  ],
+  ice_hockey: [
+    ['Bruins', 'Maple Leafs'],
+    ['Rangers', 'Devils'],
+    ['Golden Knights', 'Avalanche'],
+    ['Blackhawks', 'Red Wings']
+  ],
+  esports: [
+    ['T1', 'Gen.G'],
+    ['Fnatic', 'G2 Esports'],
+    ['Team Liquid', 'Cloud9'],
+    ['Sentinels', 'LOUD']
+  ]
+};
+
+// Formatting date objects into standard text indicators
+function formatKickoff(dateObj) {
+  const now = new Date();
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  const timeStr = `${hours}:${minutes}`;
+
+  if (dateObj.toDateString() === now.toDateString()) {
+    return `Today, ${timeStr}`;
+  }
+  
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (dateObj.toDateString() === tomorrow.toDateString()) {
+    return `Tomorrow, ${timeStr}`;
+  }
+
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const dayName = days[dateObj.getDay()];
+  const dateNum = dateObj.getDate();
+  const monthName = months[dateObj.getMonth()];
+  
+  return `${dayName}, ${dateNum} ${monthName}, ${timeStr}`;
+}
+
+// Generate the master matches list dynamically
+export const matchesList = [];
+
+// Helper: Seed random odds value
+function getRandomOdds(min = 1.20, max = 8.00) {
+  return parseFloat((Math.random() * (max - min) + min).toFixed(2));
+}
+
+// Step 1: Generate 1 active live match for EVERY sport (7 live matches)
+Object.keys(sportTeams).forEach((sport, index) => {
+  const teamsPair = sportTeams[sport][index % sportTeams[sport].length];
+  const leagueInfo = sportLeagues[sport];
+  const matchId = `live_${sport}_${index}`;
+
+  let timer = '40';
+  let scores = { home: 1, away: 0 };
+
+  if (sport === 'football') {
+    timer = '54';
+    scores = { home: 2, away: 1 };
+  } else if (sport === 'basketball') {
+    timer = 'Q3 - 08:12';
+    scores = { home: 78, away: 74 };
+  } else if (sport === 'tennis') {
+    timer = 'Set 3, Game 4';
+    scores = { home: '6, 4, 3', away: '4, 6, 1' };
+  } else if (sport === 'rugby') {
+    timer = '62';
+    scores = { home: 24, away: 18 };
+  } else if (sport === 'cricket') {
+    timer = '12.4 Overs';
+    scores = { home: 112, away: 98 };
+  } else if (sport === 'ice_hockey') {
+    timer = 'P2 - 14:22';
+    scores = { home: 3, away: 2 };
+  } else if (sport === 'esports') {
+    timer = 'Game 2 - 19:40';
+    scores = { home: 1, away: 0 };
+  }
+
+  // Common markets mapping
+  const markets = [
+    {
+      name: sport === 'football' || sport === 'rugby' || sport === 'ice_hockey' ? 'Match Outcome (1X2)' : 'Money Line (Winner)',
+      odds: [
+        { selectionId: `${matchId}_1`, label: `1 (${teamsPair[0]})`, value: getRandomOdds(1.30, 3.50) },
+        ...(sport === 'football' || sport === 'rugby' || sport === 'ice_hockey' ? [
+          { selectionId: `${matchId}_x`, label: 'X (Draw)', value: getRandomOdds(2.50, 4.50) }
+        ] : []),
+        { selectionId: `${matchId}_2`, label: `2 (${teamsPair[1]})`, value: getRandomOdds(1.80, 5.00) }
+      ]
+    }
+  ];
+
+  matchesList.push({
+    id: matchId,
+    sport,
+    league: leagueInfo.name,
+    country: leagueInfo.country,
     isLive: true,
-    timer: '54',
-    scores: { home: 2, away: 1 },
+    timer,
+    scores,
     teams: {
-      home: { name: 'Arsenal' },
-      away: { name: 'Chelsea' }
+      home: { name: teamsPair[0] },
+      away: { name: teamsPair[1] }
     },
-    venue: 'Emirates Stadium, London',
+    venue: leagueInfo.venue,
     stats: {
-      possession: { home: 58, away: 42 },
-      shots: { home: 11, away: 7 },
-      shotsOnTarget: { home: 5, away: 3 },
-      corners: { home: 6, away: 3 },
+      possession: { home: 54, away: 46 },
+      shots: { home: 11, away: 8 },
+      shotsOnTarget: { home: 5, away: 4 },
+      corners: { home: 5, away: 3 },
       yellowCards: { home: 1, away: 2 },
       redCards: { home: 0, away: 0 }
     },
     lineups: {
-      home: ['Raya (GK)', 'White', 'Saliba', 'Gabriel', 'Timber', 'Odegaard (C)', 'Rice', 'Merino', 'Saka', 'Havertz', 'Martinelli'],
-      away: ['Sanchez (GK)', 'Gusto', 'Fofana', 'Colwill', 'Cucurella', 'Caicedo', 'Enzo (C)', 'Madueke', 'Palmer', 'Neto', 'Jackson']
+      home: ['Team Alpha Lineup'],
+      away: ['Team Beta Lineup']
     },
     h2h: [
-      { date: '2025-11-23', score: 'Arsenal 3 - 1 Chelsea', event: 'Premier League' },
-      { date: '2025-04-23', score: 'Arsenal 5 - 0 Chelsea', event: 'Premier League' },
-      { date: '2024-10-21', score: 'Chelsea 2 - 2 Arsenal', event: 'Premier League' }
+      { date: '2025-11-23', score: `${teamsPair[0]} 3 - 1 ${teamsPair[1]}`, event: leagueInfo.name }
     ],
-    markets: [
-      {
-        name: 'Match Outcome (1X2)',
-        odds: [
-          { selectionId: 'fb_1_1', label: '1 (Arsenal)', value: 1.45 },
-          { selectionId: 'fb_1_x', label: 'X (Draw)', value: 3.80 },
-          { selectionId: 'fb_1_2', label: '2 (Chelsea)', value: 6.20 }
-        ]
-      },
-      {
-        name: 'Double Chance',
-        odds: [
-          { selectionId: 'fb_1_dc1x', label: '1X (Arsenal or Draw)', value: 1.10 },
-          { selectionId: 'fb_1_dc12', label: '12 (Arsenal or Chelsea)', value: 1.25 },
-          { selectionId: 'fb_1_dcx2', label: 'X2 (Draw or Chelsea)', value: 2.30 }
-        ]
-      },
-      {
-        name: 'Total Goals (Over/Under 2.5)',
-        odds: [
-          { selectionId: 'fb_1_o25', label: 'Over 2.5', value: 1.70 },
-          { selectionId: 'fb_1_u25', label: 'Under 2.5', value: 2.05 }
-        ]
-      },
-      {
-        name: 'Both Teams to Score',
-        odds: [
-          { selectionId: 'fb_1_btts_yes', label: 'Yes', value: 1.65 },
-          { selectionId: 'fb_1_btts_no', label: 'No', value: 2.15 }
-        ]
-      },
-      {
-        name: 'Draw No Bet',
-        odds: [
-          { selectionId: 'fb_1_dnb1', label: '1 (Arsenal)', value: 1.15 },
-          { selectionId: 'fb_1_dnb2', label: '2 (Chelsea)', value: 4.50 }
-        ]
-      },
-      {
-        name: 'Handicap (0:1)',
-        odds: [
-          { selectionId: 'fb_1_hc1', label: '1 (Arsenal -1)', value: 2.10 },
-          { selectionId: 'fb_1_hcx', label: 'X (Handicap Draw)', value: 3.60 },
-          { selectionId: 'fb_1_hc2', label: '2 (Chelsea +1)', value: 2.80 }
-        ]
-      },
-      {
-        name: 'Correct Score',
-        odds: [
-          { selectionId: 'fb_1_cs10', label: '1-0 (Arsenal)', value: 6.50 },
-          { selectionId: 'fb_1_cs20', label: '2-0 (Arsenal)', value: 7.00 },
-          { selectionId: 'fb_1_cs21', label: '2-1 (Arsenal)', value: 8.50 },
-          { selectionId: 'fb_1_cs11', label: '1-1 (Draw)', value: 7.50 },
-          { selectionId: 'fb_1_cs01', label: '0-1 (Chelsea)', value: 15.00 }
-        ]
-      },
-      {
-        name: 'Odd/Even Goals',
-        odds: [
-          { selectionId: 'fb_1_odd', label: 'Odd', value: 1.95 },
-          { selectionId: 'fb_1_even', label: 'Even', value: 1.85 }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'fb_2',
-    sport: 'football',
-    league: 'La Liga',
-    country: 'Spain',
-    isLive: true,
-    timer: '21',
-    scores: { home: 0, away: 0 },
-    teams: {
-      home: { name: 'Real Madrid' },
-      away: { name: 'Barcelona' }
-    },
-    venue: 'Santiago Bernabeu, Madrid',
-    stats: {
-      possession: { home: 47, away: 53 },
-      shots: { home: 4, away: 5 },
-      shotsOnTarget: { home: 2, away: 2 },
-      corners: { home: 1, away: 2 },
-      yellowCards: { home: 0, away: 1 },
-      redCards: { home: 0, away: 0 }
-    },
-    lineups: {
-      home: ['Courtois (GK)', 'Carvajal', 'Militao', 'Rudiger', 'Mendy', 'Valverde', 'Tchouameni', 'Bellingham', 'Rodrygo', 'Mbappe', 'Vinicius Jr.'],
-      away: ['Ter Stegen (GK)', 'Kounde', 'Cubarsi', 'Martinez', 'Balde', 'Casado', 'Pedri', 'Yamal', 'Olmo', 'Raphinha', 'Lewandowski']
-    },
-    h2h: [
-      { date: '2025-10-26', score: 'Real Madrid 0 - 4 Barcelona', event: 'La Liga' },
-      { date: '2025-04-21', score: 'Real Madrid 3 - 2 Barcelona', event: 'La Liga' },
-      { date: '2024-10-28', score: 'Barcelona 1 - 2 Real Madrid', event: 'La Liga' }
-    ],
-    markets: [
-      {
-        name: 'Match Outcome (1X2)',
-        odds: [
-          { selectionId: 'fb_2_1', label: '1 (Real Madrid)', value: 2.10 },
-          { selectionId: 'fb_2_x', label: 'X (Draw)', value: 3.40 },
-          { selectionId: 'fb_2_2', label: '2 (Barcelona)', value: 3.10 }
-        ]
-      },
-      {
-        name: 'Double Chance',
-        odds: [
-          { selectionId: 'fb_2_dc1x', label: '1X (Real Madrid or Draw)', value: 1.35 },
-          { selectionId: 'fb_2_dc12', label: '12 (Real Madrid or Barcelona)', value: 1.25 },
-          { selectionId: 'fb_2_dcx2', label: 'X2 (Draw or Barcelona)', value: 1.65 }
-        ]
-      },
-      {
-        name: 'Total Goals (Over/Under 2.5)',
-        odds: [
-          { selectionId: 'fb_2_o25', label: 'Over 2.5', value: 1.55 },
-          { selectionId: 'fb_2_u25', label: 'Under 2.5', value: 2.30 }
-        ]
-      },
-      {
-        name: 'Both Teams to Score',
-        odds: [
-          { selectionId: 'fb_2_btts_yes', label: 'Yes', value: 1.48 },
-          { selectionId: 'fb_2_btts_no', label: 'No', value: 2.50 }
-        ]
-      },
-      {
-        name: 'Draw No Bet',
-        odds: [
-          { selectionId: 'fb_2_dnb1', label: '1 (Real Madrid)', value: 1.55 },
-          { selectionId: 'fb_2_dnb2', label: '2 (Barcelona)', value: 2.25 }
-        ]
-      },
-      {
-        name: 'Correct Score',
-        odds: [
-          { selectionId: 'fb_2_cs10', label: '1-0 (Real Madrid)', value: 9.50 },
-          { selectionId: 'fb_2_cs21', label: '2-1 (Real Madrid)', value: 9.00 },
-          { selectionId: 'fb_2_cs11', label: '1-1 (Draw)', value: 7.00 },
-          { selectionId: 'fb_2_cs12', label: '1-2 (Barcelona)', value: 11.00 },
-          { selectionId: 'fb_2_cs02', label: '0-2 (Barcelona)', value: 18.00 }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'fb_3',
-    sport: 'football',
-    league: 'UEFA Champions League',
-    country: 'Europe',
-    isLive: false,
-    kickoffTime: 'Today, 22:00',
-    teams: {
-      home: { name: 'Bayern Munich' },
-      away: { name: 'Manchester City' }
-    },
-    venue: 'Allianz Arena, Munich',
-    h2h: [
-      { date: '2025-04-19', score: 'Bayern 1 - 1 Man City', event: 'Champions League' },
-      { date: '2025-04-11', score: 'Man City 3 - 0 Bayern', event: 'Champions League' }
-    ],
-    markets: [
-      {
-        name: 'Match Outcome (1X2)',
-        odds: [
-          { selectionId: 'fb_3_1', label: '1 (Bayern)', value: 2.65 },
-          { selectionId: 'fb_3_x', label: 'X (Draw)', value: 3.60 },
-          { selectionId: 'fb_3_2', label: '2 (Man City)', value: 2.45 }
-        ]
-      },
-      {
-        name: 'Double Chance',
-        odds: [
-          { selectionId: 'fb_3_dc1x', label: '1X (Bayern or Draw)', value: 1.55 },
-          { selectionId: 'fb_3_dc12', label: '12 (Bayern or Man City)', value: 1.25 },
-          { selectionId: 'fb_3_dcx2', label: 'X2 (Draw or Man City)', value: 1.48 }
-        ]
-      },
-      {
-        name: 'Both Teams to Score',
-        odds: [
-          { selectionId: 'fb_3_btts_yes', label: 'Yes', value: 1.50 },
-          { selectionId: 'fb_3_btts_no', label: 'No', value: 2.40 }
-        ]
-      },
-      {
-        name: 'Draw No Bet',
-        odds: [
-          { selectionId: 'fb_3_dnb1', label: '1 (Bayern)', value: 1.95 },
-          { selectionId: 'fb_3_dnb2', label: '2 (Man City)', value: 1.80 }
-        ]
-      },
-      {
-        name: 'Total Goals (Over/Under 2.5)',
-        odds: [
-          { selectionId: 'fb_3_o25', label: 'Over 2.5', value: 1.62 },
-          { selectionId: 'fb_3_u25', label: 'Under 2.5', value: 2.15 }
-        ]
-      }
-    ]
-  },
+    markets
+  });
+});
 
-  // BASKETBALL Matches
-  {
-    id: 'bb_1',
-    sport: 'basketball',
-    league: 'NBA',
-    country: 'USA',
-    isLive: true,
-    timer: 'Q3 - 08:12',
-    scores: { home: 78, away: 74 },
-    teams: {
-      home: { name: 'Lakers' },
-      away: { name: 'Celtics' }
-    },
-    venue: 'Crypto.com Arena, Los Angeles',
-    stats: {
-      possession: { home: 50, away: 50 },
-      shots: { home: 68, away: 70 },
-      shotsOnTarget: { home: 34, away: 32 },
-      corners: { home: 18, away: 22 },
-      yellowCards: { home: 12, away: 14 },
-      redCards: { home: 4, away: 5 }
-    },
-    lineups: {
-      home: ['D. Russell (G)', 'A. Reaves (G)', 'R. Hachimura (F)', 'L. James (F)', 'A. Davis (C)'],
-      away: ['J. Holiday (G)', 'D. White (G)', 'J. Brown (F)', 'J. Tatum (F)', 'K. Porzingis (C)']
-    },
-    h2h: [
-      { date: '2026-02-01', score: 'Lakers 115 - 112 Celtics', event: 'NBA' },
-      { date: '2025-12-25', score: 'Lakers 122 - 126 Celtics', event: 'NBA' }
-    ],
-    markets: [
-      {
-        name: 'Money Line (Winner)',
-        odds: [
-          { selectionId: 'bb_1_1', label: '1 (Lakers)', value: 1.70 },
-          { selectionId: 'bb_1_2', label: '2 (Celtics)', value: 2.10 }
-        ]
-      },
-      {
-        name: 'Point Spread',
-        odds: [
-          { selectionId: 'bb_1_h1', label: 'Lakers -3.5', value: 1.90 },
-          { selectionId: 'bb_1_h2', label: 'Celtics +3.5', value: 1.90 }
-        ]
-      },
-      {
-        name: 'Total Points (Over/Under 224.5)',
-        odds: [
-          { selectionId: 'bb_1_tot_o', label: 'Over 224.5', value: 1.85 },
-          { selectionId: 'bb_1_tot_u', label: 'Under 224.5', value: 1.95 }
-        ]
-      },
-      {
-        name: 'Home Team Odd/Even Points',
-        odds: [
-          { selectionId: 'bb_1_odd_home', label: 'Odd', value: 1.90 },
-          { selectionId: 'bb_1_even_home', label: 'Even', value: 1.90 }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'bb_2',
-    sport: 'basketball',
-    league: 'EuroLeague',
-    country: 'Europe',
-    isLive: false,
-    kickoffTime: 'Tomorrow, 21:30',
-    teams: {
-      home: { name: 'Real Madrid' },
-      away: { name: 'Panathinaikos' }
-    },
-    venue: 'WiZink Center, Madrid',
-    h2h: [
-      { date: '2025-05-26', score: 'Panathinaikos 95 - 80 Real Madrid', event: 'EuroLeague Final' }
-    ],
-    markets: [
-      {
-        name: 'Money Line (Winner)',
-        odds: [
-          { selectionId: 'bb_2_1', label: '1 (Madrid)', value: 1.55 },
-          { selectionId: 'bb_2_2', label: '2 (Panathinaikos)', value: 2.40 }
-        ]
-      },
-      {
-        name: 'Total Points (Over/Under 165.5)',
-        odds: [
-          { selectionId: 'bb_2_tot_o', label: 'Over 165.5', value: 1.88 },
-          { selectionId: 'bb_2_tot_u', label: 'Under 165.5', value: 1.92 }
-        ]
-      }
-    ]
-  },
+// Step 2: Generate upcoming fixtures daily up to NEXT WEEK (for the next 7 days)
+const daysToGenerate = 7;
+const now = new Date();
 
-  // TENNIS Matches
-  {
-    id: 'tn_1',
-    sport: 'tennis',
-    league: 'Wimbledon',
-    country: 'Great Britain',
-    isLive: true,
-    timer: 'Set 3, Game 4',
-    scores: { home: '6, 4, 3', away: '4, 6, 1' },
-    teams: {
-      home: { name: 'Jannik Sinner' },
-      away: { name: 'Carlos Alcaraz' }
-    },
-    venue: 'Centre Court, London',
-    stats: {
-      possession: { home: 52, away: 48 },
-      shots: { home: 4, away: 2 },
-      shotsOnTarget: { home: 1, away: 3 },
-      corners: { home: 12, away: 9 },
-      yellowCards: { home: 8, away: 11 },
-      redCards: { home: 2, away: 1 }
-    },
-    lineups: {
-      home: ['Coach: Darren Cahill'],
-      away: ['Coach: Juan Carlos Ferrero']
-    },
-    h2h: [
-      { date: '2025-09-06', score: 'Sinner 3 - 2 Alcaraz', event: 'US Open' },
-      { date: '2025-06-07', score: 'Alcaraz 3 - 2 Sinner', event: 'French Open' }
-    ],
-    markets: [
+for (let d = 0; d <= daysToGenerate; d++) {
+  Object.keys(sportTeams).forEach((sport, sIndex) => {
+    // Determine teams pair (cycles through lists)
+    const cycleIndex = (d + sIndex) % sportTeams[sport].length;
+    const teamsPair = sportTeams[sport][cycleIndex];
+    const leagueInfo = sportLeagues[sport];
+    
+    // Stagger hours
+    const matchKickoff = new Date(now);
+    matchKickoff.setDate(now.getDate() + d);
+    // Setup kickoff hours e.g. 15:00, 17:00, 19:00, 21:00 depending on sport sIndex
+    matchKickoff.setHours(14 + (sIndex * 1.5), 0, 0, 0);
+
+    const matchId = `upcoming_${sport}_day_${d}_${sIndex}`;
+
+    const markets = [
       {
-        name: 'Match Winner',
+        name: sport === 'football' || sport === 'rugby' || sport === 'ice_hockey' ? 'Match Outcome (1X2)' : 'Money Line (Winner)',
         odds: [
-          { selectionId: 'tn_1_1', label: '1 (Sinner)', value: 1.40 },
-          { selectionId: 'tn_1_2', label: '2 (Carlos Alcaraz)', value: 2.80 }
-        ]
-      },
-      {
-        name: 'To Win Set 3',
-        odds: [
-          { selectionId: 'tn_1_s3_1', label: '1 (Sinner)', value: 1.35 },
-          { selectionId: 'tn_1_s3_2', label: '2 (Carlos Alcaraz)', value: 3.00 }
-        ]
-      },
-      {
-        name: 'Total Games (Over/Under 38.5)',
-        odds: [
-          { selectionId: 'tn_1_tot_o', label: 'Over 38.5', value: 1.90 },
-          { selectionId: 'tn_1_tot_u', label: 'Under 38.5', value: 1.80 }
+          { selectionId: `${matchId}_1`, label: `1 (${teamsPair[0]})`, value: getRandomOdds(1.25, 4.00) },
+          ...(sport === 'football' || sport === 'rugby' || sport === 'ice_hockey' ? [
+            { selectionId: `${matchId}_x`, label: 'X (Draw)', value: getRandomOdds(2.60, 4.20) }
+          ] : []),
+          { selectionId: `${matchId}_2`, label: `2 (${teamsPair[1]})`, value: getRandomOdds(1.60, 6.00) }
         ]
       }
-    ]
-  }
-];
+    ];
 
-export const searchDatabase = [
-  { title: 'Arsenal', subtitle: 'Football Team (England)', type: 'team', id: 'fb_1' },
-  { title: 'Chelsea', subtitle: 'Football Team (England)', type: 'team', id: 'fb_1' },
-  { title: 'Real Madrid', subtitle: 'Football/Basketball Team (Spain)', type: 'team', id: 'fb_2' },
-  { title: 'Barcelona', subtitle: 'Football Team (Spain)', type: 'team', id: 'fb_2' },
-  { title: 'Bayern Munich', subtitle: 'Football Team (Germany)', type: 'team', id: 'fb_3' },
-  { title: 'Manchester City', subtitle: 'Football Team (England)', type: 'team', id: 'fb_3' },
-  { title: 'Lakers', subtitle: 'Basketball Team (USA)', type: 'team', id: 'bb_1' },
-  { title: 'Celtics', subtitle: 'Basketball Team (USA)', type: 'team', id: 'bb_1' },
-  { title: 'Jannik Sinner', subtitle: 'Tennis Player (Italy)', type: 'player', id: 'tn_1' },
-  { title: 'Carlos Alcaraz', subtitle: 'Tennis Player (Spain)', type: 'player', id: 'tn_1' },
-  { title: 'Premier League', subtitle: 'Football Competition (England)', type: 'league', sport: 'football' },
-  { title: 'La Liga', subtitle: 'Football Competition (Spain)', type: 'league', sport: 'football' },
-  { title: 'NBA', subtitle: 'Basketball League (USA)', type: 'league', sport: 'basketball' },
-  { title: 'Wimbledon', subtitle: 'Tennis Grand Slam', type: 'league', sport: 'tennis' }
-];
+    matchesList.push({
+      id: matchId,
+      sport,
+      league: leagueInfo.name,
+      country: leagueInfo.country,
+      isLive: false,
+      kickoffTime: formatKickoff(matchKickoff),
+      teams: {
+        home: { name: teamsPair[0] },
+        away: { name: teamsPair[1] }
+      },
+      venue: leagueInfo.venue,
+      h2h: [
+        { date: '2025-08-14', score: `${teamsPair[0]} 1 - 1 ${teamsPair[1]}`, event: leagueInfo.name }
+      ],
+      markets
+    });
+  });
+}
+
+// Step 3: Populate search database dynamically from all active matches
+export const searchDatabase = [];
+
+matchesList.forEach(match => {
+  searchDatabase.push({
+    title: match.teams.home.name,
+    subtitle: `${match.sport.charAt(0).toUpperCase() + match.sport.slice(1)} Team (${match.league})`,
+    type: 'team',
+    id: match.id
+  });
+  searchDatabase.push({
+    title: match.teams.away.name,
+    subtitle: `${match.sport.charAt(0).toUpperCase() + match.sport.slice(1)} Team (${match.league})`,
+    type: 'team',
+    id: match.id
+  });
+});
+
+// Update sport chips counts in sportsList dynamically
+sportsList.forEach(sport => {
+  sport.count = matchesList.filter(m => m.sport === sport.id).length;
+});

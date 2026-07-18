@@ -33,13 +33,16 @@ export function renderHomeView() {
     <!-- Sports Category Horizontal Chips Navigation -->
     <div class="sports-nav-wrapper">
       <div class="sports-nav">
-        ${sportsList.map(sport => `
-          <button class="sport-chip ${activeSport === sport.id ? 'active' : ''}" data-sport="${sport.id}">
-            <span>${getMaterialIcon(sport.icon)}</span>
-            <span>${sport.name}</span>
-            <span class="sport-chip-count">${sport.count}</span>
-          </button>
-        `).join('')}
+        ${sportsList.map(sport => {
+          const count = matches.filter(m => m.sport === sport.id).length;
+          return `
+            <button class="sport-chip ${activeSport === sport.id ? 'active' : ''}" data-sport="${sport.id}">
+              <span>${getMaterialIcon(sport.icon)}</span>
+              <span>${sport.name}</span>
+              <span class="sport-chip-count">${count}</span>
+            </button>
+          `;
+        }).join('')}
       </div>
     </div>
 
