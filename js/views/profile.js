@@ -71,7 +71,7 @@ export function renderProfileView() {
         </div>
       </div>
 
-      <!-- DEPOSIT BOX (Betika style, Cashia removed) -->
+      <!-- DEPOSIT BOX -->
       <div class="wallet-card" style="margin-top:16px; gap: 12px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Deposit</h3>
@@ -103,7 +103,7 @@ export function renderProfileView() {
         </button>
       </div>
 
-      <!-- WITHDRAWAL BOX (Betika style, Cashia removed) -->
+      <!-- WITHDRAWAL BOX -->
       <div class="wallet-card" style="margin-top:16px; gap: 12px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Withdrawal</h3>
@@ -158,7 +158,7 @@ export function renderProfileView() {
         `).join('')}
       </div>
 
-      <!-- PREFERENCES SECTION -->
+      <!-- PREFERENCES SECTION (iOS Custom Switches) -->
       <div class="wallet-card" style="margin-top:20px; gap:16px;">
         <div>
           <h3 style="font-size:1.1rem; font-weight:700;">Preferences</h3>
@@ -173,10 +173,10 @@ export function renderProfileView() {
               <h4 style="font-size:0.85rem; font-weight:700;">Display Settings</h4>
               <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Switch between light theme and dark theme</p>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              ${getMaterialIcon('settings')}
-              <input type="checkbox" id="theme-toggle-switch" style="width:40px; height:20px; accent-color:var(--accent-emerald); cursor:pointer;" ${document.body.classList.contains('light-theme') ? 'checked' : ''} />
-            </div>
+            <label class="switch-toggle-label">
+              <input type="checkbox" id="theme-toggle-switch" ${document.body.classList.contains('light-theme') ? 'checked' : ''} />
+              <span class="switch-slider"></span>
+            </label>
           </div>
           <!-- Data Saver Switch -->
           <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:12px;">
@@ -184,59 +184,71 @@ export function renderProfileView() {
               <h4 style="font-size:0.85rem; font-weight:700;">Data Saver</h4>
               <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Turn on to save data bundles</p>
             </div>
-            <input type="checkbox" id="data-saver-switch" style="width:40px; height:20px; accent-color:var(--accent-emerald); cursor:pointer;" />
+            <label class="switch-toggle-label">
+              <input type="checkbox" id="data-saver-switch" />
+              <span class="switch-slider"></span>
+            </label>
           </div>
         </div>
       </div>
 
-      <!-- OTHER INFO & PREFERENCES -->
-      <div class="wallet-card" style="margin-top:20px; gap:16px;">
-        <div>
-          <h3 style="font-size:1.1rem; font-weight:700;">Other Info & Preferences</h3>
+      <!-- OTHER INFO & PREFERENCES (iOS settings rows list) -->
+      <div style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
+        <div style="margin-bottom:8px;">
+          <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Other Info & Preferences</h3>
           <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Information that is critical in managing your account</p>
         </div>
 
-        <div style="display:flex; flex-direction:column; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden;">
-          
-          <div class="sidebar-item" style="border-bottom:1px solid var(--border-color);">
-            <button id="profile-livechat-btn" style="padding:12px; display:flex; justify-content:space-between; align-items:center; width:100%; border:none; background:none; text-align:left; cursor:pointer;">
-              <span style="font-size:0.85rem; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
-                ${getMaterialIcon('chat')} Live Chat
-              </span>
-              ${getMaterialIcon('back', 'icon-rotated-right')}
-            </button>
+        <!-- Sleek info rows -->
+        <div class="profile-info-row" id="profile-livechat-btn">
+          <div class="profile-info-icon-wrapper chat">
+            ${getMaterialIcon('chat')}
           </div>
-
-          <div class="sidebar-item" style="border-bottom:1px solid var(--border-color);">
-            <button id="profile-del-btn" style="padding:12px; display:flex; justify-content:space-between; align-items:center; width:100%; border:none; background:none; text-align:left; cursor:pointer;">
-              <span style="font-size:0.85rem; font-weight:700; color:var(--accent-live); display:flex; align-items:center; gap:8px;">
-                ${getMaterialIcon('trash')} Delete Account
-              </span>
-              ${getMaterialIcon('back', 'icon-rotated-right')}
-            </button>
+          <div class="profile-info-text">
+            <span class="profile-info-title">Live Chat Support</span>
+            <span class="profile-info-desc">Chat with helpdesk agents (24/7 online)</span>
           </div>
-
-          <div class="sidebar-item">
-            <button id="profile-rg-btn" style="padding:12px; display:flex; justify-content:space-between; align-items:center; width:100%; border:none; background:none; text-align:left; cursor:pointer;">
-              <span style="font-size:0.85rem; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
-                ${getMaterialIcon('shield')} Responsible Gaming
-              </span>
-              ${getMaterialIcon('back', 'icon-rotated-right')}
-            </button>
-          </div>
-
+          <span style="display:flex; align-items:center;" class="arrow-icon">
+            ${getMaterialIcon('back', 'icon-rotated-right')}
+          </span>
         </div>
 
-        <button id="profile-signout-btn" style="background:none; border:none; color:var(--accent-emerald); font-weight:700; font-family:var(--font-display); cursor:pointer; text-align:left; padding:8px 0; font-size:0.95rem; align-self:flex-start;">
-          Sign Out
+        <div class="profile-info-row" id="profile-rg-btn">
+          <div class="profile-info-icon-wrapper safety">
+            ${getMaterialIcon('shield')}
+          </div>
+          <div class="profile-info-text">
+            <span class="profile-info-title">Responsible Gaming</span>
+            <span class="profile-info-desc">Set daily deposit limits or request timeouts</span>
+          </div>
+          <span style="display:flex; align-items:center;" class="arrow-icon">
+            ${getMaterialIcon('back', 'icon-rotated-right')}
+          </span>
+        </div>
+
+        <div class="profile-info-row" id="profile-del-btn">
+          <div class="profile-info-icon-wrapper delete">
+            ${getMaterialIcon('trash')}
+          </div>
+          <div class="profile-info-text">
+            <span class="profile-info-title" style="color:var(--accent-live);">Delete Account</span>
+            <span class="profile-info-desc">Request permanent closure under BCLB rules</span>
+          </div>
+          <span style="display:flex; align-items:center;" class="arrow-icon">
+            ${getMaterialIcon('back', 'icon-rotated-right')}
+          </span>
+        </div>
+
+        <!-- Sign Out Button -->
+        <button id="profile-signout-btn" style="background:none; border:none; color:var(--accent-emerald); font-weight:800; font-family:var(--font-display); cursor:pointer; text-align:left; padding:12px 4px; font-size:0.95rem; display:flex; align-items:center; gap:8px; align-self:flex-start; margin-top:8px; outline:none;">
+          ${getMaterialIcon('close')} Sign Out
         </button>
       </div>
 
-      <!-- Custom Transaction Processing Modal Overlay (Betika / BetPulse style) -->
+      <!-- Custom Transaction Processing Modal Overlay -->
       <div id="tx-processing-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(8,10,15,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center; z-index:9999; padding: 20px;">
         <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:20px; box-shadow:var(--shadow-lg);">
           <div id="tx-modal-icon" style="display:flex; align-items:center; justify-content:center; width:80px; height:80px;">
-            <!-- Loading Spinner SVG -->
             <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
               <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-emerald)" stroke-width="5" stroke-dasharray="80 100" stroke-linecap="round"></circle>
             </svg>
@@ -371,7 +383,7 @@ export function renderProfileView() {
       }, 2000);
     };
 
-    // Bind triggers to M-Pesa Buttons
+    // Bind M-Pesa Buttons
     document.getElementById('profile-dep-mpesa-btn')?.addEventListener('click', () => {
       const amt = parseInt(depValInput.value) || 0;
       triggerTransactionFlow('deposit', amt);
@@ -406,7 +418,7 @@ export function renderProfileView() {
       alert("Jackpot Streaks: Standings table loading... [No active jackpot tickets found.]");
     });
 
-    // 6. Preferences switches (Light theme switch)
+    // 6. Preferences switches (iOS Custom Switch Toggles)
     const themeSwitch = document.getElementById('theme-toggle-switch');
     themeSwitch?.addEventListener('change', (e) => {
       if (e.target.checked) {
@@ -416,11 +428,12 @@ export function renderProfileView() {
       }
     });
 
-    document.getElementById('data-saver-switch')?.addEventListener('change', (e) => {
+    const dsSwitch = document.getElementById('data-saver-switch');
+    dsSwitch?.addEventListener('change', (e) => {
       alert(`Data Saver Mode: ${e.target.checked ? 'Enabled. Images compressed.' : 'Disabled.'}`);
     });
 
-    // 7. Other Preferences Links
+    // 7. Other Info List Rows triggers
     document.getElementById('profile-livechat-btn')?.addEventListener('click', () => {
       alert("Support: Hello! Welcome to BetPulse Live Chat assistance. How can we help?");
     });
