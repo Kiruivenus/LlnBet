@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { getMaterialIcon, formatCurrency } from '../utils.js';
+import { renderMobileDrawer, openDrawer } from './mobileDrawer.js';
 
 export function renderHeader() {
   const container = document.getElementById('app-header');
@@ -7,6 +8,9 @@ export function renderHeader() {
 
   const isLoggedIn = state.data.isLoggedIn;
   const userData = state.data.user;
+
+  // Initialize mobile drawer overlay
+  renderMobileDrawer();
 
   let rightSideHtml = '';
 
@@ -49,11 +53,17 @@ export function renderHeader() {
   }
 
   container.innerHTML = `
-    <!-- Brand / Logo -->
-    <a href="#" class="brand" id="header-brand-logo">
-      <div class="brand-logo">P</div>
-      <div class="brand-name">Bet<span>Pulse</span></div>
-    </a>
+    <!-- Brand & Smartphone Hamburger Trigger -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button class="mobile-hamburger-btn" id="mobile-hamburger-trigger" aria-label="Open Navigation Menu">
+        ${getMaterialIcon('menu')}
+      </button>
+
+      <a href="#" class="brand" id="header-brand-logo">
+        <div class="brand-logo desktop-logo">P</div>
+        <div class="brand-name">Bet<span>Pulse</span></div>
+      </a>
+    </div>
 
     <!-- Global Search Trigger -->
     <div class="header-center">
@@ -73,6 +83,10 @@ export function renderHeader() {
   `;
 
   // Bind Events
+  document.getElementById('mobile-hamburger-trigger')?.addEventListener('click', () => {
+    openDrawer();
+  });
+
   document.getElementById('header-brand-logo').addEventListener('click', (e) => {
     e.preventDefault();
     state.setPage('home');
