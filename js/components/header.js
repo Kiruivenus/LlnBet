@@ -93,7 +93,7 @@ export function renderHeader() {
     });
 
     document.getElementById('header-notif-btn')?.addEventListener('click', () => {
-      alert("Notification: Standard KYC verification completed. Your profile is active under GCC rules.");
+      state.setPage('notifications');
     });
 
     document.getElementById('header-profile-btn')?.addEventListener('click', () => {

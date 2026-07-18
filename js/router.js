@@ -7,6 +7,11 @@ import { renderPromotionsView } from './views/promotions.js';
 import { renderProfileView } from './views/profile.js';
 import { renderLoginView } from './views/login.js';
 import { renderRegisterView } from './views/register.js';
+import { renderSupportView } from './views/support.js';
+import { renderResponsibleGamingView } from './views/responsibleGaming.js';
+import { renderTransactionsView } from './views/transactions.js';
+import { renderJackpotsView } from './views/jackpots.js';
+import { renderNotificationsView } from './views/notifications.js';
 
 export function route() {
   const page = state.data.currentPage;
@@ -22,7 +27,7 @@ export function route() {
       renderMatchDetailsView();
       break;
     case 'my-bets':
-      // Guard my-bets route (redirect to login if not logged in)
+      // Guard route (redirect to login if not logged in)
       if (!state.data.isLoggedIn) {
         state.setPage('login');
       } else {
@@ -33,7 +38,7 @@ export function route() {
       renderPromotionsView();
       break;
     case 'profile':
-      // Guard profile route (redirect to login if not logged in)
+      // Guard route (redirect to login if not logged in)
       if (!state.data.isLoggedIn) {
         state.setPage('login');
       } else {
@@ -45,6 +50,26 @@ export function route() {
       break;
     case 'register':
       renderRegisterView();
+      break;
+    case 'live-support':
+      renderSupportView();
+      break;
+    case 'responsible-gaming':
+      renderResponsibleGamingView();
+      break;
+    case 'transactions':
+      // Guard route (redirect to login if not logged in)
+      if (!state.data.isLoggedIn) {
+        state.setPage('login');
+      } else {
+        renderTransactionsView();
+      }
+      break;
+    case 'jackpot-streak':
+      renderJackpotsView();
+      break;
+    case 'notifications':
+      renderNotificationsView();
       break;
     default:
       renderHomeView();

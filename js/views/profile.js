@@ -6,7 +6,6 @@ export function renderProfileView() {
   if (!container) return;
 
   const user = state.data.user;
-  const transactions = state.data.transactions;
 
   // Track deposit and withdrawal values locally in view state
   let depositAmount = 1000;
@@ -127,35 +126,20 @@ export function renderProfileView() {
         </button>
       </div>
 
-      <!-- MY TRANSACTIONS LINK -->
+      <!-- DEDICATED TRANSACTIONS ROW LINK -->
       <div style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; margin-top:16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" id="profile-transactions-row-btn">
         <div style="display:flex; align-items:center; gap:12px;">
           <div style="color:var(--accent-emerald); display:flex; align-items:center;">
             ${getMaterialIcon('history')}
           </div>
           <div>
-            <h4 style="font-size:0.9rem; font-weight:700;">My Transactions</h4>
-            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">View all your debits and credits logs</p>
+            <h4 style="font-size:0.9rem; font-weight:700; color:var(--text-primary);">My Transactions</h4>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">View all deposit, withdrawal and cashout logs</p>
           </div>
         </div>
         <div style="color:var(--text-muted); display:flex; align-items:center;">
           ${getMaterialIcon('back', 'icon-rotated-right')}
         </div>
-      </div>
-
-      <!-- Dynamic transactions dropdown overlay box -->
-      <div id="profile-transactions-list-box" style="display:none; margin-top:8px; display:flex; flex-direction:column; gap:8px; border-left:2px solid var(--border-color-light); padding-left:12px; margin-left:16px;">
-        ${transactions.map(txn => `
-          <div style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:10px; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
-            <div>
-              <div style="font-weight:700;">${txn.type} (${txn.method})</div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">${txn.date}</div>
-            </div>
-            <strong style="font-family:var(--font-mono); color:${txn.type.includes('dep') || txn.type.includes('Dep') ? 'var(--accent-emerald)' : 'var(--accent-orange)'};">
-              ${txn.type.includes('dep') || txn.type.includes('Dep') ? '+' : '-'}${formatCurrency(txn.amount)}
-            </strong>
-          </div>
-        `).join('')}
       </div>
 
       <!-- PREFERENCES SECTION -->
@@ -273,7 +257,7 @@ export function renderProfileView() {
     const depValInput = document.getElementById('dep-val-input');
     const withValInput = document.getElementById('with-val-input');
 
-    // 1. Hook up adjuster buttons for deposit amount
+    // Adjuster buttons for deposit amount
     document.getElementById('dep-decrement-btn')?.addEventListener('click', () => {
       let amt = parseInt(depValInput.value) || 0;
       if (amt > 100) {
@@ -288,7 +272,6 @@ export function renderProfileView() {
       depValInput.value = depositAmount;
     });
 
-    // Handle typing inside deposit input directly
     depValInput?.addEventListener('input', (e) => {
       depositAmount = parseInt(e.target.value) || 0;
     });
@@ -303,7 +286,7 @@ export function renderProfileView() {
       });
     });
 
-    // 2. Hook up adjuster buttons for withdrawals
+    // Adjuster buttons for withdrawals
     document.getElementById('with-decrement-btn')?.addEventListener('click', () => {
       let amt = parseInt(withValInput.value) || 0;
       if (amt > 100) {
@@ -318,13 +301,11 @@ export function renderProfileView() {
       withValInput.value = withdrawAmount;
     });
 
-    // Handle typing inside withdraw input directly
     withValInput?.addEventListener('input', (e) => {
       withdrawAmount = parseInt(e.target.value) || 0;
     });
 
-
-    // 3. Custom Modal Transaction Trigger Routine
+    // Custom Modal Transaction Trigger Routine
     const modal = document.getElementById('tx-processing-modal');
     const modalIcon = document.getElementById('tx-modal-icon');
     const modalHeading = document.getElementById('tx-modal-heading');
@@ -332,7 +313,6 @@ export function renderProfileView() {
     const modalCloseBtn = document.getElementById('tx-modal-close');
 
     const triggerTransactionFlow = (type, amount) => {
-      // Validate withdrawal limit
       if (type === 'withdraw' && amount > user.balance) {
         alert("Insufficient balance for requested withdrawal.");
         return;
@@ -342,7 +322,6 @@ export function renderProfileView() {
         return;
       }
 
-      // Initial state: Processing
       modalCloseBtn.style.display = 'none';
       modalIcon.innerHTML = `
         <svg width="50" height="50" viewBox="0 0 50 50" style="animation: spin-loop 1s linear infinite;">
@@ -356,7 +335,6 @@ export function renderProfileView() {
       
       modal.style.display = 'flex';
 
-      // Wait 2 seconds (simulate payment authorization)
       setTimeout(() => {
         let success = false;
         let referenceCode = '';
@@ -374,7 +352,6 @@ export function renderProfileView() {
         }
 
         if (success) {
-          // Success State
           modalIcon.innerHTML = `
             <span class="material-icons-round" style="font-size: 5rem; color: var(--accent-emerald);">check_circle</span>
           `;
@@ -394,31 +371,23 @@ export function renderProfileView() {
       triggerTransactionFlow('withdraw', amt);
     });
 
-    // Close modal trigger
     modalCloseBtn?.addEventListener('click', () => {
       modal.style.display = 'none';
-      renderProfileView(); // Refresh page data (w/ updated balance)
+      renderProfileView(); // Refresh page data
     });
 
-
-    // 4. Expandable Transactions List
-    const txRowBtn = document.getElementById('profile-transactions-row-btn');
-    const txListBox = document.getElementById('profile-transactions-list-box');
-    txRowBtn?.addEventListener('click', () => {
-      if (txListBox.style.display === 'none') {
-        txListBox.style.display = 'flex';
-      } else {
-        txListBox.style.display = 'none';
-      }
+    // Dedicated Transaction Page redirection
+    document.getElementById('profile-transactions-row-btn')?.addEventListener('click', () => {
+      state.setPage('transactions');
     });
 
-    // 5. View shortcuts
+    // View shortcuts
     document.getElementById('profile-view-promos-btn')?.addEventListener('click', () => state.setPage('promotions'));
     document.getElementById('profile-view-jackpots-btn')?.addEventListener('click', () => {
-      alert("Jackpot Streaks: Standings table loading... [No active jackpot tickets found.]");
+      state.setPage('jackpot-streak');
     });
 
-    // 6. Preferences switches (iOS Custom Switch Toggles)
+    // Preferences switches
     const themeSwitch = document.getElementById('theme-toggle-switch');
     themeSwitch?.addEventListener('change', (e) => {
       if (e.target.checked) {
@@ -433,19 +402,19 @@ export function renderProfileView() {
       alert(`Data Saver Mode: ${e.target.checked ? 'Enabled. Images compressed.' : 'Disabled.'}`);
     });
 
-    // 7. Other Info List Rows triggers
+    // Other Info List Rows triggers
     document.getElementById('profile-livechat-btn')?.addEventListener('click', () => {
-      alert("Support: Hello! Welcome to BetPulse Live Chat assistance. How can we help?");
+      state.setPage('live-support');
+    });
+
+    document.getElementById('profile-rg-btn')?.addEventListener('click', () => {
+      state.setPage('responsible-gaming');
     });
 
     document.getElementById('profile-del-btn')?.addEventListener('click', () => {
       if (confirm("Warning: Are you sure you wish to delete your account? This action is permanent.")) {
         alert("Under GCC compliance guidelines, account deletion requires 7 days cool-down period. Request logged.");
       }
-    });
-
-    document.getElementById('profile-rg-btn')?.addEventListener('click', () => {
-      alert("Responsible Gaming: Adjust Daily Limits or Request Session Timeouts. Call 1-800-GAMBLER for help.");
     });
 
     document.getElementById('profile-signout-btn')?.addEventListener('click', () => {
