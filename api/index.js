@@ -84,22 +84,39 @@ const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
 const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
 const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
 
-// Connect to MongoDB with Serverless Connection Caching
+// Connect to MongoDB with Serverless Connection Caching (Official Vercel & Atlas best practices)
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-let isDbConnected = false;
+
+let cachedConnection = globalThis.__mongoose_cached;
+if (!cachedConnection) {
+  cachedConnection = globalThis.__mongoose_cached = { conn: null, promise: null };
+}
 
 async function connectDb() {
-  if (isDbConnected && mongoose.connection.readyState === 1) return;
-  if (!mongoUri) return;
-  try {
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000
-    });
-    isDbConnected = true;
-    console.log("[MONGODB] Connected successfully to MongoDB Database!");
-  } catch (err) {
-    console.warn("[MONGODB] MongoDB Connection error:", err.message);
+  if (cachedConnection.conn && mongoose.connection.readyState === 1) {
+    return cachedConnection.conn;
   }
+  if (!mongoUri) return null;
+
+  if (!cachedConnection.promise) {
+    const opts = {
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 1, // Cap pool size to 1 connection per instance to prevent connection limits exhaustion
+      autoIndex: true
+    };
+    cachedConnection.promise = mongoose.connect(mongoUri, opts).then((m) => {
+      console.log("[MONGODB] Connected successfully to MongoDB Database!");
+      return m;
+    });
+  }
+
+  try {
+    cachedConnection.conn = await cachedConnection.promise;
+  } catch (e) {
+    cachedConnection.promise = null; // Clear cached promise on failure
+    console.warn("[MONGODB] MongoDB Connection error:", e.message);
+  }
+  return cachedConnection.conn;
 }
 
 // Middleware: Ensure Database Connection on incoming API requests

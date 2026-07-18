@@ -49,17 +49,6 @@ export class TradingEngine {
       const obj = {};
       this.memoryOdds.forEach((v, k) => obj[k] = v);
       localStorage.setItem('betpulse_odds_memory', JSON.stringify(obj));
-
-      const now = Date.now();
-      const lastSync = this.lastBackendSync.get(matchId) || 0;
-      if (now - lastSync > 60000) {
-        this.lastBackendSync.set(matchId, now);
-        fetch('/api/odds', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ matchId, ...oddsObj })
-        }).catch(() => {});
-      }
     } catch (e) {}
   }
 
