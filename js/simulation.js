@@ -209,11 +209,6 @@ class SimulationEngine {
     if (parsedMatches.length > 0) {
       console.log(`[ESPN FEED SUCCESS] Fetched ${parsedMatches.length} real-world matches.`);
       this.matches = [...parsedMatches, ...matchesList];
-    } else {
-      this.matches = matchesList;
-    }
-
-    state.notify('matches');
 
       // Async index new real team names in global search database
       import('./data.js').then(dataModule => {
@@ -233,11 +228,12 @@ class SimulationEngine {
             id: match.id
           });
         });
-      });
-
-      // Notify UI state to update
-      state.notify('matches');
+      }).catch(() => {});
+    } else {
+      this.matches = matchesList;
     }
+
+    state.notify('matches');
   }
 
   tick() {
