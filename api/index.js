@@ -84,13 +84,31 @@ const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
 const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
 const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
 
-// Connect to MongoDB
+// Connect to MongoDB with Serverless Connection Caching
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-if (mongoUri) {
-  mongoose.connect(mongoUri)
-    .then(() => console.log("[MONGODB] Connected successfully to MongoDB Database!"))
-    .catch(err => console.warn("[MONGODB] MongoDB Connection error:", err.message));
+let isDbConnected = false;
+
+async function connectDb() {
+  if (isDbConnected && mongoose.connection.readyState === 1) return;
+  if (!mongoUri) return;
+  try {
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000
+    });
+    isDbConnected = true;
+    console.log("[MONGODB] Connected successfully to MongoDB Database!");
+  } catch (err) {
+    console.warn("[MONGODB] MongoDB Connection error:", err.message);
+  }
 }
+
+// Middleware: Ensure Database Connection on incoming API requests
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    await connectDb();
+  }
+  next();
+});
 
 // In-memory fallback map for transactions when Mongo is connecting
 const memoryTransactions = new Map();
