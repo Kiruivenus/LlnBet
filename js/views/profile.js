@@ -1,15 +1,37 @@
 import { state } from '../state.js';
 import { getMaterialIcon, formatCurrency } from '../utils.js';
 
-export function renderProfileView() {
+export async function renderProfileView() {
   const container = document.getElementById('app-main');
   if (!container) return;
 
   const user = state.data.user;
 
+  let minDeposit = 200;
+  let maxDeposit = 500000;
+  let minWithdrawal = 200;
+  let maxWithdrawal = 100000;
+  let mpesaPartyB = '254700000000';
+
+  try {
+    const res = await fetch('/api/settings');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.settings) {
+        minDeposit = data.settings.minDeposit || 200;
+        maxDeposit = data.settings.maxDeposit || 500000;
+        minWithdrawal = data.settings.minWithdrawal || 200;
+        maxWithdrawal = data.settings.maxWithdrawal || 100000;
+        mpesaPartyB = data.settings.mpesaPartyB || '254700000000';
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load settings:", e);
+  }
+
   // Track deposit and withdrawal values locally in view state
-  let depositAmount = 200;
-  let withdrawAmount = 200;
+  let depositAmount = minDeposit;
+  let withdrawAmount = minWithdrawal;
 
   const drawProfile = () => {
     container.innerHTML = `
@@ -86,7 +108,7 @@ export function renderProfileView() {
           </div>
           <button id="dep-increment-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">+</button>
         </div>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES 10. All transactions are subject to 5% tax.</p>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES ${minDeposit.toLocaleString()}, Maximum KES ${maxDeposit.toLocaleString()}. All transactions are subject to 5% tax.</p>
 
         <!-- Quick Amount Selectors -->
         <div class="quick-stakes-grid" style="grid-template-columns: repeat(4, 1fr);">
@@ -118,7 +140,7 @@ export function renderProfileView() {
           </div>
           <button id="with-increment-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">+</button>
         </div>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES 50, Maximum KES 300,000. All transactions are subject to 5% tax.</p>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES ${minWithdrawal.toLocaleString()}, Maximum KES ${maxWithdrawal.toLocaleString()}. All transactions are subject to 5% tax.</p>
 
         <!-- Single clean full-width M-Pesa Withdraw button -->
         <button class="wallet-submit-btn" id="profile-with-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.9rem; padding:12px; font-weight:800; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; width:100%;">
@@ -544,13 +566,21 @@ export function renderProfileView() {
 
     const triggerTransactionFlow = async (type, amount) => {
       if (type === 'deposit') {
-        if (amount < 200) {
-          alert("Minimum deposit amount is KES 200.");
+        if (amount < minDeposit) {
+          alert(`Minimum deposit amount is KES ${minDeposit.toLocaleString()}.`);
+          return;
+        }
+        if (amount > maxDeposit) {
+          alert(`Maximum deposit amount is KES ${maxDeposit.toLocaleString()}.`);
           return;
         }
       } else {
-        if (amount < 200) {
-          alert("Minimum withdrawal amount is KES 200.");
+        if (amount < minWithdrawal) {
+          alert(`Minimum withdrawal amount is KES ${minWithdrawal.toLocaleString()}.`);
+          return;
+        }
+        if (amount > maxWithdrawal) {
+          alert(`Maximum withdrawal amount is KES ${maxWithdrawal.toLocaleString()}.`);
           return;
         }
         if (amount > (user?.balance || 0)) {

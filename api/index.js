@@ -472,7 +472,8 @@ app.post('/api/stkpush', async (req, res) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    const shortcode = process.env.MPESA_SHORTCODE || '174379';
+    const dbPartyB = await getSetting('mpesaPartyB', '174379');
+    const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || '174379';
     const passkey = process.env.MPESA_PASSKEY || '';
     const timestamp = getMpesaTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
@@ -995,6 +996,24 @@ app.post('/api/admin/withdrawals/:id/status', authenticateAdmin, async (req, res
     return res.status(400).json({ error: "Operation requires active database connection." });
   } catch (error) {
     return res.status(500).json({ error: "Failed to process withdrawal status." });
+  }
+});
+
+// Public Endpoint: Get general system config limits and Party B details
+app.get('/api/settings', async (req, res) => {
+  try {
+    const minDeposit = await getSetting('minDeposit', 200);
+    const maxDeposit = await getSetting('maxDeposit', 500000);
+    const minWithdrawal = await getSetting('minWithdrawal', 200);
+    const maxWithdrawal = await getSetting('maxWithdrawal', 100000);
+    const mpesaPartyB = await getSetting('mpesaPartyB', '254700000000');
+
+    return res.json({
+      success: true,
+      settings: { minDeposit, maxDeposit, minWithdrawal, maxWithdrawal, mpesaPartyB }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch settings." });
   }
 });
 
