@@ -226,6 +226,7 @@ class State {
         const data = await res.json();
         this.data.user = data.user;
         this.notify('user');
+        this.fetchUserData();
       }
     } catch (e) {}
   }
