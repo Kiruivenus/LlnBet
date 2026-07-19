@@ -1,5 +1,47 @@
 // Global Application State (MongoDB & JWT Session Integration)
 
+// Clean URL Path Routing Helpers
+export function parsePath(path) {
+  const p = path.replace(/\/$/, '').toLowerCase();
+  if (p === '' || p === '/') return { page: 'home', matchId: null };
+  if (p === '/live') return { page: 'live', matchId: null };
+  if (p === '/jackpots' || p === '/jackpot-streak') return { page: 'jackpot-streak', matchId: null };
+  if (p === '/promotions') return { page: 'promotions', matchId: null };
+  if (p === '/my-bets') return { page: 'my-bets', matchId: null };
+  if (p === '/profile' || p === '/dashboard') return { page: 'profile', matchId: null };
+  if (p === '/login') return { page: 'login', matchId: null };
+  if (p === '/register') return { page: 'register', matchId: null };
+  if (p === '/support' || p === '/live-support') return { page: 'live-support', matchId: null };
+  if (p === '/responsible-gaming') return { page: 'responsible-gaming', matchId: null };
+  if (p === '/transactions') return { page: 'transactions', matchId: null };
+  if (p === '/notifications') return { page: 'notifications', matchId: null };
+
+  const matchMatch = p.match(/^\/match\/([^\/]+)$/);
+  if (matchMatch) {
+    return { page: 'match-details', matchId: matchMatch[1] };
+  }
+  return { page: 'home', matchId: null };
+}
+
+export function getPathForPage(page, matchId) {
+  switch (page) {
+    case 'home': return '/';
+    case 'live': return '/live';
+    case 'jackpot-streak': return '/jackpots';
+    case 'promotions': return '/promotions';
+    case 'my-bets': return '/my-bets';
+    case 'profile': return '/profile';
+    case 'login': return '/login';
+    case 'register': return '/register';
+    case 'live-support': return '/support';
+    case 'responsible-gaming': return '/responsible-gaming';
+    case 'transactions': return '/transactions';
+    case 'notifications': return '/notifications';
+    case 'match-details': return `/match/${matchId || ''}`;
+    default: return '/';
+  }
+}
+
 class State {
   constructor() {
     let savedSelections = [];
@@ -45,6 +87,9 @@ class State {
       console.warn("[SHARE LOAD ERROR]:", err.message);
     }
 
+    // Parse current URL path for initial deep link navigation state
+    const initialRoute = parsePath(window.location.pathname);
+
     this.data = {
       isLoggedIn: false,
       token: localStorage.getItem('betpulse_token') || null,
@@ -54,8 +99,8 @@ class State {
         selections: savedSelections, // { id, matchId, matchName, team, market, odds }
         stakes: savedStakes
       },
-      currentPage: 'home',
-      selectedMatchId: null,
+      currentPage: initialRoute.page,
+      selectedMatchId: initialRoute.matchId,
       searchQuery: '',
       placedBets: [],
       transactions: [],
@@ -64,6 +109,15 @@ class State {
     };
 
     this.listeners = {};
+    
+    // Bind Popstate browser navigation trigger
+    window.addEventListener('popstate', (e) => {
+      const routeInfo = parsePath(window.location.pathname);
+      this.data.currentPage = routeInfo.page;
+      this.data.selectedMatchId = routeInfo.matchId;
+      this.notify('currentPage');
+    });
+
     this.initSession();
   }
 
@@ -178,6 +232,13 @@ class State {
   setPage(page, matchId = null) {
     this.data.currentPage = page;
     this.data.selectedMatchId = matchId;
+
+    // Update URL pathname cleanly
+    const targetPath = getPathForPage(page, matchId);
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ page, matchId }, "", targetPath);
+    }
+
     this.notify('currentPage');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
