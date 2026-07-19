@@ -11,6 +11,40 @@ class State {
       if (st) savedStakes = JSON.parse(st);
     } catch (e) {}
 
+    // Check for shared selections in query params
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const shareB64 = urlParams.get('share');
+      if (shareB64) {
+        const decodedJson = decodeURIComponent(escape(atob(shareB64)));
+        const sharedSelections = JSON.parse(decodedJson);
+        if (Array.isArray(sharedSelections) && sharedSelections.length > 0) {
+          const formatted = sharedSelections.map(s => ({
+            id: s.selectionId || s.id || `${s.matchId}_${s.team}`,
+            matchId: s.matchId,
+            matchName: s.matchName || 'Match Selection',
+            team: s.team,
+            market: s.market,
+            odds: parseFloat(s.odds)
+          }));
+          savedSelections = formatted;
+          
+          // Clear query param so reload doesn't keep adding them
+          const url = new URL(window.location);
+          url.searchParams.delete('share');
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+
+          // Proactively trigger opening the betslip drawer once page renders
+          setTimeout(() => {
+            const slip = document.getElementById('app-betslip');
+            if (slip) slip.classList.add('active');
+          }, 600);
+        }
+      }
+    } catch (err) {
+      console.warn("[SHARE LOAD ERROR]:", err.message);
+    }
+
     this.data = {
       isLoggedIn: false,
       token: localStorage.getItem('betpulse_token') || null,
