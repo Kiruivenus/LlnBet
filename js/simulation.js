@@ -199,9 +199,14 @@ class SimulationEngine {
 
       selections.forEach(sel => {
         const match = this.matches.find(m => m.id === sel.matchId);
-        if (!match) return;
+        if (!match) {
+          allFinished = false;
+          return;
+        }
 
-        const isFinished = !match.isLive || match.timer === 'FT' || match.timer === '90+' || (typeof match.timer === 'string' && parseInt(match.timer) >= 90);
+        const hasStarted = new Date(match.kickoffTime) <= new Date();
+        const isFinished = hasStarted && (!match.isLive || match.timer === 'FT' || match.timer === '90+' || (typeof match.timer === 'string' && parseInt(match.timer) >= 90));
+        
         if (!isFinished) {
           allFinished = false;
           return;
@@ -236,30 +241,42 @@ class SimulationEngine {
           selWon = homeScore >= awayScore;
         }
 
+        // Tag individual selection status
+        sel.status = selWon ? 'won' : 'lost';
+
         if (!selWon) {
           allWon = false;
         }
       });
 
       if (allFinished) {
-        if (allWon) {
-          bet.status = 'WON';
-          const winAmt = bet.possiblePayout || (bet.stake * (bet.totalOdds || bet.odds || 2));
-          bet.winnings = winAmt;
-          
-          if (state.data.user) {
-            state.data.user.balance += winAmt;
-            state.notify('user');
-          }
-          state.refreshUserData();
-          state.notify('placedBets');
+        const finalStatus = allWon ? 'WON' : 'LOST';
+        const winAmt = allWon ? (bet.possiblePayout || (bet.stake * (bet.totalOdds || bet.odds || 2))) : 0;
+        
+        // Optimistic local state update to prevent double triggers
+        bet.status = finalStatus;
+        bet.winnings = winAmt;
 
-          alert(`🎉 CONGRATULATIONS! Your Bet Ticket ${bet.betId || bet.id} WON!\n\nKES ${winAmt.toLocaleString()} has been credited automatically to your wallet.`);
-        } else {
-          bet.status = 'LOST';
-          bet.winnings = 0;
-          state.notify('placedBets');
-        }
+        fetch(`/api/bets/${bet.betId || bet.id}/settle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: finalStatus,
+            selections: selections,
+            winnings: winAmt
+          })
+        })
+        .then(async r => {
+          if (r.ok) {
+            if (finalStatus === 'WON') {
+              alert(`🎉 CONGRATULATIONS! Your Bet Ticket ${bet.betId || bet.id} WON!\n\nKES ${winAmt.toLocaleString()} has been credited automatically to your wallet.`);
+            }
+            state.refreshUserData();
+          }
+        })
+        .catch(err => {
+          console.warn("Failed to settle bet on backend:", err);
+        });
       }
     });
   }

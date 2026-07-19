@@ -731,6 +731,57 @@ app.get('/api/bets/my-bets', authenticateToken, async (req, res) => {
   }
 });
 
+// Endpoint: Update Settle Bet Status & Selections outcomes in MongoDB
+app.post('/api/bets/:id/settle', async (req, res) => {
+  try {
+    const betId = req.params.id;
+    const { status, selections, winnings } = req.body;
+
+    if (mongoose.connection.readyState === 1) {
+      const bet = await Bet.findOne({ betId });
+      if (!bet) return res.status(404).json({ error: "Bet not found." });
+
+      if (bet.status !== 'OPEN') {
+        return res.json({ success: true, message: "Bet is already settled." });
+      }
+
+      bet.status = status;
+      if (selections) bet.selections = selections;
+      if (winnings !== undefined) bet.cashoutAmount = winnings;
+      await bet.save();
+
+      // If the bet won, credit user balance!
+      if (status === 'WON' && winnings > 0) {
+        const user = await User.findById(bet.userId);
+        if (user) {
+          user.balance += winnings;
+          await user.save();
+
+          await Transaction.create({
+            userId: user._id.toString(),
+            type: 'BET_WON',
+            amount: winnings,
+            status: 'COMPLETED',
+            reference: `WIN-${betId}`,
+            description: `Winnings payout for Bet Ticket #${betId}`
+          });
+
+          await Notification.create({
+            userId: user._id.toString(),
+            title: "Bet Won! Payout Credited",
+            message: `Congratulations! Your bet ticket #${betId} won KES ${winnings.toLocaleString()}. Funds have been credited to your wallet.`,
+            type: "bet"
+          });
+        }
+      }
+      return res.json({ success: true });
+    }
+    return res.status(400).json({ error: "No active database connection." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to settle bet." });
+  }
+});
+
 // Endpoint: Fetch User's Transaction History
 app.get('/api/wallet/transactions', authenticateToken, async (req, res) => {
   try {

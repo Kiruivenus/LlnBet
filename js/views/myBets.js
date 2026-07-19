@@ -133,18 +133,34 @@ export function renderMyBetsView() {
 
               <!-- Expandable details drawer (hidden by default) -->
               <div class="bet-ticket-details" id="ticket-details-${bet.id}">
-                ${bet.selections.map(sel => `
-                  <div class="bet-ticket-selection-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                      <strong style="color:var(--text-primary); font-size:0.9rem;">${sel.team}</strong>
-                      <span style="font-family:var(--font-mono); font-weight:800; color:var(--accent-emerald);">${formatOdds(sel.odds)}</span>
+                ${bet.selections.map(sel => {
+                  let statusBadge = '<span style="color:var(--text-muted); font-size:0.72rem; font-weight:700;">Pending</span>';
+                  if (sel.status === 'won') {
+                    statusBadge = '<span style="color:var(--accent-emerald); font-size:0.72rem; font-weight:900;">✓ Won</span>';
+                  } else if (sel.status === 'lost') {
+                    statusBadge = '<span style="color:var(--accent-live); font-size:0.72rem; font-weight:900;">✗ Lost</span>';
+                  } else if (bet.status === 'won') {
+                    statusBadge = '<span style="color:var(--accent-emerald); font-size:0.72rem; font-weight:900;">✓ Won</span>';
+                  } else if (bet.status === 'lost' && sel.status !== 'won') {
+                    statusBadge = '<span style="color:var(--accent-live); font-size:0.72rem; font-weight:900;">✗ Lost</span>';
+                  }
+
+                  return `
+                    <div class="bet-ticket-selection-item" style="border-bottom:1px solid var(--border-color); padding-bottom:8px; margin-bottom:8px; last-child: border-bottom:none;">
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="color:var(--text-primary); font-size:0.9rem;">${sel.team}</strong>
+                        <span style="font-family:var(--font-mono); font-weight:800; color:var(--accent-emerald);">${formatOdds(sel.odds)}</span>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">
+                        <span>Market: ${sel.market}</span>
+                        <span>${statusBadge}</span>
+                      </div>
+                      <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+                        ${sel.matchName}
+                      </div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">
-                      <span>Market: ${sel.market}</span>
-                      <span>${sel.matchName}</span>
-                    </div>
-                  </div>
-                `).join('')}
+                  `;
+                }).join('')}
 
                 <!-- Cash Out panel -->
                 ${bet.status === 'active' ? `
