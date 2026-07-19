@@ -62,8 +62,17 @@ class State {
     } catch (e) {}
 
     // Check for shared selections in query params
+    let initialRefCode = '';
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get('ref');
+      if (refCode) {
+        initialRefCode = refCode;
+        try { sessionStorage.setItem('llnbet_ref_code', refCode); } catch(e) {}
+      } else {
+        try { initialRefCode = sessionStorage.getItem('llnbet_ref_code') || ''; } catch(e) {}
+      }
+
       const shareB64 = urlParams.get('share');
       if (shareB64) {
         const decodedJson = decodeURIComponent(escape(atob(shareB64)));
@@ -107,6 +116,7 @@ class State {
         selections: savedSelections, // { id, matchId, matchName, team, market, odds }
         stakes: savedStakes
       },
+      referralCode: initialRefCode,
       currentPage: initialRoute.page,
       selectedMatchId: initialRoute.matchId,
       searchQuery: '',
@@ -320,11 +330,11 @@ class State {
   }
 
   // User Registration Action against MongoDB
-  async register(phone, password, name) {
+  async register(phone, password, name, referredBy = null) {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password, name })
+      body: JSON.stringify({ phone, password, name, referredBy })
     });
 
     const data = await res.json();

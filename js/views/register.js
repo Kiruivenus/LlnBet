@@ -51,6 +51,12 @@ export function renderRegisterView() {
             </div>
           </div>
 
+          <!-- Referral Code Input (Pre-filled from state.data.referralCode if present) -->
+          <div class="auth-form-group">
+            <label class="auth-input-label" for="register-ref-code">Referral Code (Optional)</label>
+            <input type="text" class="auth-input" id="register-ref-code" placeholder="e.g. 0712345678" value="${state.data.referralCode || ''}" autocomplete="off" style="width: 100%;" />
+          </div>
+
           <!-- BCLB Terms Checkbox -->
           <div class="auth-checkbox-group">
             <input type="checkbox" id="register-terms-agree" required />
@@ -139,11 +145,13 @@ export function renderRegisterView() {
       return;
     }
 
+    const referralCode = document.getElementById('register-ref-code')?.value.trim() || '';
+
     try {
       submitBtn.disabled = true;
       submitBtn.textContent = "Registering...";
 
-      await state.register(phone, password);
+      await state.register(phone, password, null, referralCode);
       alert("Registration Successful!\n\nWelcome to LlnBet. Your betting account has been created.");
       state.setPage('home');
     } catch (err) {

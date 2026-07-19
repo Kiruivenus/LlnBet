@@ -32,6 +32,9 @@ const UserSchema = new mongoose.Schema({
   balance: { type: Number, default: 0.00 },
   bonusBalance: { type: Number, default: 0.00 },
   verified: { type: Boolean, default: true },
+  referredBy: { type: String, default: null },
+  referralCount: { type: Number, default: 0 },
+  referralEarnings: { type: Number, default: 0.00 },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -228,8 +231,8 @@ async function createUser(data) {
 // Endpoint: Register User
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { phone, password, name } = req.body;
-    console.log("[REGISTER REQUEST] Phone:", phone, "MongoDB readyState:", mongoose.connection.readyState);
+    const { phone, password, name, referredBy } = req.body;
+    console.log("[REGISTER REQUEST] Phone:", phone, "ReferredBy:", referredBy, "MongoDB readyState:", mongoose.connection.readyState);
 
     if (!phone || !password) {
       return res.status(400).json({ error: "Phone number and password are required." });
@@ -244,6 +247,16 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: "Password must be at least 4 characters long." });
     }
 
+    let cleanReferrer = null;
+    if (referredBy) {
+      try {
+        cleanReferrer = formatPhoneNumber(referredBy);
+      } catch (err) {}
+    }
+    if (cleanReferrer === cleanedPhone) {
+      cleanReferrer = null;
+    }
+
     // Check if user exists
     const existingUser = await findUserByPhone(cleanedPhone);
     if (existingUser) {
@@ -256,7 +269,8 @@ app.post('/api/auth/register', async (req, res) => {
       password: hashedPassword,
       name: name || `Player_${cleanedPhone.slice(-4)}`,
       balance: 0.00,
-      bonusBalance: 0.00
+      bonusBalance: 0.00,
+      referredBy: cleanReferrer
     });
 
     const userId = newUser._id ? newUser._id.toString() : newUser.id;
@@ -270,6 +284,49 @@ app.post('/api/auth/register', async (req, res) => {
       }).catch(() => {});
     }
 
+    // Process Referral Bonus for Referrer
+    if (cleanReferrer) {
+      const referrer = await findUserByPhone(cleanReferrer);
+      if (referrer) {
+        if (mongoose.connection.readyState === 1) {
+          try {
+            await User.updateOne(
+              { phone: cleanReferrer },
+              { $inc: { referralCount: 1, referralEarnings: 500, balance: 500 } }
+            );
+          } catch (e) {
+            console.error("Failed to update database referrer:", e);
+          }
+        }
+        
+        // Sync Memory User Map representation
+        referrer.referralCount = (referrer.referralCount || 0) + 1;
+        referrer.referralEarnings = (referrer.referralEarnings || 0) + 500;
+        referrer.balance = (referrer.balance || 0) + 500;
+        memoryUsers.set(cleanReferrer, referrer);
+
+        // Add reward transaction & system alert notification for the referrer
+        const refUserId = referrer._id ? referrer._id.toString() : referrer.id;
+        if (mongoose.connection.readyState === 1) {
+          Transaction.create({
+            userId: refUserId,
+            type: 'BET_WON',
+            amount: 500.00,
+            status: 'COMPLETED',
+            reference: 'REF_' + Math.floor(100000 + Math.random() * 900000),
+            description: `Referral signup reward for inviting Player_${cleanedPhone.slice(-4)}`
+          }).catch(() => {});
+
+          Notification.create({
+            userId: refUserId,
+            title: "Referral Reward Credited!",
+            message: `Congratulations! Player_${cleanedPhone.slice(-4)} has successfully signed up using your link. KES 500.00 bonus has been credited to your balance.`,
+            type: "system"
+          }).catch(() => {});
+        }
+      }
+    }
+
     const token = jwt.sign({ id: userId, phone: newUser.phone }, JWT_SECRET, { expiresIn: '7d' });
 
     return res.json({
@@ -281,6 +338,8 @@ app.post('/api/auth/register', async (req, res) => {
         name: newUser.name,
         balance: newUser.balance,
         bonusBalance: newUser.bonusBalance,
+        referralCount: newUser.referralCount || 0,
+        referralEarnings: newUser.referralEarnings || 0.00,
         verified: newUser.verified !== false
       }
     });
@@ -324,6 +383,8 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name,
         balance: user.balance,
         bonusBalance: user.bonusBalance,
+        referralCount: user.referralCount || 0,
+        referralEarnings: user.referralEarnings || 0.00,
         verified: user.verified !== false
       }
     });
@@ -351,6 +412,8 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         name: user.name,
         balance: user.balance,
         bonusBalance: user.bonusBalance,
+        referralCount: user.referralCount || 0,
+        referralEarnings: user.referralEarnings || 0.00,
         verified: user.verified !== false
       }
     });

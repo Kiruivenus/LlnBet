@@ -6,8 +6,10 @@ export function renderReferralView() {
   if (!container) return;
 
   const user = state.data.user;
-  const userPhone = user ? user.phone : '254700000000';
-  const refLink = `${window.location.origin}/register?ref=${userPhone}`;
+  const userPhone = user ? user.phone : '';
+  const refLink = userPhone ? `${window.location.origin}/register?ref=${userPhone}` : 'Please login to view your unique link.';
+  const referralCount = user ? (user.referralCount || 0) : 0;
+  const referralEarnings = user ? (user.referralEarnings || 0.00) : 0.00;
 
   container.innerHTML = `
     <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -20,11 +22,11 @@ export function renderReferralView() {
       <!-- Referral statistics cards -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; text-align: center;">
-          <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 900; color: var(--accent-emerald);">3</div>
+          <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 900; color: var(--accent-emerald);">${referralCount}</div>
           <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Friends Joined</p>
         </div>
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; text-align: center;">
-          <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 900; color: var(--accent-orange);">KES 1,500.00</div>
+          <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 900; color: var(--accent-orange);">${formatCurrency(referralEarnings)}</div>
           <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Total Earned</p>
         </div>
       </div>
