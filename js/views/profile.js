@@ -627,9 +627,12 @@ export function renderProfileView() {
     themeSwitch?.addEventListener('change', (e) => {
       if (e.target.checked) {
         document.body.classList.add('light-theme');
+        localStorage.setItem('llnbet_theme', 'light');
       } else {
         document.body.classList.remove('light-theme');
+        localStorage.setItem('llnbet_theme', 'dark');
       }
+      state.notify('theme');
     });
 
     const dsSwitch = document.getElementById('data-saver-switch');

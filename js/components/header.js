@@ -33,14 +33,18 @@ export function renderHeader() {
         <span class="badge-dot"></span>
       </button>
 
-      <!-- Account Settings / Profile Dropdown -->
-      <button class="profile-trigger" id="header-profile-btn" aria-label="Profile">
-        <img class="avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Profile" />
+      <!-- Theme Switcher Button -->
+      <button class="icon-btn" id="header-theme-toggle" aria-label="Toggle Theme" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-surface); border: none; color: var(--text-primary); cursor: pointer; margin-left: 4px;">
+        ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
       </button>
     `;
   } else {
     rightSideHtml = `
       <div style="display:flex; align-items:center; gap:6px;">
+        <!-- Theme Switcher Button -->
+        <button class="icon-btn" id="header-theme-toggle" aria-label="Toggle Theme" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-surface); border: none; color: var(--text-primary); cursor: pointer; margin-right: 6px;">
+          ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
+        </button>
         <button class="quick-stake-btn" id="header-login-btn" style="padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight:700; border: 1px solid var(--accent-emerald); color:var(--accent-emerald); background:none; cursor:pointer;">
           Login
         </button>
@@ -125,6 +129,19 @@ export function renderHeader() {
 
 
 
+  // Bind Theme Toggle Listener
+  document.getElementById('header-theme-toggle')?.addEventListener('click', () => {
+    const isLight = document.body.classList.contains('light-theme');
+    if (isLight) {
+      document.body.classList.remove('light-theme');
+      localStorage.setItem('llnbet_theme', 'dark');
+    } else {
+      document.body.classList.add('light-theme');
+      localStorage.setItem('llnbet_theme', 'light');
+    }
+    state.notify('theme');
+  });
+
   if (isLoggedIn) {
     document.getElementById('header-wallet-trigger')?.addEventListener('click', () => {
       state.setPage('profile');
@@ -132,10 +149,6 @@ export function renderHeader() {
 
     document.getElementById('header-notif-btn')?.addEventListener('click', () => {
       state.setPage('notifications');
-    });
-
-    document.getElementById('header-profile-btn')?.addEventListener('click', () => {
-      state.setPage('profile');
     });
   } else {
     document.getElementById('header-login-btn')?.addEventListener('click', () => {

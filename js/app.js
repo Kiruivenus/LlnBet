@@ -7,6 +7,14 @@ import { renderBetslip } from './components/betslip.js';
 import { renderSearchModal } from './components/searchModal.js';
 import { getMaterialIcon } from './utils.js';
 
+// Load theme preference on boot
+const savedTheme = localStorage.getItem('llnbet_theme') || 'dark';
+if (savedTheme === 'light') {
+  document.body.classList.add('light-theme');
+} else {
+  document.body.classList.remove('light-theme');
+}
+
 // Global Custom Alert Monkey-patching
 const originalAlert = window.alert;
 window.alert = function(message) {
@@ -149,6 +157,12 @@ function initApp() {
     renderBetslip();
     renderMobileNavBar();
     route();
+  });
+
+  state.subscribe('theme', () => {
+    renderHeader();
+    renderSidebar();
+    renderBetslip();
   });
 
   state.subscribe('user', () => {
