@@ -15,15 +15,18 @@ export async function renderAdminView() {
     </div>
 
     <!-- Admin Tabs -->
-    <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border-color); margin-top: 20px; background: var(--bg-surface); padding: 8px 12px; border-radius: var(--radius-md) var(--radius-md) 0 0;">
-      <button class="admin-tab-btn" data-tab="users" style="flex: 1; padding: 12px; background: ${activeTab === 'users' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'users' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
+    <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border-color); margin-top: 20px; background: var(--bg-surface); padding: 8px 12px; border-radius: var(--radius-md) var(--radius-md) 0 0; flex-wrap: wrap;">
+      <button class="admin-tab-btn" data-tab="users" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'users' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'users' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
         PLAYERS
       </button>
-      <button class="admin-tab-btn" data-tab="withdrawals" style="flex: 1; padding: 12px; background: ${activeTab === 'withdrawals' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'withdrawals' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
+      <button class="admin-tab-btn" data-tab="withdrawals" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'withdrawals' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'withdrawals' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
         WITHDRAWALS
       </button>
-      <button class="admin-tab-btn" data-tab="settings" style="flex: 1; padding: 12px; background: ${activeTab === 'settings' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'settings' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
+      <button class="admin-tab-btn" data-tab="settings" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'settings' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'settings' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
         SETTINGS
+      </button>
+      <button class="admin-tab-btn" data-tab="telemetry" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'telemetry' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'telemetry' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
+        TELEMETRY
       </button>
     </div>
 
@@ -300,6 +303,75 @@ export async function renderAdminView() {
           alert("Failed to save configuration settings: " + err.message);
         });
       });
+
+    } catch (err) {
+      contentEl.innerHTML = `<div style="color:var(--accent-live); text-align:center; padding:40px;">Error: ${err.message}</div>`;
+    }
+  }
+
+  else if (activeTab === 'telemetry') {
+    try {
+      const res = await fetch('/api/admin/telemetry', { headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const t = data.telemetry || {};
+
+      contentEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary);">Backend Telemetry</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">Real-time database connection pooling and Vercel memory caching stats.</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <!-- Database State Card -->
+            <div style="background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800;">Database Connection</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${t.dbState === 'Connected' ? '#10b981' : '#ef4444'};"></span>
+                <span style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">${t.dbState}</span>
+              </div>
+            </div>
+
+            <!-- Pool Reuse Card -->
+            <div style="background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800;">Global Pool Cache</span>
+              <span style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: ${t.poolCached ? '#10b981' : '#f59e0b'};">
+                ${t.poolCached ? 'ACTIVE (Singleton)' : 'INACTIVE'}
+              </span>
+            </div>
+
+            <!-- Cache Count Card -->
+            <div style="background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800;">Warmed Cached Matches</span>
+              <span style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">${t.cacheCount} Records</span>
+            </div>
+
+            <!-- Sync Lock Card -->
+            <div style="background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800;">Synchronization Lock</span>
+              <span style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: ${t.syncInProgress ? '#f59e0b' : 'var(--text-secondary)'};">
+                ${t.syncInProgress ? 'SYNCING (Locked)' : 'IDLE (Unlocked)'}
+              </span>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">Detailed Metrics & Timers</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; color: var(--text-secondary);">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                <span>Last Cache Refresh:</span>
+                <span style="font-family: var(--font-mono); font-weight: 700;">${t.cacheAgeSeconds !== null ? `${t.cacheAgeSeconds}s ago` : 'Never'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Last ESPN Board Sync:</span>
+                <span style="font-family: var(--font-mono); font-weight: 700;">${t.lastSyncAgeSeconds !== null ? `${t.lastSyncAgeSeconds}s ago` : 'Never'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
 
     } catch (err) {
       contentEl.innerHTML = `<div style="color:var(--accent-live); text-align:center; padding:40px;">Error: ${err.message}</div>`;

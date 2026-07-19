@@ -1119,6 +1119,34 @@ app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Endpoint: Fetch backend telemetry for active connection status and cache hits
+app.get('/api/admin/telemetry', authenticateAdmin, async (req, res) => {
+  try {
+    await connectDb();
+    
+    const dbState = mongoose.connection.readyState;
+    const dbStateLabel = dbState === 0 ? "Disconnected" : dbState === 1 ? "Connected" : dbState === 2 ? "Connecting" : "Disconnecting";
+    
+    const cacheCount = matchCache.matches ? matchCache.matches.length : 0;
+    const cacheAgeSeconds = matchCache.lastFetched ? Math.round((Date.now() - matchCache.lastFetched) / 1000) : null;
+    const lastSyncAgeSeconds = lastSyncTime ? Math.round((Date.now() - lastSyncTime) / 1000) : null;
+
+    return res.json({
+      success: true,
+      telemetry: {
+        dbState: dbStateLabel,
+        poolCached: globalThis.__mongoose_cached ? true : false,
+        cacheCount,
+        cacheAgeSeconds,
+        lastSyncAgeSeconds,
+        syncInProgress: matchCache.syncInProgress
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch telemetry data." });
+  }
+});
+
 // Start Express Server
 if (process.env.VERCEL !== '1') {
   const PORT = process.env.PORT || 8080;
