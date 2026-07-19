@@ -258,7 +258,7 @@ export function renderHomeView() {
   };
 
   const goToSlide = (idx) => {
-    if (!container.querySelector('.hero-slide-wrapper')) return;
+    if (!container.querySelector('.hero-slider-wrapper')) return;
     slides[currentSlideIdx].classList.remove('active');
     currentSlideIdx = (idx + slides.length) % slides.length;
     slides[currentSlideIdx].classList.add('active');
@@ -266,7 +266,7 @@ export function renderHomeView() {
   };
 
   const nextSlide = () => {
-    if (!container.querySelector('.hero-slide-wrapper')) {
+    if (!container.querySelector('.hero-slider-wrapper')) {
       clearInterval(slideInterval);
       return;
     }
@@ -274,7 +274,7 @@ export function renderHomeView() {
   };
 
   const prevSlide = () => {
-    if (!container.querySelector('.hero-slide-wrapper')) {
+    if (!container.querySelector('.hero-slider-wrapper')) {
       clearInterval(slideInterval);
       return;
     }

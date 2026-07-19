@@ -3907,6 +3907,7 @@ body.light-theme .market-odds-btn.selected .selection-odds {
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .hero-slider-track {
