@@ -13,7 +13,7 @@ export function renderHomeView() {
 
   const sportMatches = matches.filter(m => m.sport === activeSport);
   const liveMatches = sportMatches.filter(m => m.isLive);
-  const upcomingMatches = sportMatches.filter(m => !m.isLive);
+  const upcomingMatches = sportMatches.filter(m => !m.isLive && new Date(m.kickoffTime) > new Date());
 
   let html = `
     <!-- Premium Promo Hero Banner -->

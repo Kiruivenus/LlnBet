@@ -27,8 +27,20 @@ export function renderMyBetsView() {
   const currentUpdateTimestamp = getTimestamp();
 
   const drawMyBets = () => {
+    // Normalize raw database bets into layout structure
+    const normalizedBets = placedBets.map(b => ({
+      id: b.betId || b.id || 'N/A',
+      type: b.selections?.length > 1 ? 'Multi Bet' : 'Single Bet',
+      status: (b.status === 'OPEN' ? 'active' : b.status).toLowerCase(),
+      date: b.createdAt ? new Date(b.createdAt).toLocaleString() : 'N/A',
+      stake: b.stake || 0,
+      possiblePayout: b.possiblePayout || 0,
+      winnings: b.possiblePayout || 0,
+      selections: b.selections || []
+    }));
+
     // Apply filters based on local state
-    let filteredList = placedBets;
+    let filteredList = normalizedBets;
 
     // Filter by category
     if (activeCategory === 'jackpot') {
