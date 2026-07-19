@@ -37,8 +37,12 @@ export async function renderProfileView() {
     container.innerHTML = `
       <!-- Phone Header -->
       <div style="display:flex; align-items:center; gap:16px; background:var(--bg-surface); padding:20px; border-radius:var(--radius-lg); border:1px solid var(--border-color);">
-        <div style="background:var(--accent-emerald-glow); color:var(--accent-emerald); width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-          ${getMaterialIcon('user', 'large-profile-icon')}
+        <div style="position:relative; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg, var(--accent-emerald), #10b981); display:flex; align-items:center; justify-content:center; color:#080a0f; font-family:var(--font-display); font-weight:900; font-size:1.45rem; box-shadow:0 4px 14px rgba(16,185,129,0.25);">
+          ${user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'LP'}
+          <!-- Verified Indicator Badge -->
+          <div style="position:absolute; bottom:-2px; right:-2px; background:#10b981; border:2px solid var(--bg-surface); width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:bold;">
+            ✓
+          </div>
         </div>
         <div>
           <h2 style="font-size:1.3rem; font-family:var(--font-display); font-weight:700;">+${user?.phone || '254700000000'}</h2>
@@ -93,58 +97,74 @@ export async function renderProfileView() {
       </div>
 
       <!-- DEPOSIT BOX -->
-      <div class="wallet-card" style="margin-top:16px; gap: 12px;">
-        <div>
-          <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Deposit</h3>
-          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Send money into your LlnBet account</p>
+      <div class="wallet-card" style="margin-top:16px; gap:16px; background:var(--bg-surface); border:1px solid var(--border-color); padding:20px; border-radius:var(--radius-lg); display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(0, 230, 118, 0.1); color:#00e676; display:flex; align-items:center; justify-content:center;">
+            ${getMaterialIcon('account_balance_wallet')}
+          </div>
+          <div>
+            <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-primary);">Deposit Funds</h3>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1px;">Instantly top up via M-Pesa STK push</p>
+          </div>
         </div>
 
-        <!-- Editable Adjuster Input -->
-        <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; justify-content:space-between; height:48px; padding:0 12px;">
-          <button id="dep-decrement-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">-</button>
-          <div style="display:flex; align-items:center; gap:4px; flex:1; justify-content:center;">
-            <span style="font-size:0.85rem; color:var(--text-secondary); font-family:var(--font-mono); font-weight:800;">KES</span>
-            <input type="number" id="dep-val-input" value="${depositAmount}" style="background:none; border:none; color:var(--text-primary); font-family:var(--font-mono); font-weight:800; font-size:1.15rem; width:100px; text-align:center; outline:none; -moz-appearance: textfield;" min="10" />
+        <!-- Adjustable Input Group -->
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:0.72rem; text-transform:uppercase; color:var(--text-muted); font-weight:800; letter-spacing:0.05em;">Enter Deposit Amount</span>
+          <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:12px; overflow:hidden; justify-content:space-between; height:52px; padding:0 16px;">
+            <button id="dep-decrement-btn" style="background:none; border:none; width:40px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.6rem; font-weight:700; outline:none;">-</button>
+            <div style="display:flex; align-items:center; gap:6px; flex:1; justify-content:center;">
+              <span style="font-size:0.9rem; color:var(--text-secondary); font-family:var(--font-mono); font-weight:800;">KES</span>
+              <input type="number" id="dep-val-input" value="${depositAmount}" style="background:none; border:none; color:var(--text-primary); font-family:var(--font-mono); font-weight:800; font-size:1.25rem; width:120px; text-align:center; outline:none; -moz-appearance: textfield;" min="${minDeposit}" />
+            </div>
+            <button id="dep-increment-btn" style="background:none; border:none; width:40px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.6rem; font-weight:700; outline:none;">+</button>
           </div>
-          <button id="dep-increment-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">+</button>
+          <p style="font-size:0.72rem; color:var(--text-muted); line-height:1.4; margin-top:2px;">Min: <b>KES ${minDeposit.toLocaleString()}</b> • Max: <b>KES ${maxDeposit.toLocaleString()}</b></p>
         </div>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES ${minDeposit.toLocaleString()}, Maximum KES ${maxDeposit.toLocaleString()}. All transactions are subject to 5% tax.</p>
 
         <!-- Quick Amount Selectors -->
-        <div class="quick-stakes-grid" style="grid-template-columns: repeat(4, 1fr);">
-          <button class="quick-stake-btn profile-dep-quick" data-val="100">+100</button>
-          <button class="quick-stake-btn profile-dep-quick" data-val="200">+200</button>
-          <button class="quick-stake-btn profile-dep-quick" data-val="500">+500</button>
-          <button class="quick-stake-btn profile-dep-quick" data-val="1000">+1000</button>
+        <div class="quick-stakes-grid" style="grid-template-columns: repeat(4, 1fr); gap:8px;">
+          <button class="quick-stake-btn profile-dep-quick" data-val="100" style="padding:10px; font-weight:700; border-radius:8px;">+100</button>
+          <button class="quick-stake-btn profile-dep-quick" data-val="250" style="padding:10px; font-weight:700; border-radius:8px;">+250</button>
+          <button class="quick-stake-btn profile-dep-quick" data-val="500" style="padding:10px; font-weight:700; border-radius:8px;">+500</button>
+          <button class="quick-stake-btn profile-dep-quick" data-val="1000" style="padding:10px; font-weight:700; border-radius:8px;">+1000</button>
         </div>
 
-        <!-- Single clean full-width M-Pesa Deposit button -->
-        <button class="wallet-submit-btn" id="profile-dep-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.9rem; padding:12px; font-weight:800; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; width:100%;">
-          ${getMaterialIcon('smartphone')} Deposit with Mpesa
+        <!-- M-Pesa Deposit button -->
+        <button class="wallet-submit-btn" id="profile-dep-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.95rem; padding:14px; font-weight:900; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:10px; border:none; cursor:pointer; width:100%; transition:all 0.2s; box-shadow:0 4px 12px rgba(0,230,118,0.2);">
+          ${getMaterialIcon('smartphone')} Send Mpesa STK Push
         </button>
       </div>
 
       <!-- WITHDRAWAL BOX -->
-      <div class="wallet-card" style="margin-top:16px; gap: 12px;">
-        <div>
-          <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">Withdrawal</h3>
-          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Withdraw money from your LlnBet wallet</p>
-        </div>
-
-        <!-- Editable Adjuster Input -->
-        <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; justify-content:space-between; height:48px; padding:0 12px;">
-          <button id="with-decrement-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">-</button>
-          <div style="display:flex; align-items:center; gap:4px; flex:1; justify-content:center;">
-            <span style="font-size:0.85rem; color:var(--text-secondary); font-family:var(--font-mono); font-weight:800;">KES</span>
-            <input type="number" id="with-val-input" value="${withdrawAmount}" style="background:none; border:none; color:var(--text-primary); font-family:var(--font-mono); font-weight:800; font-size:1.15rem; width:100px; text-align:center; outline:none; -moz-appearance: textfield;" min="50" />
+      <div class="wallet-card" style="margin-top:16px; gap:16px; background:var(--bg-surface); border:1px solid var(--border-color); padding:20px; border-radius:var(--radius-lg); display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(253, 185, 39, 0.1); color:#fdb927; display:flex; align-items:center; justify-content:center;">
+            ${getMaterialIcon('payments')}
           </div>
-          <button id="with-increment-btn" style="background:none; border:none; width:36px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; font-weight:700; outline:none;">+</button>
+          <div>
+            <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-primary);">Withdraw Funds</h3>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1px;">Send earnings directly to your mobile phone</p>
+          </div>
         </div>
-        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-4px;">Minimum KES ${minWithdrawal.toLocaleString()}, Maximum KES ${maxWithdrawal.toLocaleString()}. All transactions are subject to 5% tax.</p>
 
-        <!-- Single clean full-width M-Pesa Withdraw button -->
-        <button class="wallet-submit-btn" id="profile-with-mpesa-btn" style="background:#00e676; color:#080a0f; font-size:0.9rem; padding:12px; font-weight:800; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; width:100%;">
-          ${getMaterialIcon('smartphone')} Withdraw with Mpesa
+        <!-- Adjustable Input Group -->
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:0.72rem; text-transform:uppercase; color:var(--text-muted); font-weight:800; letter-spacing:0.05em;">Enter Withdrawal Amount</span>
+          <div style="display:flex; align-items:center; background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:12px; overflow:hidden; justify-content:space-between; height:52px; padding:0 16px;">
+            <button id="with-decrement-btn" style="background:none; border:none; width:40px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.6rem; font-weight:700; outline:none;">-</button>
+            <div style="display:flex; align-items:center; gap:6px; flex:1; justify-content:center;">
+              <span style="font-size:0.9rem; color:var(--text-secondary); font-family:var(--font-mono); font-weight:800;">KES</span>
+              <input type="number" id="with-val-input" value="${withdrawAmount}" style="background:none; border:none; color:var(--text-primary); font-family:var(--font-mono); font-weight:800; font-size:1.25rem; width:120px; text-align:center; outline:none; -moz-appearance: textfield;" min="${minWithdrawal}" />
+            </div>
+            <button id="with-increment-btn" style="background:none; border:none; width:40px; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; font-size:1.6rem; font-weight:700; outline:none;">+</button>
+          </div>
+          <p style="font-size:0.72rem; color:var(--text-muted); line-height:1.4; margin-top:2px;">Min: <b>KES ${minWithdrawal.toLocaleString()}</b> • Max: <b>KES ${maxWithdrawal.toLocaleString()}</b> • 5% excise tax applied</p>
+        </div>
+
+        <!-- M-Pesa Withdraw button -->
+        <button class="wallet-submit-btn" id="profile-with-mpesa-btn" style="background:#fdb927; color:#080a0f; font-size:0.95rem; padding:14px; font-weight:900; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:10px; border:none; cursor:pointer; width:100%; transition:all 0.2s; box-shadow:0 4px 12px rgba(253,185,39,0.2);">
+          ${getMaterialIcon('smartphone')} Withdraw to M-Pesa
         </button>
       </div>
 
