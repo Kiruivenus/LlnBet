@@ -3759,6 +3759,144 @@ body.light-theme .skeleton-box {
   100% { background-position: -200% 0; }
 }
 
+/* Market Page Accordion & Odds Grid Design */
+:root {
+  --market-hdr-bg: #141b27;
+  --market-hdr-text: var(--text-primary);
+  --market-hdr-pin: var(--accent-emerald);
+  --market-btn-bg: #1c2635;
+  --market-btn-border: #28374d;
+  --market-btn-text: var(--text-secondary);
+  --market-btn-val: var(--text-primary);
+}
+
+body.light-theme {
+  --market-hdr-bg: #e2f0d9;
+  --market-hdr-text: #2e4c2f;
+  --market-hdr-pin: #2e7d32;
+  --market-btn-bg: #ffffff;
+  --market-btn-border: #d8e2dc;
+  --market-btn-text: #4a5568;
+  --market-btn-val: #1a202c;
+}
+
+.market-accordion {
+  background: var(--bg-charcoal);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.market-accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--market-hdr-bg);
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border-color);
+  transition: opacity 0.2s;
+}
+
+.market-accordion-header:hover {
+  opacity: 0.95;
+}
+
+.market-accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--market-hdr-text);
+}
+
+.market-accordion-header-left .pin-icon {
+  color: var(--market-hdr-pin);
+  font-size: 1.1rem;
+}
+
+.market-accordion-header-right {
+  display: flex;
+  align-items: center;
+  color: var(--market-hdr-text);
+}
+
+.market-accordion-content {
+  padding: 12px;
+  background: var(--bg-charcoal);
+}
+
+/* Responsive Odds Grid */
+.market-odds-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.market-odds-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--market-btn-bg);
+  border: 1px solid var(--market-btn-border);
+  border-radius: 8px;
+  color: var(--market-btn-text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  outline: none;
+}
+
+.market-odds-btn:hover:not(:disabled) {
+  border-color: var(--accent-emerald);
+}
+
+.market-odds-btn .selection-label {
+  font-weight: 500;
+  text-align: left;
+}
+
+.market-odds-btn .selection-odds {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--market-btn-val);
+  margin-left: 8px;
+}
+
+/* Selected active state (from the screenshots: green text and highlight background) */
+.market-odds-btn.selected {
+  background: var(--accent-emerald-glow) !important;
+  border-color: var(--accent-emerald) !important;
+  color: var(--accent-emerald) !important;
+}
+
+.market-odds-btn.selected .selection-odds {
+  color: var(--accent-emerald) !important;
+}
+
+body.light-theme .market-odds-btn.selected {
+  background: #e8f5e9 !important;
+  border-color: #2e7d32 !important;
+  color: #2e7d32 !important;
+}
+
+body.light-theme .market-odds-btn.selected .selection-odds {
+  color: #2e7d32 !important;
+}
+
+/* Suspended state */
+.market-odds-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg-obsidian);
+}
+
 
 
 

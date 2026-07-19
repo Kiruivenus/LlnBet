@@ -266,16 +266,18 @@ export function renderMatchDetailsView() {
           .filter(market => activeFilter === 'All Markets' || activeFilter === market.category)
           .map((market, mIdx) => {
             return `
-              <div class="market-accordion" style="background:var(--bg-charcoal); border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden;">
-                <div class="market-accordion-header" data-index="${mIdx}" style="display:flex; justify-content:space-between; align-items:center; padding:14px var(--spacing-md); background:var(--bg-surface); cursor:pointer; user-select:none;">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="material-icons-round" style="color:var(--text-muted); cursor:pointer;">star_border</span>
-                    <span class="market-title" style="font-family:var(--font-display); font-weight:700; font-size:0.9rem; color:var(--text-primary);">${market.name}</span>
+              <div class="market-accordion">
+                <div class="market-accordion-header" data-index="${mIdx}">
+                  <div class="market-accordion-header-left">
+                    <span class="material-icons-round pin-icon">push_pin</span>
+                    <span class="market-title">${market.name}</span>
                   </div>
-                  <span class="accordion-arrow-icon" style="display:flex; align-items:center; color:var(--text-muted);">${getMaterialIcon('menu')}</span>
+                  <div class="market-accordion-header-right">
+                    <span class="material-icons-round accordion-arrow-icon" style="font-size:1.4rem;">expand_less</span>
+                  </div>
                 </div>
-                <div class="market-accordion-content" id="market-content-${mIdx}" style="padding:var(--spacing-md); background:var(--bg-charcoal);">
-                  <div style="display:grid; grid-template-columns: repeat(${market.columns}, 1fr); gap:8px;">
+                <div class="market-accordion-content" id="market-content-${mIdx}">
+                  <div class="market-odds-grid" style="grid-template-columns: repeat(${market.columns}, 1fr);">
                     ${market.odds.map(odd => {
                       const isSelected = selections.some(s => s.id === odd.selectionId);
                       const flash = simulation.getFlashState(match.id, odd.selectionId);
@@ -283,23 +285,21 @@ export function renderMatchDetailsView() {
 
                       if (isSuspended) {
                         return `
-                          <button class="odds-btn suspended" disabled 
-                            style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px var(--spacing-md); background:var(--bg-obsidian); border:1px solid var(--border-color); border-radius:var(--radius-full); color:var(--text-muted); cursor:not-allowed; opacity:0.45;">
-                            <span style="font-weight:600; color:var(--text-muted);">${odd.label}</span>
-                            <span style="font-family:var(--font-mono); font-weight:800; color:var(--text-muted);">-</span>
+                          <button class="market-odds-btn" disabled>
+                            <span class="selection-label">${odd.label}</span>
+                            <span class="selection-odds">-</span>
                           </button>
                         `;
                       }
                       
                       return `
-                        <button class="odds-btn ${isSelected ? 'selected' : ''} ${flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : ''}" 
+                        <button class="market-odds-btn ${isSelected ? 'selected' : ''} ${flash === 'up' ? 'flash-up' : flash === 'down' ? 'flash-down' : ''}" 
                           data-id="${odd.selectionId}" 
                           data-team="${odd.label}" 
                           data-market="${market.name}" 
-                          data-value="${odd.value}"
-                          style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px var(--spacing-md); background:var(--bg-surface-active); border:1px solid var(--border-color); border-radius:var(--radius-full); color:var(--text-primary); cursor:pointer; font-family:var(--font-body); font-size:0.85rem; transition:all 0.2s;">
-                          <span style="font-weight:600; color:var(--text-secondary);">${odd.label}</span>
-                          <span style="font-family:var(--font-mono); font-weight:800; color:var(--text-primary);">${formatOdds(odd.value)}</span>
+                          data-value="${odd.value}">
+                          <span class="selection-label">${odd.label}</span>
+                          <span class="selection-odds">${formatOdds(odd.value)}</span>
                         </button>
                       `;
                     }).join('')}
@@ -329,36 +329,24 @@ export function renderMatchDetailsView() {
 
   // Accordions toggle listeners
   container.querySelectorAll('.market-accordion-header').forEach(header => {
-    header.addEventListener('click', (e) => {
-      // Toggle favorites star color
-      if (e.target.classList.contains('material-icons-round') && e.target.innerText.includes('star')) {
-        e.stopPropagation();
-        if (e.target.innerText === 'star_border') {
-          e.target.innerText = 'star';
-          e.target.style.color = '#fdb927';
-        } else {
-          e.target.innerText = 'star_border';
-          e.target.style.color = 'var(--text-muted)';
-        }
-        return;
-      }
-
+    header.addEventListener('click', () => {
       const idx = header.getAttribute('data-index');
       const content = document.getElementById(`market-content-${idx}`);
       if (content) {
+        const arrow = header.querySelector('.accordion-arrow-icon');
         if (content.style.display === 'none') {
           content.style.display = 'block';
-          header.querySelector('.accordion-arrow-icon').innerHTML = getMaterialIcon('menu');
+          if (arrow) arrow.innerText = 'expand_less';
         } else {
           content.style.display = 'none';
-          header.querySelector('.accordion-arrow-icon').innerHTML = getMaterialIcon('close');
+          if (arrow) arrow.innerText = 'expand_more';
         }
       }
     });
   });
 
   // Odds button selections handler
-  container.querySelectorAll('.odds-btn').forEach(btn => {
+  container.querySelectorAll('.market-odds-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const selectionId = btn.getAttribute('data-id');
       const team = btn.getAttribute('data-team');
