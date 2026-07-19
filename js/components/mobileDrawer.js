@@ -13,6 +13,7 @@ export function renderMobileDrawer() {
 
   const curPage = state.data.currentPage;
   const isLoggedIn = state.data.isLoggedIn;
+  const isUserAdmin = state.data.user && state.data.user.role === 'ADMIN';
 
   const menuSections = [
     {
@@ -31,6 +32,7 @@ export function renderMobileDrawer() {
         { id: 'drawer-nav-withdraw', label: 'Withdraw', icon: 'wallet', page: 'profile' },
         { id: 'drawer-nav-history', label: 'Bet History', icon: 'history', page: 'my-bets' },
         { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'user', page: 'referral' },
+        ...(isUserAdmin ? [{ id: 'drawer-nav-admin', label: 'Admin Portal', icon: 'shield', page: 'admin' }] : []),
         { id: 'drawer-nav-app', label: 'Download App', icon: 'deposit', action: () => alert("Download Mobile App:\n\nAn SMS with the direct Android APK download link has been sent to your registered phone number.") }
       ]
     },

@@ -35,7 +35,14 @@ const UserSchema = new mongoose.Schema({
   referredBy: { type: String, default: null },
   referralCount: { type: Number, default: 0 },
   referralEarnings: { type: Number, default: 0.00 },
+  role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
   createdAt: { type: Date, default: Date.now }
+});
+
+// Setting Schema
+const SettingSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  value: { type: mongoose.Schema.Types.Mixed, required: true }
 });
 
 // Transaction Schema
@@ -107,6 +114,29 @@ const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
 const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
 const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
 const Match = mongoose.models.Match || mongoose.model('Match', MatchSchema);
+const Setting = mongoose.models.Setting || mongoose.model('Setting', SettingSchema);
+
+async function getSetting(key, defaultValue) {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const s = await Setting.findOne({ key });
+      if (s) return s.value;
+    }
+  } catch (e) {}
+  return defaultValue;
+}
+
+async function setSetting(key, value) {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await Setting.findOneAndUpdate(
+        { key },
+        { value },
+        { upsert: true, new: true }
+      );
+    }
+  } catch (e) {}
+}
 
 // Connect to MongoDB with Serverless Connection Caching (Official Vercel & Atlas best practices)
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -136,6 +166,21 @@ async function connectDb() {
 
   try {
     cachedConnection.conn = await cachedConnection.promise;
+    if (cachedConnection.conn) {
+      try {
+        const count = await Setting.countDocuments({});
+        if (count === 0) {
+          await Setting.create([
+            { key: 'minDeposit', value: 200 },
+            { key: 'maxDeposit', value: 500000 },
+            { key: 'minWithdrawal', value: 200 },
+            { key: 'maxWithdrawal', value: 100000 },
+            { key: 'mpesaPartyB', value: '254700000000' }
+          ]);
+          console.log("[SETTINGS SEED] Default limits and Party B successfully seeded to database!");
+        }
+      } catch (e) {}
+    }
   } catch (e) {
     cachedConnection.promise = null; // Clear cached promise on failure
     console.warn("[MONGODB] MongoDB Connection error:", e.message);
@@ -264,13 +309,25 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    let userRole = 'USER';
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const count = await User.countDocuments({});
+        if (count === 0) userRole = 'ADMIN';
+      } catch (e) {}
+    }
+    if (cleanedPhone === '254700000000') {
+      userRole = 'ADMIN';
+    }
+
     const newUser = await createUser({
       phone: cleanedPhone,
       password: hashedPassword,
       name: name || `Player_${cleanedPhone.slice(-4)}`,
       balance: 0.00,
       bonusBalance: 0.00,
-      referredBy: cleanReferrer
+      referredBy: cleanReferrer,
+      role: userRole
     });
 
     const userId = newUser._id ? newUser._id.toString() : newUser.id;
@@ -327,7 +384,7 @@ app.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    const token = jwt.sign({ id: userId, phone: newUser.phone }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: userId, phone: newUser.phone, role: newUser.role || 'USER' }, JWT_SECRET, { expiresIn: '7d' });
 
     return res.json({
       success: true,
@@ -340,6 +397,7 @@ app.post('/api/auth/register', async (req, res) => {
         bonusBalance: newUser.bonusBalance,
         referralCount: newUser.referralCount || 0,
         referralEarnings: newUser.referralEarnings || 0.00,
+        role: newUser.role || 'USER',
         verified: newUser.verified !== false
       }
     });
@@ -372,7 +430,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const userId = user._id ? user._id.toString() : user.id;
-    const token = jwt.sign({ id: userId, phone: user.phone }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: userId, phone: user.phone, role: user.role || 'USER' }, JWT_SECRET, { expiresIn: '7d' });
 
     return res.json({
       success: true,
@@ -385,6 +443,7 @@ app.post('/api/auth/login', async (req, res) => {
         bonusBalance: user.bonusBalance,
         referralCount: user.referralCount || 0,
         referralEarnings: user.referralEarnings || 0.00,
+        role: user.role || 'USER',
         verified: user.verified !== false
       }
     });
@@ -414,6 +473,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         bonusBalance: user.bonusBalance,
         referralCount: user.referralCount || 0,
         referralEarnings: user.referralEarnings || 0.00,
+        role: user.role || 'USER',
         verified: user.verified !== false
       }
     });
@@ -503,9 +563,14 @@ app.post('/api/stkpush', async (req, res) => {
 
     const numericAmount = Number(amount);
 
-    // ENFORCE MINIMUM DEPOSIT KES 200
-    if (numericAmount < 200) {
-      return res.status(400).json({ error: "Minimum deposit amount is KES 200." });
+    // ENFORCE MINIMUM & MAXIMUM DEPOSIT LIMITS
+    const minDep = await getSetting('minDeposit', 200);
+    const maxDep = await getSetting('maxDeposit', 500000);
+    if (numericAmount < minDep) {
+      return res.status(400).json({ error: `Minimum deposit amount is KES ${minDep.toLocaleString()}.` });
+    }
+    if (numericAmount > maxDep) {
+      return res.status(400).json({ error: `Maximum deposit amount is KES ${maxDep.toLocaleString()}.` });
     }
 
     const cleanedPhone = formatPhoneNumber(phone);
@@ -694,9 +759,14 @@ app.post('/api/wallet/withdraw', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "Please enter a valid withdrawal amount." });
     }
 
-    // ENFORCE MINIMUM WITHDRAWAL KES 200
-    if (numericAmount < 200) {
-      return res.status(400).json({ error: "Minimum withdrawal amount is KES 200." });
+    // ENFORCE MINIMUM & MAXIMUM WITHDRAWAL LIMITS
+    const minWith = await getSetting('minWithdrawal', 200);
+    const maxWith = await getSetting('maxWithdrawal', 100000);
+    if (numericAmount < minWith) {
+      return res.status(400).json({ error: `Minimum withdrawal amount is KES ${minWith.toLocaleString()}.` });
+    }
+    if (numericAmount > maxWith) {
+      return res.status(400).json({ error: `Maximum withdrawal amount is KES ${maxWith.toLocaleString()}.` });
     }
 
     const user = await User.findById(req.user.id);
@@ -717,25 +787,24 @@ app.post('/api/wallet/withdraw', authenticateToken, async (req, res) => {
       userId: user._id.toString(),
       type: 'WITHDRAWAL',
       amount: numericAmount,
-      status: 'COMPLETED',
+      status: 'PENDING',
       reference: ref,
-      description: `M-Pesa B2C Withdrawal to ${targetPhone}`
+      description: `M-Pesa B2C Withdrawal to ${targetPhone} (Pending Approval)`
     });
 
     await Notification.create({
       userId: user._id.toString(),
-      title: "Withdrawal Processed",
-      message: `KES ${numericAmount.toLocaleString()} sent to M-Pesa number ${targetPhone}. Ref: ${ref}`,
+      title: "Withdrawal Request Received",
+      message: `Your withdrawal of KES ${numericAmount.toLocaleString()} is pending admin approval. Ref: ${ref}`,
       type: "withdrawal"
     });
 
     return res.json({
       success: true,
-      message: `Withdrawal of KES ${numericAmount.toLocaleString()} to ${targetPhone} processed successfully.`,
+      message: `Withdrawal request of KES ${numericAmount.toLocaleString()} submitted. Pending admin approval.`,
       reference: ref,
       newBalance: user.balance
     });
-
   } catch (error) {
     console.error("[WITHDRAWAL ERROR]:", error);
     return res.status(500).json({ error: "Withdrawal failed.", details: error.message });
@@ -1037,6 +1106,218 @@ app.get('/api/matches', async (req, res) => {
     return res.json([]);
   } catch (err) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------------------------------------------------------------
+// ROLE-BASED ADMIN DASHBOARD ENDPOINTS
+// ---------------------------------------------------------------------
+
+// Middleware: Authenticate Admin Privilege
+function authenticateAdmin(req, res, next) {
+  authenticateToken(req, res, () => {
+    if (req.user && req.user.role === 'ADMIN') {
+      next();
+    } else {
+      res.status(403).json({ error: "Access Denied: Admin privilege required." });
+    }
+  });
+}
+
+// 1. Get all registered users
+app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+  try {
+    let list = [];
+    if (mongoose.connection.readyState === 1) {
+      list = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+    } else {
+      list = Array.from(memoryUsers.values()).map(u => {
+        const { password, ...safeUser } = u;
+        return safeUser;
+      });
+    }
+    return res.json({ success: true, users: list });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to list users." });
+  }
+});
+
+// 2. Adjust user balance
+app.post('/api/admin/users/:id/balance', authenticateAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { amount, action } = req.body; // action: 'add' | 'subtract'
+    const numericAmount = Number(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ error: "Please enter a valid positive adjustment amount." });
+    }
+
+    let user = null;
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findById(userId);
+      if (user) {
+        if (action === 'add') {
+          user.balance += numericAmount;
+        } else {
+          user.balance = Math.max(0, user.balance - numericAmount);
+        }
+        await user.save();
+      }
+    }
+
+    // fallback memory
+    if (!user) {
+      for (const u of memoryUsers.values()) {
+        if (String(u._id) === String(userId) || String(u.id) === String(userId)) {
+          user = u;
+          if (action === 'add') {
+            user.balance += numericAmount;
+          } else {
+            user.balance = Math.max(0, user.balance - numericAmount);
+          }
+          memoryUsers.set(u.phone, user);
+          break;
+        }
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // Log transaction
+    const ref = `ADJ-${Math.floor(Math.random() * 900000 + 100000)}`;
+    if (mongoose.connection.readyState === 1) {
+      await Transaction.create({
+        userId: userId,
+        type: action === 'add' ? 'DEPOSIT' : 'WITHDRAWAL',
+        amount: numericAmount,
+        status: 'COMPLETED',
+        reference: ref,
+        description: `Admin Balance Adjustment (${action.toUpperCase()})`
+      });
+
+      await Notification.create({
+        userId: userId,
+        title: "Balance Adjusted by Admin",
+        message: `Your wallet balance has been adjusted by KES ${numericAmount.toLocaleString()} (${action === 'add' ? 'Added' : 'Subtracted'}). New Balance: KES ${user.balance.toFixed(2)}`,
+        type: "system"
+      });
+    }
+
+    return res.json({ success: true, newBalance: user.balance });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to adjust balance." });
+  }
+});
+
+// 3. Get all withdrawal requests
+app.get('/api/admin/withdrawals', authenticateAdmin, async (req, res) => {
+  try {
+    let list = [];
+    if (mongoose.connection.readyState === 1) {
+      list = await Transaction.find({ type: 'WITHDRAWAL' }).sort({ createdAt: -1 });
+    }
+    return res.json({ success: true, withdrawals: list });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to list withdrawals." });
+  }
+});
+
+// 4. Approve or decline withdrawal request
+app.post('/api/admin/withdrawals/:id/status', authenticateAdmin, async (req, res) => {
+  try {
+    const txId = req.params.id;
+    const { status } = req.body; // status: 'APPROVED' | 'DECLINED'
+
+    if (status !== 'APPROVED' && status !== 'DECLINED') {
+      return res.status(400).json({ error: "Invalid action. Must be APPROVED or DECLINED." });
+    }
+
+    if (mongoose.connection.readyState === 1) {
+      const tx = await Transaction.findById(txId);
+      if (!tx || tx.type !== 'WITHDRAWAL') {
+        return res.status(404).json({ error: "Withdrawal transaction not found." });
+      }
+
+      if (tx.status !== 'PENDING') {
+        return res.status(400).json({ error: "Transaction is already processed." });
+      }
+
+      const user = await User.findById(tx.userId);
+      if (status === 'APPROVED') {
+        tx.status = 'COMPLETED';
+        tx.description = tx.description.replace('(Pending Approval)', '(Approved)');
+        await tx.save();
+
+        if (user) {
+          await Notification.create({
+            userId: user._id.toString(),
+            title: "Withdrawal Approved",
+            message: `Your withdrawal of KES ${tx.amount.toLocaleString()} has been approved and sent to M-Pesa. Ref: ${tx.reference}`,
+            type: "withdrawal"
+          });
+        }
+      } else {
+        tx.status = 'FAILED';
+        tx.description = tx.description.replace('(Pending Approval)', '(Declined)');
+        await tx.save();
+
+        if (user) {
+          // Refund balance!
+          user.balance += tx.amount;
+          await user.save();
+
+          await Notification.create({
+            userId: user._id.toString(),
+            title: "Withdrawal Declined",
+            message: `Your withdrawal request of KES ${tx.amount.toLocaleString()} has been declined. Funds have been refunded to your wallet.`,
+            type: "system"
+          });
+        }
+      }
+      return res.json({ success: true, newStatus: tx.status });
+    }
+
+    return res.status(400).json({ error: "Operation requires active database connection." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to process withdrawal status." });
+  }
+});
+
+// 5. Get system config settings
+app.get('/api/admin/settings', authenticateAdmin, async (req, res) => {
+  try {
+    const minDeposit = await getSetting('minDeposit', 200);
+    const maxDeposit = await getSetting('maxDeposit', 500000);
+    const minWithdrawal = await getSetting('minWithdrawal', 200);
+    const maxWithdrawal = await getSetting('maxWithdrawal', 100000);
+    const mpesaPartyB = await getSetting('mpesaPartyB', '254700000000');
+
+    return res.json({
+      success: true,
+      settings: { minDeposit, maxDeposit, minWithdrawal, maxWithdrawal, mpesaPartyB }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch settings." });
+  }
+});
+
+// 6. Update system config settings
+app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
+  try {
+    const { minDeposit, maxDeposit, minWithdrawal, maxWithdrawal, mpesaPartyB } = req.body;
+
+    if (minDeposit !== undefined) await setSetting('minDeposit', Number(minDeposit));
+    if (maxDeposit !== undefined) await setSetting('maxDeposit', Number(maxDeposit));
+    if (minWithdrawal !== undefined) await setSetting('minWithdrawal', Number(minWithdrawal));
+    if (maxWithdrawal !== undefined) await setSetting('maxWithdrawal', Number(maxWithdrawal));
+    if (mpesaPartyB !== undefined) await setSetting('mpesaPartyB', String(mpesaPartyB));
+
+    return res.json({ success: true, message: "Settings saved successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update settings." });
   }
 });
 

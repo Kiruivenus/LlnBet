@@ -19,6 +19,7 @@ export function parsePath(path) {
   if (p === '/privacy') return { page: 'privacy', matchId: null };
   if (p === '/terms') return { page: 'terms', matchId: null };
   if (p === '/refer-and-earn' || p === '/referral') return { page: 'referral', matchId: null };
+  if (p === '/admin' || p === '/admin-dashboard') return { page: 'admin', matchId: null };
 
   const matchMatch = p.match(/^\/match\/([^\/]+)$/);
   if (matchMatch) {
@@ -45,6 +46,7 @@ export function getPathForPage(page, matchId) {
     case 'privacy': return '/privacy';
     case 'terms': return '/terms';
     case 'referral': return '/refer-and-earn';
+    case 'admin': return '/admin';
     case 'match-details': return `/match/${matchId || ''}`;
     default: return '/';
   }

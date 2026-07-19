@@ -69,6 +69,16 @@ export function renderSidebar() {
             </span>
           </button>
         </li>
+        ${state.data.user && state.data.user.role === 'ADMIN' ? `
+        <li class="sidebar-item ${curPage === 'admin' ? 'active' : ''}">
+          <button id="nav-admin">
+            <span class="sidebar-item-content" style="color: var(--accent-orange);">
+              ${getMaterialIcon('shield')}
+              Admin Portal
+            </span>
+          </button>
+        </li>
+        ` : ''}
       </ul>
     </div>
 
@@ -139,5 +149,6 @@ export function renderSidebar() {
   document.getElementById('nav-terms').addEventListener('click', () => state.setPage('terms'));
   document.getElementById('nav-privacy').addEventListener('click', () => state.setPage('privacy'));
   document.getElementById('nav-chat').addEventListener('click', () => state.setPage('live-support'));
+  document.getElementById('nav-admin')?.addEventListener('click', () => state.setPage('admin'));
 }
 export default renderSidebar;
