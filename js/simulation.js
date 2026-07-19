@@ -65,10 +65,46 @@ class SimulationEngine {
       this.tick();
     }, 3500);
 
-    // Live refetch polling loop running every 60 seconds
+    // Initial polling interval setup
+    this.updatePollingInterval();
+
+    // Bind visibility change to pause polling when tab goes to background
+    document.addEventListener('visibilitychange', () => {
+      this.updatePollingInterval();
+      if (!document.hidden) {
+        this.fetchRealWorldMatches(); // trigger immediate fetch on tab focus
+      }
+    });
+
+    // Bind page changes to adapt polling frequency (e.g. live page every 15s)
+    state.subscribe('currentPage', () => {
+      this.updatePollingInterval();
+    });
+  }
+
+  updatePollingInterval() {
+    if (this.feedIntervalId) {
+      clearInterval(this.feedIntervalId);
+      this.feedIntervalId = null;
+    }
+
+    if (document.hidden) {
+      console.log("[POLLING] Tab is hidden. Pausing background match fetches.");
+      return;
+    }
+
+    const curPage = state.data.currentPage;
+    let intervalMs = 60000; // default 60s for prematch / static pages
+    if (curPage === 'live') {
+      intervalMs = 15000; // 15s for live odds updates
+      console.log("[POLLING] Active page is LIVE. Speeding up match fetches to 15s.");
+    } else {
+      console.log(`[POLLING] Active page is ${curPage}. Setting match fetches to 60s.`);
+    }
+
     this.feedIntervalId = setInterval(async () => {
       await this.fetchRealWorldMatches();
-    }, 60000);
+    }, intervalMs);
   }
 
   stop() {

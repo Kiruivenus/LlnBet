@@ -6,6 +6,11 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import { connectDb, getSetting, setSetting } from './db.js';
+import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting } from './models.js';
+import { matchCache } from './cache.js';
+import { syncMatchesFromEspn } from './services/syncService.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -20,177 +25,9 @@ app.use(express.static(path.resolve(__dirname, '..')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'betpulse_super_secret_jwt_key_2026';
 
-// ---------------------------------------------------------------------
-// MONGODB SCHEMAS & MODELS
-// ---------------------------------------------------------------------
-
-// User Schema
-const UserSchema = new mongoose.Schema({
-  phone: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  name: { type: String, default: 'LlnBet Player' },
-  balance: { type: Number, default: 0.00 },
-  bonusBalance: { type: Number, default: 0.00 },
-  verified: { type: Boolean, default: true },
-  referredBy: { type: String, default: null },
-  referralCount: { type: Number, default: 0 },
-  referralEarnings: { type: Number, default: 0.00 },
-  role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
-  createdAt: { type: Date, default: Date.now }
-});
-
-// Setting Schema
-const SettingSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
-  value: { type: mongoose.Schema.Types.Mixed, required: true }
-});
-
-// Transaction Schema
-const TransactionSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  type: { type: String, enum: ['DEPOSIT', 'WITHDRAWAL', 'BET_PLACED', 'BET_WON', 'CASHOUT'], required: true },
-  amount: { type: Number, required: true },
-  status: { type: String, enum: ['COMPLETED', 'PENDING', 'FAILED'], default: 'COMPLETED' },
-  reference: { type: String, required: true },
-  description: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
-
-// Bet Schema
-const BetSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  betId: { type: String, required: true, unique: true },
-  selections: { type: Array, required: true },
-  totalOdds: { type: Number, required: true },
-  stake: { type: Number, required: true },
-  possiblePayout: { type: Number, required: true },
-  status: { type: String, enum: ['OPEN', 'WON', 'LOST', 'CASHOUT'], default: 'OPEN' },
-  cashoutAmount: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
-});
-
-// Notification Schema
-const NotificationSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  title: { type: String, required: true },
-  message: { type: String, required: true },
-  type: { type: String, default: 'system' },
-  read: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
-});
-
-// Odds History Schema
-const OddsHistorySchema = new mongoose.Schema({
-  matchId: { type: String, required: true, unique: true },
-  r1: Number,
-  rx: Number,
-  r2: Number,
-  updatedAt: { type: Date, default: Date.now }
-});
-
-// Match Cache Schema
-const MatchSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  sport: String,
-  league: String,
-  country: String,
-  isLive: Boolean,
-  timer: String,
-  scores: { home: Number, away: Number },
-  kickoffTime: String,
-  teams: {
-    home: { name: String },
-    away: { name: String }
-  },
-  venue: String,
-  stats: mongoose.Schema.Types.Mixed,
-  markets: mongoose.Schema.Types.Mixed,
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
-const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
-const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
-const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
-const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
-const Match = mongoose.models.Match || mongoose.model('Match', MatchSchema);
-const Setting = mongoose.models.Setting || mongoose.model('Setting', SettingSchema);
-
-async function getSetting(key, defaultValue) {
-  try {
-    if (mongoose.connection.readyState === 1) {
-      const s = await Setting.findOne({ key });
-      if (s) return s.value;
-    }
-  } catch (e) {}
-  return defaultValue;
-}
-
-async function setSetting(key, value) {
-  try {
-    if (mongoose.connection.readyState === 1) {
-      await Setting.findOneAndUpdate(
-        { key },
-        { value },
-        { upsert: true, new: true }
-      );
-    }
-  } catch (e) {}
-}
-
-// Connect to MongoDB with Serverless Connection Caching (Official Vercel & Atlas best practices)
-const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-
-let cachedConnection = globalThis.__mongoose_cached;
-if (!cachedConnection) {
-  cachedConnection = globalThis.__mongoose_cached = { conn: null, promise: null };
-}
-
-async function connectDb() {
-  if (cachedConnection.conn && mongoose.connection.readyState === 1) {
-    return cachedConnection.conn;
-  }
-  if (!mongoUri) return null;
-
-  if (!cachedConnection.promise) {
-    const opts = {
-      serverSelectionTimeoutMS: 5000,
-      maxPoolSize: 1, // Cap pool size to 1 connection per instance to prevent connection limits exhaustion
-      autoIndex: true
-    };
-    cachedConnection.promise = mongoose.connect(mongoUri, opts).then((m) => {
-      console.log("[MONGODB] Connected successfully to MongoDB Database!");
-      return m;
-    });
-  }
-
-  try {
-    cachedConnection.conn = await cachedConnection.promise;
-    if (cachedConnection.conn) {
-      try {
-        const count = await Setting.countDocuments({});
-        if (count === 0) {
-          await Setting.create([
-            { key: 'minDeposit', value: 200 },
-            { key: 'maxDeposit', value: 500000 },
-            { key: 'minWithdrawal', value: 200 },
-            { key: 'maxWithdrawal', value: 100000 },
-            { key: 'mpesaPartyB', value: '254700000000' }
-          ]);
-          console.log("[SETTINGS SEED] Default limits and Party B successfully seeded to database!");
-        }
-      } catch (e) {}
-    }
-  } catch (e) {
-    cachedConnection.promise = null; // Clear cached promise on failure
-    console.warn("[MONGODB] MongoDB Connection error:", e.message);
-  }
-  return cachedConnection.conn;
-}
-
 // Middleware: Ensure Database Connection on incoming API requests
 app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+  if (req.path.startsWith('/api') && req.path !== '/api/matches') {
     await connectDb();
   }
   next();
@@ -927,7 +764,7 @@ app.post('/api/odds', async (req, res) => {
     const { matchId, r1, rx, r2 } = req.body;
     if (!matchId) return res.status(400).json({ error: "matchId required" });
 
-    if (mongoUri && mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1) {
       await OddsHistory.updateOne(
         { matchId },
         { $set: { r1, rx, r2, updatedAt: new Date() } },
@@ -943,167 +780,42 @@ app.post('/api/odds', async (req, res) => {
 // ---------------------------------------------------------------------
 // DYNAMIC MATCH CACHING & BACKGROUND SYNCHRONIZATION
 // ---------------------------------------------------------------------
-function getEspnDateRange() {
-  const dates = [];
-  const start = new Date();
-  start.setDate(start.getDate() - 1);
-  for (let i = 0; i < 9; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    dates.push(`${yyyy}${mm}${dd}`);
-  }
-  return `${dates[0]}-${dates[dates.length - 1]}`;
-}
-
-async function syncMatchesFromEspn() {
-  const feeds = [
-    { url: 'soccer/all', sport: 'football', name: 'Soccer Match', country: 'International' },
-    { url: 'basketball/nba', sport: 'basketball', name: 'NBA', country: 'USA' },
-    { url: 'basketball/wnba', sport: 'basketball', name: 'WNBA', country: 'USA' },
-    { url: 'tennis/atp', sport: 'tennis', name: 'ATP Tour', country: 'International' },
-    { url: 'hockey/nhl', sport: 'ice_hockey', name: 'NHL', country: 'USA' }
-  ];
-
-  const dateRange = getEspnDateRange();
-  const promises = feeds.map(async (feed) => {
-    const feedMatches = [];
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout cap
-
-      const limit = feed.sport === 'football' ? 200 : 50; // Keep payload light and fast
-      const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${feed.url}/scoreboard?dates=${dateRange}&limit=${limit}`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) return [];
-      const data = await response.json();
-      
-      const leagueMap = {};
-      if (data.leagues) {
-        data.leagues.forEach(l => {
-          leagueMap[l.id] = {
-            name: l.name || l.abbreviation || feed.name,
-            country: l.midsizeName || feed.country
-          };
-        });
-      }
-
-      const events = data.events || [];
-      events.forEach(event => {
-        const comp = event.competitions?.[0];
-        if (!comp) return;
-
-        const competitors = comp.competitors || [];
-        const homeComp = competitors.find(c => c.homeAway === 'home');
-        const awayComp = competitors.find(c => c.homeAway === 'away');
-        if (!homeComp || !awayComp) return;
-
-        const homeName = homeComp.team?.displayName || homeComp.team?.name;
-        const awayName = awayComp.team?.displayName || awayComp.team?.name;
-        if (!homeName || !awayName) return;
-
-        const isLive = event.status?.type?.state === 'in';
-        const isFinished = event.status?.type?.state === 'post';
-        
-        if (isFinished) return;
-
-        const kickoffDate = new Date(event.date);
-        const matchId = `espn_${event.id}`;
-        
-        const homeScore = parseInt(homeComp.score) || 0;
-        const awayScore = parseInt(awayComp.score) || 0;
-        
-        const timer = event.status?.displayClock ? event.status.displayClock.replace("'", "") : (isLive ? 'Live' : '0');
-        const leagueId = event.uid?.split('~l:')[1]?.split('~')[0] || '';
-        const leagueInfo = leagueMap[leagueId] || { name: feed.name, country: feed.country };
-
-        const r1 = parseFloat((Math.random() * 2 + 1.2).toFixed(2));
-        const rx = parseFloat((Math.random() * 1.5 + 2.5).toFixed(2));
-        const r2 = parseFloat((Math.random() * 3 + 1.8).toFixed(2));
-
-        const markets = [
-          {
-            name: feed.sport === 'football' || feed.sport === 'rugby' || feed.sport === 'ice_hockey' ? 'Match Outcome (1X2)' : 'Money Line (Winner)',
-            odds: [
-              { selectionId: `${matchId}_1`, label: `1 (${homeName})`, value: r1 },
-              ...(feed.sport === 'football' || feed.sport === 'rugby' || feed.sport === 'ice_hockey' ? [
-                { selectionId: `${matchId}_x`, label: 'X (Draw)', value: rx }
-              ] : []),
-              { selectionId: `${matchId}_2`, label: `2 (${awayName})`, value: r2 }
-            ]
-          }
-        ];
-
-        feedMatches.push({
-          id: matchId,
-          sport: feed.sport,
-          league: leagueInfo.name,
-          country: leagueInfo.country,
-          isLive: isLive,
-          timer: timer,
-          scores: { home: homeScore, away: awayScore },
-          kickoffTime: kickoffDate.toISOString(),
-          teams: {
-            home: { name: homeName },
-            away: { name: awayName }
-          },
-          venue: comp.venue?.fullName || leagueInfo.name,
-          stats: {
-            possession: { home: 50, away: 50 },
-            shots: { home: 10, away: 8 },
-            shotsOnTarget: { home: 4, away: 3 },
-            corners: { home: 5, away: 4 },
-            yellowCards: { home: 1, away: 1 },
-            redCards: { home: 0, away: 0 }
-          },
-          markets
-        });
-      });
-    } catch (e) {}
-    return feedMatches;
-  });
-
-  const results = await Promise.all(promises);
-  const parsedMatches = results.flat();
-
-  if (parsedMatches.length > 0) {
-    const ops = parsedMatches.map(m => ({
-      updateOne: {
-        filter: { id: m.id },
-        update: { $set: { ...m, updatedAt: new Date() } },
-        upsert: true
-      }
-    }));
-    await Match.bulkWrite(ops);
-    console.log(`[BACKEND SYNC] Successfully upserted ${parsedMatches.length} matches to MongoDB.`);
-  }
-}
-
 let lastSyncTime = 0;
 
 app.get('/api/matches', async (req, res) => {
   try {
+    const now = Date.now();
+
+    // 1. Serve from global in-memory cache if fresh (< 10 seconds old)
+    if (matchCache.matches.length > 0 && (now - matchCache.lastFetched < 10000)) {
+      return res.json(matchCache.matches);
+    }
+
+    // 2. Refresh/Fetch from MongoDB if memory cache is stale
+    await connectDb();
+
     if (mongoose.connection.readyState === 1) {
-      const now = Date.now();
-      // Auto-trigger non-blocking sync in background if last fetch was > 45 seconds ago
-      if (now - lastSyncTime > 45000) {
+      // Trigger non-blocking sync in background if last ESPN fetch was > 30 seconds ago
+      if (now - lastSyncTime > 30000 && !matchCache.syncInProgress) {
         lastSyncTime = now;
-        syncMatchesFromEspn().catch((err) => {
-          console.warn("[BACKEND SYNC ERROR]:", err.message);
-        });
+        matchCache.syncInProgress = true;
+        syncMatchesFromEspn()
+          .catch((err) => {
+            console.warn("[BACKEND SYNC ERROR]:", err.message);
+          })
+          .finally(() => {
+            matchCache.syncInProgress = false;
+          });
       }
 
       const cachedMatches = await Match.find({}).lean();
-      if (cachedMatches.length > 0) {
-        return res.json(cachedMatches);
-      }
+      matchCache.matches = cachedMatches;
+      matchCache.lastFetched = now;
+      return res.json(cachedMatches);
     }
-    return res.json([]);
+
+    // Return stale cache if DB is offline
+    return res.json(matchCache.matches);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -1327,7 +1039,7 @@ if (process.env.VERCEL !== '1') {
   app.listen(PORT, () => {
     console.log(`---------------------------------------------------------------------`);
     console.log(`LlnBet backend server running on http://localhost:${PORT}`);
-    console.log(`MongoDB URI: ${mongoUri ? 'Configured' : 'Missing'}`);
+    console.log(`MongoDB URI: ${(process.env.MONGO_URI || process.env.MONGODB_URI) ? 'Configured' : 'Missing'}`);
     console.log(`M-Pesa Env: ${process.env.MPESA_ENV || 'sandbox'}`);
     console.log(`---------------------------------------------------------------------`);
   });
