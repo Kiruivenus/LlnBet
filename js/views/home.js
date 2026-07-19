@@ -16,18 +16,84 @@ export function renderHomeView() {
   const upcomingMatches = sportMatches.filter(m => !m.isLive && new Date(m.kickoffTime) > new Date());
 
   let html = `
-    <!-- Premium Promo Hero Banner -->
-    <div class="hero-slider">
-      <div class="hero-bg" style="background-image: url('assets/hero_banner.png'); background-size: cover; background-position: center; opacity: 0.85;"></div>
-      <div class="hero-content">
-        <span class="hero-tag">Special Promo</span>
-        <h1 class="hero-title">Start Betting with Double the Power</h1>
-        <p class="hero-desc">Get a 100% deposit bonus on your first funding up to KES 50,000. Bet on Premier League, NBA, and Tennis with premium boosted odds.</p>
-        <button class="hero-cta" id="hero-deposit-link">
-          ${getMaterialIcon('deposit')}
-          Claim Bonus Now
-        </button>
+    <!-- Premium Promo Hero Slider -->
+    <div class="hero-slider-wrapper">
+      <div class="hero-slider-track" id="hero-slider-track">
+        
+        <!-- Slide 1: Deposit Bonus -->
+        <div class="hero-slide active" style="background: linear-gradient(135deg, #0e121a 0%, #15803d 100%);">
+          <div class="hero-slide-content">
+            <span class="hero-tag">Special Promo</span>
+            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">100% BONUS ON THE 1ST DEPOSIT UP TO KES 50,000</h1>
+            <p class="hero-desc" style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">Register with LlnBet and receive 100% match bonus on your very first funding!</p>
+            <button class="hero-cta" id="slide-deposit-btn" style="margin-top:12px; font-weight:800; padding:8px 16px; font-size:0.8rem; border-radius:8px; border:none; background:var(--accent-emerald); color:#080a0f; cursor:pointer;">
+              Register / Deposit
+            </button>
+          </div>
+          <div class="hero-slide-graphic">
+            <div class="percent-badge">100%</div>
+          </div>
+        </div>
+
+        <!-- Slide 2: Cybersport -->
+        <div class="hero-slide" style="background: linear-gradient(135deg, #080a0f 0%, #ff3d00 150%);">
+          <div class="hero-slide-content">
+            <span class="hero-tag" style="background:#ff3d00;">Esports Specials</span>
+            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">CATCH BEST COEFFICIENTS IN CYBERSPORT!</h1>
+            <p class="hero-desc" style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">Take advantage of premium boosted odds on Dota 2, League of Legends, Counter-Strike and virtual leagues.</p>
+            <button class="hero-cta" id="slide-esports-btn" style="margin-top:12px; font-weight:800; padding:8px 16px; font-size:0.8rem; border-radius:8px; border:none; background:#ff3d00; color:#fff; cursor:pointer;">
+              Make Your Bet
+            </button>
+          </div>
+          <div class="hero-slide-graphic">
+            <span class="material-icons-round" style="font-size:6.5rem; color:rgba(255,61,0,0.12); animation: float 3s ease-in-out infinite;">sports_esports</span>
+          </div>
+        </div>
+
+        <!-- Slide 3: Athletic Bilbao Partnership -->
+        <div class="hero-slide" style="background: linear-gradient(135deg, #450a0a 0%, #111 100%);">
+          <div class="hero-slide-content">
+            <span class="hero-tag" style="background:#fdb927; color:#111;">La Liga Partner</span>
+            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">OFFICIAL REGIONAL PARTNER - ATHLETIC BILBAO</h1>
+            <p class="hero-desc" style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">Support the lions of Basque country with customized selections and guaranteed live payouts.</p>
+            <button class="hero-cta" id="slide-bilbao-btn" style="margin-top:12px; font-weight:800; padding:8px 16px; font-size:0.8rem; border-radius:8px; border:none; background:#fdb927; color:#111; cursor:pointer;">
+              Place Your Bets!
+            </button>
+          </div>
+          <div class="hero-slide-graphic">
+            <span class="material-icons-round" style="font-size:6.5rem; color:rgba(253,185,39,0.12); animation: float 3s ease-in-out infinite;">sports_soccer</span>
+          </div>
+        </div>
+
+        <!-- Slide 4: Spain vs Argentina Special Match -->
+        <div class="hero-slide" style="background: linear-gradient(135deg, #0e121a 0%, #0369a1 100%);">
+          <div class="hero-slide-content">
+            <span class="hero-tag" style="background:#38bdf8; color:#0f172a;">World Cup 2026</span>
+            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">Spain vs Argentina</h1>
+            <p class="hero-desc" style="font-size:0.82rem; color:rgba(255,255,255,0.7); margin-top:4px;">Lamine Yamal vs Lionel Messi! Boosted 1X2 market odds active right now.</p>
+            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+              <button class="quick-stake-btn slide-bet-btn" data-sel-id="spain_arg_1" data-val="2.25" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; cursor:pointer; outline:none; height:auto; width:auto; border-radius:4px;">W1: 2.25</button>
+              <button class="quick-stake-btn slide-bet-btn" data-sel-id="spain_arg_x" data-val="2.94" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; cursor:pointer; outline:none; height:auto; width:auto; border-radius:4px;">Draw: 2.94</button>
+              <button class="quick-stake-btn slide-bet-btn" data-sel-id="spain_arg_2" data-val="3.72" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; cursor:pointer; outline:none; height:auto; width:auto; border-radius:4px;">W2: 3.72</button>
+            </div>
+          </div>
+          <div class="hero-slide-graphic">
+            <div style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.06); padding:8px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+              <span style="font-size:1.8rem;">🇪🇸</span>
+              <span style="font-weight:900; color:#fff; font-size:0.8rem;">VS</span>
+              <span style="font-size:1.8rem;">🇦🇷</span>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      <!-- Arrow Controls -->
+      <button class="hero-arrow prev" id="hero-prev-btn">&lt;</button>
+      <button class="hero-arrow next" id="hero-next-btn">&gt;</button>
+
+      <!-- Dots Indicators -->
+      <div class="hero-dots" id="hero-dots-container"></div>
     </div>
 
     <!-- Sports Category Horizontal Chips Navigation -->
@@ -169,9 +235,105 @@ export function renderHomeView() {
 
   container.innerHTML = html;
 
-  // Bind events
-  document.getElementById('hero-deposit-link')?.addEventListener('click', () => {
+  // Initialize Slider Logic
+  const slides = container.querySelectorAll('.hero-slide');
+  const dotsContainer = document.getElementById('hero-dots-container');
+  let currentSlideIdx = 0;
+  let slideInterval = null;
+
+  const renderDots = () => {
+    if (!dotsContainer) return;
+    dotsContainer.innerHTML = Array.from({ length: slides.length }).map((_, idx) => `
+      <div class="hero-dot ${idx === currentSlideIdx ? 'active' : ''}" data-idx="${idx}"></div>
+    `).join('');
+
+    // Bind dots click events
+    dotsContainer.querySelectorAll('.hero-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        const target = parseInt(dot.getAttribute('data-idx'));
+        goToSlide(target);
+        resetAutoplay();
+      });
+    });
+  };
+
+  const goToSlide = (idx) => {
+    if (!container.querySelector('.hero-slide-wrapper')) return;
+    slides[currentSlideIdx].classList.remove('active');
+    currentSlideIdx = (idx + slides.length) % slides.length;
+    slides[currentSlideIdx].classList.add('active');
+    renderDots();
+  };
+
+  const nextSlide = () => {
+    if (!container.querySelector('.hero-slide-wrapper')) {
+      clearInterval(slideInterval);
+      return;
+    }
+    goToSlide(currentSlideIdx + 1);
+  };
+
+  const prevSlide = () => {
+    if (!container.querySelector('.hero-slide-wrapper')) {
+      clearInterval(slideInterval);
+      return;
+    }
+    goToSlide(currentSlideIdx - 1);
+  };
+
+  const startAutoplay = () => {
+    slideInterval = setInterval(nextSlide, 5000);
+  };
+
+  const resetAutoplay = () => {
+    clearInterval(slideInterval);
+    startAutoplay();
+  };
+
+  // Bind controls
+  document.getElementById('hero-prev-btn')?.addEventListener('click', () => {
+    prevSlide();
+    resetAutoplay();
+  });
+
+  document.getElementById('hero-next-btn')?.addEventListener('click', () => {
+    nextSlide();
+    resetAutoplay();
+  });
+
+  // Start initialization
+  renderDots();
+  startAutoplay();
+
+  // Bind custom links inside slides
+  document.getElementById('slide-deposit-btn')?.addEventListener('click', () => {
     state.setPage('profile');
+  });
+
+  document.getElementById('slide-esports-btn')?.addEventListener('click', () => {
+    state.setPage('live');
+  });
+
+  document.getElementById('slide-bilbao-btn')?.addEventListener('click', () => {
+    state.setPage('home');
+  });
+
+  container.querySelectorAll('.slide-bet-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const selectionId = btn.getAttribute('data-sel-id');
+      const team = selectionId.includes('1') ? 'Spain' : selectionId.includes('x') ? 'Draw' : 'Argentina';
+      const odds = parseFloat(btn.getAttribute('data-val'));
+
+      state.addSelection({
+        id: selectionId,
+        matchId: 'sim-spain-arg',
+        matchName: 'Spain vs Argentina',
+        team: team,
+        market: '1X2',
+        odds: odds
+      });
+    });
   });
 
   container.querySelectorAll('.sport-chip').forEach(chip => {
