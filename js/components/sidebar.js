@@ -61,6 +61,14 @@ export function renderSidebar() {
             </span>
           </button>
         </li>
+        <li class="sidebar-item ${curPage === 'referral' ? 'active' : ''}">
+          <button id="nav-referral">
+            <span class="sidebar-item-content">
+              ${getMaterialIcon('user')}
+              Refer & Earn
+            </span>
+          </button>
+        </li>
       </ul>
     </div>
 
@@ -68,11 +76,35 @@ export function renderSidebar() {
     <div class="sidebar-section">
       <h3 class="sidebar-title">Play Safe</h3>
       <ul class="sidebar-menu">
-        <li class="sidebar-item">
+        <li class="sidebar-item ${curPage === 'responsible-gaming' ? 'active' : ''}">
           <button id="nav-rg">
             <span class="sidebar-item-content">
               ${getMaterialIcon('shield')}
               Responsible Gaming
+            </span>
+          </button>
+        </li>
+        <li class="sidebar-item ${curPage === 'about' ? 'active' : ''}">
+          <button id="nav-about">
+            <span class="sidebar-item-content">
+              ${getMaterialIcon('user')}
+              About LlnBet
+            </span>
+          </button>
+        </li>
+        <li class="sidebar-item ${curPage === 'terms' ? 'active' : ''}">
+          <button id="nav-terms">
+            <span class="sidebar-item-content">
+              ${getMaterialIcon('search')}
+              Terms & Conditions
+            </span>
+          </button>
+        </li>
+        <li class="sidebar-item ${curPage === 'privacy' ? 'active' : ''}">
+          <button id="nav-privacy">
+            <span class="sidebar-item-content">
+              ${getMaterialIcon('shield')}
+              Privacy Policy
             </span>
           </button>
         </li>
@@ -83,7 +115,7 @@ export function renderSidebar() {
     <div class="sidebar-section" style="margin-top: auto; padding-top: 20px;">
       <h3 class="sidebar-title">Support</h3>
       <ul class="sidebar-menu">
-        <li class="sidebar-item">
+        <li class="sidebar-item ${curPage === 'live-support' ? 'active' : ''}">
           <button id="nav-chat">
             <span class="sidebar-item-content">
               ${getMaterialIcon('chat')}
@@ -101,13 +133,11 @@ export function renderSidebar() {
   document.getElementById('nav-promo').addEventListener('click', () => state.setPage('promotions'));
   document.getElementById('nav-mybets').addEventListener('click', () => state.setPage('my-bets'));
   document.getElementById('nav-profile').addEventListener('click', () => state.setPage('profile'));
-  
-  document.getElementById('nav-rg').addEventListener('click', () => {
-    alert("Responsible Gambling:\n\nSet Deposit Limits, Session Limits, or self-exclude inside profile dashboard.");
-  });
-
-  document.getElementById('nav-chat').addEventListener('click', () => {
-    alert("Support Agent: Hello! How can I assist you with LlnBet today?");
-  });
+  document.getElementById('nav-referral').addEventListener('click', () => state.setPage('referral'));
+  document.getElementById('nav-rg').addEventListener('click', () => state.setPage('responsible-gaming'));
+  document.getElementById('nav-about').addEventListener('click', () => state.setPage('about'));
+  document.getElementById('nav-terms').addEventListener('click', () => state.setPage('terms'));
+  document.getElementById('nav-privacy').addEventListener('click', () => state.setPage('privacy'));
+  document.getElementById('nav-chat').addEventListener('click', () => state.setPage('live-support'));
 }
 export default renderSidebar;

@@ -20,7 +20,7 @@ export function renderMobileDrawer() {
       items: [
         { id: 'drawer-nav-prematch', label: 'Prematch', icon: 'home', page: 'home' },
         { id: 'drawer-nav-live', label: 'Live Betting', icon: 'live', page: 'live' },
-        { id: 'drawer-nav-jackpot', label: 'Jackpots', icon: 'trophy', page: 'jackpots' },
+        { id: 'drawer-nav-jackpot', label: 'Jackpots', icon: 'trophy', page: 'jackpot-streak' },
         { id: 'drawer-nav-promo', label: 'Promotions', icon: 'bonus', page: 'promotions' }
       ]
     },
@@ -30,24 +30,24 @@ export function renderMobileDrawer() {
         { id: 'drawer-nav-deposit', label: 'Deposit', icon: 'deposit', page: 'profile' },
         { id: 'drawer-nav-withdraw', label: 'Withdraw', icon: 'wallet', page: 'profile' },
         { id: 'drawer-nav-history', label: 'Bet History', icon: 'history', page: 'my-bets' },
-        { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'user', action: () => alert("Refer & Earn:\n\nShare your referral code with friends to receive KES 500 bonus upon their first M-Pesa deposit!") },
+        { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'user', page: 'referral' },
         { id: 'drawer-nav-app', label: 'Download App', icon: 'deposit', action: () => alert("Download Mobile App:\n\nAn SMS with the direct Android APK download link has been sent to your registered phone number.") }
       ]
     },
     {
       title: 'SUPPORT',
       items: [
-        { id: 'drawer-nav-chat', label: 'Live Chat', icon: 'chat', page: 'support' },
+        { id: 'drawer-nav-chat', label: 'Live Chat', icon: 'chat', page: 'live-support' },
         { id: 'drawer-nav-telegram', label: 'Telegram', icon: 'notification', action: () => alert("Telegram Support:\n\nOpening official LlnBet Kenya Telegram Channel (@LlnBetKenya)...") }
       ]
     },
     {
       title: 'LEGAL',
       items: [
-        { id: 'drawer-nav-terms', label: 'Terms', icon: 'search', action: () => alert("Terms & Conditions:\n\nLlnBet Sportsbook operates under Kenya Betting Control & Licensing Board (BCLB) license no. BCLB-2026-A829.") },
-        { id: 'drawer-nav-privacy', label: 'Privacy', icon: 'shield', action: () => alert("Privacy Policy:\n\nAll registered user transactions and personal records are encrypted with 256-bit SSL technology.") },
+        { id: 'drawer-nav-terms', label: 'Terms', icon: 'search', page: 'terms' },
+        { id: 'drawer-nav-privacy', label: 'Privacy', icon: 'shield', page: 'privacy' },
         { id: 'drawer-nav-rg', label: 'Responsible Gaming', icon: 'shield', page: 'responsible-gaming' },
-        { id: 'drawer-nav-about', label: 'About', icon: 'user', action: () => alert("About LlnBet:\n\nLlnBet is Kenya's premium sportsbook platform providing state-of-the-art live feeds, M-Pesa STK push deposits, and multi-market calculators.") }
+        { id: 'drawer-nav-about', label: 'About', icon: 'user', page: 'about' }
       ]
     }
   ];

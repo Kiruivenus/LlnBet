@@ -11,6 +11,10 @@ import { renderSupportView } from './views/support.js';
 import { renderResponsibleGamingView } from './views/responsibleGaming.js';
 import { renderTransactionsView } from './views/transactions.js';
 import { renderJackpotsView } from './views/jackpots.js';
+import { renderAboutView } from './views/about.js';
+import { renderPrivacyView } from './views/privacy.js';
+import { renderTermsView } from './views/terms.js';
+import { renderReferralView } from './views/referral.js';
 import { renderNotificationsView } from './views/notifications.js';
 
 export function route() {
@@ -63,6 +67,18 @@ export function route() {
       break;
     case 'notifications':
       renderNotificationsView();
+      break;
+    case 'about':
+      renderAboutView();
+      break;
+    case 'privacy':
+      renderPrivacyView();
+      break;
+    case 'terms':
+      renderTermsView();
+      break;
+    case 'referral':
+      renderReferralView();
       break;
     default:
       renderHomeView();

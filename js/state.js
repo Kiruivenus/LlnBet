@@ -15,6 +15,10 @@ export function parsePath(path) {
   if (p === '/responsible-gaming') return { page: 'responsible-gaming', matchId: null };
   if (p === '/transactions') return { page: 'transactions', matchId: null };
   if (p === '/notifications') return { page: 'notifications', matchId: null };
+  if (p === '/about') return { page: 'about', matchId: null };
+  if (p === '/privacy') return { page: 'privacy', matchId: null };
+  if (p === '/terms') return { page: 'terms', matchId: null };
+  if (p === '/refer-and-earn' || p === '/referral') return { page: 'referral', matchId: null };
 
   const matchMatch = p.match(/^\/match\/([^\/]+)$/);
   if (matchMatch) {
@@ -37,6 +41,10 @@ export function getPathForPage(page, matchId) {
     case 'responsible-gaming': return '/responsible-gaming';
     case 'transactions': return '/transactions';
     case 'notifications': return '/notifications';
+    case 'about': return '/about';
+    case 'privacy': return '/privacy';
+    case 'terms': return '/terms';
+    case 'referral': return '/refer-and-earn';
     case 'match-details': return `/match/${matchId || ''}`;
     default: return '/';
   }
