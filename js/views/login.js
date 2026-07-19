@@ -100,7 +100,11 @@ export function renderLoginView() {
 
       await state.login(phone, password);
       alert("Welcome back to LlnBet! Login successful.");
-      state.setPage('home');
+      if (state.data.user && state.data.user.role === 'ADMIN') {
+        state.setPage('admin');
+      } else {
+        state.setPage('home');
+      }
     } catch (err) {
       errorBadge.textContent = err.message || "Invalid login credentials.";
       errorBadge.style.display = 'block';

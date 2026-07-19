@@ -138,7 +138,7 @@ class State {
       this.notify('currentPage');
     });
 
-    this.initSession();
+    this.sessionPromise = this.initSession();
   }
 
   persistBetslip() {

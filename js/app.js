@@ -132,8 +132,11 @@ function renderMobileNavBar() {
 }
 
 // Bootstrap Application
-function initApp() {
+async function initApp() {
   simulation.start();
+
+  // Wait for state session restoration to finish before initial routing
+  await state.sessionPromise;
 
   renderHeader();
   renderSidebar();
