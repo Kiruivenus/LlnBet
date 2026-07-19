@@ -282,7 +282,7 @@ export function renderHomeView() {
   };
 
   const startAutoplay = () => {
-    slideInterval = setInterval(nextSlide, 5000);
+    slideInterval = setInterval(nextSlide, 4000);
   };
 
   const resetAutoplay = () => {
