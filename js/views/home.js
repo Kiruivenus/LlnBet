@@ -15,6 +15,74 @@ export function renderHomeView() {
   const liveMatches = sportMatches.filter(m => m.isLive);
   const upcomingMatches = sportMatches.filter(m => !m.isLive && new Date(m.kickoffTime) > new Date());
 
+  // Partial update check: if slider structure already exists, don't overwrite it to prevent resetting the autoplay timer
+  const hasSlider = container.querySelector('.hero-slider-wrapper');
+  if (hasSlider) {
+    // 1. Update sports nav chip counts and active state
+    const sportsNav = container.querySelector('.sports-nav');
+    if (sportsNav) {
+      sportsNav.innerHTML = sportsList.map(sport => {
+        const count = matches.filter(m => m.sport === sport.id).length;
+        return `
+          <button class="sport-chip ${activeSport === sport.id ? 'active' : ''}" data-sport="${sport.id}">
+            <span>${getMaterialIcon(sport.icon)}</span>
+            <span>${sport.name}</span>
+            <span class="sport-chip-count">${count}</span>
+          </button>
+        `;
+      }).join('');
+
+      sportsNav.querySelectorAll('.sport-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const sportId = chip.getAttribute('data-sport');
+          state.setSport(sportId);
+        });
+      });
+    }
+
+    // 2. Update upcoming matches items
+    const matchItems = container.querySelector('.match-list-items');
+    if (matchItems) {
+      matchItems.innerHTML = upcomingMatches.length === 0 ? `
+        <div style="padding: 20px; text-align: center; color: var(--text-muted);">
+          No upcoming matches available for this sport.
+        </div>
+      ` : upcomingMatches.map(match => renderMatchCard(match, selections)).join('');
+
+      matchItems.querySelectorAll('.compact-odds-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const selectionId = btn.getAttribute('data-id');
+          const matchId = btn.getAttribute('data-match-id');
+          const team = btn.getAttribute('data-team');
+          const market = btn.getAttribute('data-market');
+          const value = parseFloat(btn.getAttribute('data-value'));
+
+          const matchObj = simulation.getMatch(matchId);
+          const matchName = matchObj ? `${matchObj.teams.home.name} vs ${matchObj.teams.away.name}` : "Match";
+
+          state.addSelection({
+            id: selectionId,
+            matchId: matchId,
+            matchName: matchName,
+            team: team,
+            market: market,
+            odds: value
+          });
+        });
+      });
+
+      matchItems.querySelectorAll('.match-list-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const matchId = row.getAttribute('data-id');
+          state.setPage('match-details', matchId);
+        });
+      });
+    }
+
+    return;
+  }
+
   if (window.homeCurrentSlideIdx === undefined) {
     window.homeCurrentSlideIdx = 0;
   }
