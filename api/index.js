@@ -422,6 +422,31 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Endpoint: Get User Notifications
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    let list = [];
+    if (mongoose.connection.readyState === 1) {
+      list = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(50);
+    }
+    return res.json(list);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch notifications." });
+  }
+});
+
+// Endpoint: Clear User Notifications
+app.delete('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await Notification.deleteMany({ userId: req.user.id });
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to clear notifications." });
+  }
+});
+
 // Helper: Format phone number
 function formatPhoneNumber(phone) {
   if (!phone) return '';
