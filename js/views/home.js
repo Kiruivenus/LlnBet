@@ -15,13 +15,18 @@ export function renderHomeView() {
   const liveMatches = sportMatches.filter(m => m.isLive);
   const upcomingMatches = sportMatches.filter(m => !m.isLive && new Date(m.kickoffTime) > new Date());
 
+  if (window.homeCurrentSlideIdx === undefined) {
+    window.homeCurrentSlideIdx = 0;
+  }
+  const activeIdx = window.homeCurrentSlideIdx;
+
   let html = `
     <!-- Premium Promo Hero Slider -->
     <div class="hero-slider-wrapper">
       <div class="hero-slider-track" id="hero-slider-track">
         
         <!-- Slide 1: Deposit Bonus -->
-        <div class="hero-slide active" style="background: linear-gradient(135deg, #0e121a 0%, #15803d 100%);">
+        <div class="hero-slide ${activeIdx === 0 ? 'active' : ''}" style="background: linear-gradient(135deg, #0e121a 0%, #15803d 100%);">
           <div class="hero-slide-content">
             <span class="hero-tag">Special Promo</span>
             <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">100% BONUS ON THE 1ST DEPOSIT UP TO KES 50,000</h1>
@@ -36,7 +41,7 @@ export function renderHomeView() {
         </div>
 
         <!-- Slide 2: Cybersport -->
-        <div class="hero-slide" style="background: linear-gradient(135deg, #080a0f 0%, #ff3d00 150%);">
+        <div class="hero-slide ${activeIdx === 1 ? 'active' : ''}" style="background: linear-gradient(135deg, #080a0f 0%, #ff3d00 150%);">
           <div class="hero-slide-content">
             <span class="hero-tag" style="background:#ff3d00;">Esports Specials</span>
             <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">CATCH BEST COEFFICIENTS IN CYBERSPORT!</h1>
@@ -51,7 +56,7 @@ export function renderHomeView() {
         </div>
 
         <!-- Slide 3: Athletic Bilbao Partnership -->
-        <div class="hero-slide" style="background: linear-gradient(135deg, #450a0a 0%, #111 100%);">
+        <div class="hero-slide ${activeIdx === 2 ? 'active' : ''}" style="background: linear-gradient(135deg, #450a0a 0%, #111 100%);">
           <div class="hero-slide-content">
             <span class="hero-tag" style="background:#fdb927; color:#111;">La Liga Partner</span>
             <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">OFFICIAL REGIONAL PARTNER - ATHLETIC BILBAO</h1>
@@ -66,7 +71,7 @@ export function renderHomeView() {
         </div>
 
         <!-- Slide 4: Spain vs Argentina Special Match -->
-        <div class="hero-slide" style="background: linear-gradient(135deg, #0e121a 0%, #0369a1 100%);">
+        <div class="hero-slide ${activeIdx === 3 ? 'active' : ''}" style="background: linear-gradient(135deg, #0e121a 0%, #0369a1 100%);">
           <div class="hero-slide-content">
             <span class="hero-tag" style="background:#38bdf8; color:#0f172a;">World Cup 2026</span>
             <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">Spain vs Argentina</h1>
@@ -238,7 +243,7 @@ export function renderHomeView() {
   // Initialize Slider Logic
   const slides = container.querySelectorAll('.hero-slide');
   const dotsContainer = document.getElementById('hero-dots-container');
-  let currentSlideIdx = 0;
+  let currentSlideIdx = window.homeCurrentSlideIdx || 0;
 
   if (window.homeSliderInterval) {
     clearInterval(window.homeSliderInterval);
@@ -265,6 +270,7 @@ export function renderHomeView() {
     if (!container.querySelector('.hero-slider-wrapper')) return;
     slides[currentSlideIdx].classList.remove('active');
     currentSlideIdx = (idx + slides.length) % slides.length;
+    window.homeCurrentSlideIdx = currentSlideIdx; // Persist globally across page updates
     slides[currentSlideIdx].classList.add('active');
     renderDots();
   };
