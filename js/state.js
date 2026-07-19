@@ -443,6 +443,11 @@ class State {
     return data;
   }
 
+  deposit() {
+    this.refreshUserData();
+    return true;
+  }
+
   setSport(sportKey) {
     this.data.activeSport = sportKey;
     this.notify('activeSport');
