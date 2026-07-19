@@ -234,15 +234,19 @@ export function renderMyBetsView() {
 
     // Cash Out button trigger
     container.querySelectorAll('.bet-history-cashout-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const betId = btn.getAttribute('data-id');
         const val = parseFloat(btn.getAttribute('data-val'));
         
-        const success = state.cashOutBet(betId, val);
-        if (success) {
-          alert(`Cashout successful!\n\n${formatCurrency(val)} has been credited back to your betting wallet.`);
-          drawMyBets(); // Redraw
+        try {
+          const success = await state.cashOutBet(betId, val);
+          if (success) {
+            alert(`Cashout successful!\n\n${formatCurrency(val)} has been credited back to your betting wallet.`);
+            drawMyBets();
+          }
+        } catch (err) {
+          alert(err.message || "Cashout failed.");
         }
       });
     });

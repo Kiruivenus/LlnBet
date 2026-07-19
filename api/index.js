@@ -750,8 +750,8 @@ app.post('/api/bets/:id/settle', async (req, res) => {
       if (winnings !== undefined) bet.cashoutAmount = winnings;
       await bet.save();
 
-      // If the bet won, credit user balance!
-      if (status === 'WON' && winnings > 0) {
+      // If the bet won or was cashed out, credit user balance!
+      if ((status === 'WON' || status === 'CASHOUT') && winnings > 0) {
         const user = await User.findById(bet.userId);
         if (user) {
           user.balance += winnings;
@@ -759,17 +759,21 @@ app.post('/api/bets/:id/settle', async (req, res) => {
 
           await Transaction.create({
             userId: user._id.toString(),
-            type: 'BET_WON',
+            type: status === 'CASHOUT' ? 'CASHOUT' : 'BET_WON',
             amount: winnings,
             status: 'COMPLETED',
-            reference: `WIN-${betId}`,
-            description: `Winnings payout for Bet Ticket #${betId}`
+            reference: `${status === 'CASHOUT' ? 'CO' : 'WIN'}-${betId}`,
+            description: status === 'CASHOUT'
+              ? `Early cashout payout for Bet Ticket #${betId}`
+              : `Winnings payout for Bet Ticket #${betId}`
           });
 
           await Notification.create({
             userId: user._id.toString(),
-            title: "Bet Won! Payout Credited",
-            message: `Congratulations! Your bet ticket #${betId} won KES ${winnings.toLocaleString()}. Funds have been credited to your wallet.`,
+            title: status === 'CASHOUT' ? "Bet Cashed Out" : "Bet Won! Payout Credited",
+            message: status === 'CASHOUT'
+              ? `Your early cashout of KES ${winnings.toLocaleString()} for ticket #${betId} was successful.`
+              : `Congratulations! Your bet ticket #${betId} won KES ${winnings.toLocaleString()}. Funds have been credited to your wallet.`,
             type: "bet"
           });
         }

@@ -239,7 +239,11 @@ export function renderHomeView() {
   const slides = container.querySelectorAll('.hero-slide');
   const dotsContainer = document.getElementById('hero-dots-container');
   let currentSlideIdx = 0;
-  let slideInterval = null;
+
+  if (window.homeSliderInterval) {
+    clearInterval(window.homeSliderInterval);
+    window.homeSliderInterval = null;
+  }
 
   const renderDots = () => {
     if (!dotsContainer) return;
@@ -267,7 +271,10 @@ export function renderHomeView() {
 
   const nextSlide = () => {
     if (!container.querySelector('.hero-slider-wrapper')) {
-      clearInterval(slideInterval);
+      if (window.homeSliderInterval) {
+        clearInterval(window.homeSliderInterval);
+        window.homeSliderInterval = null;
+      }
       return;
     }
     goToSlide(currentSlideIdx + 1);
@@ -275,18 +282,23 @@ export function renderHomeView() {
 
   const prevSlide = () => {
     if (!container.querySelector('.hero-slider-wrapper')) {
-      clearInterval(slideInterval);
+      if (window.homeSliderInterval) {
+        clearInterval(window.homeSliderInterval);
+        window.homeSliderInterval = null;
+      }
       return;
     }
     goToSlide(currentSlideIdx - 1);
   };
 
   const startAutoplay = () => {
-    slideInterval = setInterval(nextSlide, 4000);
+    window.homeSliderInterval = setInterval(nextSlide, 4000);
   };
 
   const resetAutoplay = () => {
-    clearInterval(slideInterval);
+    if (window.homeSliderInterval) {
+      clearInterval(window.homeSliderInterval);
+    }
     startAutoplay();
   };
 

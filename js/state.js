@@ -448,6 +448,32 @@ class State {
     return true;
   }
 
+  async cashOutBet(betId, amount) {
+    if (!this.data.isLoggedIn || !this.data.token) {
+      throw new Error("Please login to cash out bets.");
+    }
+
+    const res = await fetch(`/api/bets/${betId}/settle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.data.token}`
+      },
+      body: JSON.stringify({
+        status: 'CASHOUT',
+        winnings: Number(amount)
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Cashout request failed.");
+    }
+
+    this.refreshUserData();
+    return true;
+  }
+
   setSport(sportKey) {
     this.data.activeSport = sportKey;
     this.notify('activeSport');
