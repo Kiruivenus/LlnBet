@@ -10,7 +10,7 @@ export function renderRegisterView() {
       <div class="auth-card">
         
         <div class="auth-header">
-          <img src="img/logo.png" style="display:block; margin: 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit:cover;" alt="LlnBet Logo" />
+          <img src="/img/logo.png" style="display:block; margin: 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit:cover;" alt="LlnBet Logo" />
           <h2 class="auth-title" style="margin-top: 10px;">Create Account</h2>
           <p class="auth-subtitle">Register to LlnBet with your Safaricom or Airtel Kenyan number</p>
         </div>

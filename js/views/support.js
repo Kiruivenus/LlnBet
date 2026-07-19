@@ -21,7 +21,7 @@ export function renderSupportView() {
       <div style="background:var(--bg-obsidian); padding:16px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between;">
         <div style="display:flex; align-items:center; gap:12px;">
           <div style="position:relative; width:40px; height:40px; background:var(--accent-emerald-glow); color:var(--accent-emerald); border-radius:50%; display:flex; align-items:center; justify-content:center; border: 1px solid var(--border-color);">
-            <img src="img/logo.png" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" alt="Alice Bot Avatar" />
+            <img src="/img/logo.png" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" alt="Alice Bot Avatar" />
             <span style="position:absolute; bottom:2px; right:2px; width:10px; height:10px; background:#00e676; border-radius:50%; border:2px solid var(--bg-obsidian);"></span>
           </div>
           <div>

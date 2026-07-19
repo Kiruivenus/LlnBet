@@ -10,7 +10,7 @@ export function renderLoginView() {
       <div class="auth-card">
         
         <div class="auth-header">
-          <img src="img/logo.png" style="display:block; margin: 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit:cover;" alt="LlnBet Logo" />
+          <img src="/img/logo.png" style="display:block; margin: 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit:cover;" alt="LlnBet Logo" />
           <h2 class="auth-title" style="margin-top: 10px;">Login to LlnBet</h2>
           <p class="auth-subtitle">Enter your Kenyan mobile number and password to access your betting account</p>
         </div>

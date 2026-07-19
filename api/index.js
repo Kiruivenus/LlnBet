@@ -811,6 +811,18 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
 // ---------------------------------------------------------------------
 // ODDS SYNC ENDPOINTS
 // ---------------------------------------------------------------------
+app.get('/api/odds', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const records = await OddsHistory.find({}).lean();
+      return res.json(records);
+    }
+    return res.json([]);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/odds', async (req, res) => {
   try {
     const { matchId, r1, rx, r2 } = req.body;
