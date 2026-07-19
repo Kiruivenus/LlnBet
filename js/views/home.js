@@ -366,7 +366,7 @@ export function renderHomeView() {
   };
 
   const startAutoplay = () => {
-    window.homeSliderInterval = setInterval(nextSlide, 4000);
+    window.homeSliderInterval = setInterval(nextSlide, 7000);
   };
 
   const resetAutoplay = () => {
