@@ -2443,6 +2443,65 @@ img {
   margin-top: 3px !important;
 }
 
+/* ==========================================================================
+   Modern Commercial Sportsbook Loading Spinner System
+   ========================================================================== */
+.initial-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 380px;
+  padding: 60px 24px;
+  gap: 20px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.skeleton-loader-spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3.5px solid rgba(56, 102, 42, 0.15);
+  border-top-color: #38662A;
+  border-right-color: #10B981;
+  animation: lln-spinner-rotate 0.75s linear infinite;
+  box-shadow: 0 4px 14px rgba(56, 102, 42, 0.12);
+  position: relative;
+}
+
+.skeleton-loader-spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #38662A;
+  box-shadow: 0 0 10px rgba(56, 102, 42, 0.5);
+}
+
+@keyframes lln-spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.initial-loading-text {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #2D3A2C;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
 
 
 
