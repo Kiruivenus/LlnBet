@@ -1,7 +1,6 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
-import { renderLiveTracker } from '../components/liveTracker.js';
-import { getMaterialIcon, formatOdds, formatDate, renderTeamBadge } from '../utils.js';
+import { getMaterialIcon, formatOdds, formatDate } from '../utils.js';
 
 let activeFilter = 'All Markets';
 
@@ -36,6 +35,28 @@ export function renderMatchDetailsView() {
   const homeName = match.teams.home.name;
   const awayName = match.teams.away.name;
 
+  // Derived or simulated stats for presentation
+  const homeScore = match.scores ? match.scores.home : 0;
+  const awayScore = match.scores ? match.scores.away : 0;
+
+  const homePoss = 52 + (homeScore - awayScore) * 3;
+  const awayPoss = 100 - homePoss;
+
+  const homeShots = 8 + homeScore * 2;
+  const awayShots = 6 + awayScore * 2;
+  const totalShots = homeShots + awayShots;
+  const homeShotsPct = Math.round((homeShots / totalShots) * 100);
+
+  const homeTarget = 4 + homeScore;
+  const awayTarget = 3 + awayScore;
+  const totalTarget = homeTarget + awayTarget;
+  const homeTargetPct = Math.round((homeTarget / totalTarget) * 100);
+
+  const homeCorners = 5;
+  const awayCorners = 4;
+  const totalCorners = homeCorners + awayCorners;
+  const homeCornersPct = Math.round((homeCorners / totalCorners) * 100);
+
   let html = `
     <!-- Navigation Back Header -->
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -46,12 +67,12 @@ export function renderMatchDetailsView() {
     </div>
 
     <!-- Match Scoreboard Hero Card -->
-    <div style="position: relative; overflow: hidden; padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px;">
+    <div style="position: relative; overflow: hidden; padding: 20px 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
         
         <!-- Home Team -->
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; text-align: center;">
-          <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--bg-surface-hover); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; color: var(--text-primary); border: 1px solid var(--border-color);">
+          <div class="team-flag" style="width: 48px; height: 48px; font-size: 1.1rem;">
             ${homeName.substring(0, 2).toUpperCase()}
           </div>
           <span style="font-size: 1rem; font-weight: 800; color: var(--text-primary);">${homeName}</span>
@@ -65,7 +86,7 @@ export function renderMatchDetailsView() {
               <span class="pulse-dot"></span>
               <span>LIVE ${match.timer}'</span>
             </div>
-            <div style="font-family: var(--font-mono); font-weight: 900; font-size: 1.6rem; color: var(--color-primary); margin-top: 4px;">
+            <div style="font-family: var(--font-mono); font-weight: 900; font-size: 1.6rem; color: var(--color-primary); margin-top: 2px;">
               ${match.scores.home} : ${match.scores.away}
             </div>
           ` : `
@@ -76,33 +97,97 @@ export function renderMatchDetailsView() {
 
         <!-- Away Team -->
         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; text-align: center;">
-          <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--bg-surface-hover); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; color: var(--text-primary); border: 1px solid var(--border-color);">
+          <div class="team-flag" style="width: 48px; height: 48px; font-size: 1.1rem;">
             ${awayName.substring(0, 2).toUpperCase()}
           </div>
           <span style="font-size: 1rem; font-weight: 800; color: var(--text-primary);">${awayName}</span>
         </div>
 
       </div>
+    </div>
 
-      <!-- Footer Quick Stats Link -->
-      <div style="display: flex; justify-content: center; gap: 24px; font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 14px;">
-        <span style="display: flex; align-items: center; gap: 6px;">
-          ${getMaterialIcon('live')}
-          ${match.isLive ? `Live Feed Active` : 'Scheduled Match'}
-        </span>
-        <span style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--color-primary);" id="trigger-stats-modal">
-          ${getMaterialIcon('trend')}
-          Match Statistics
-        </span>
+    <!-- Commercial Match Statistics & Analytics Card -->
+    <div class="match-stats-card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 20px; box-shadow: var(--shadow-card); margin-bottom: 20px;">
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--color-primary); font-size: 20px;">${getMaterialIcon('trend')}</span>
+          <h3 style="font-family: var(--font-heading); font-weight: 800; font-size: 1rem; color: var(--text-primary);">Match Statistics</h3>
+        </div>
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--color-primary);">${match.isLive ? 'Live In-Play Data' : 'Historical Metrics'}</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        
+        <!-- Possession Bar -->
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">
+            <span>${homePoss}%</span>
+            <span style="color: var(--text-secondary); font-weight: 700;">Possession</span>
+            <span>${awayPoss}%</span>
+          </div>
+          <div style="height: 8px; background: var(--bg-surface-hover); border-radius: 9999px; overflow: hidden; display: flex;">
+            <div style="width: ${homePoss}%; background: var(--color-primary); height: 100%;"></div>
+            <div style="width: ${awayPoss}%; background: var(--odds-chip-bg); height: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Total Shots Bar -->
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">
+            <span>${homeShots}</span>
+            <span style="color: var(--text-secondary); font-weight: 700;">Total Shots</span>
+            <span>${awayShots}</span>
+          </div>
+          <div style="height: 8px; background: var(--bg-surface-hover); border-radius: 9999px; overflow: hidden; display: flex;">
+            <div style="width: ${homeShotsPct}%; background: var(--color-primary); height: 100%;"></div>
+            <div style="width: ${100 - homeShotsPct}%; background: var(--border-color); height: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Shots on Target Bar -->
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">
+            <span>${homeTarget}</span>
+            <span style="color: var(--text-secondary); font-weight: 700;">Shots on Target</span>
+            <span>${awayTarget}</span>
+          </div>
+          <div style="height: 8px; background: var(--bg-surface-hover); border-radius: 9999px; overflow: hidden; display: flex;">
+            <div style="width: ${homeTargetPct}%; background: var(--color-primary); height: 100%;"></div>
+            <div style="width: ${100 - homeTargetPct}%; background: var(--border-color); height: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Corner Kicks Bar -->
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary);">
+            <span>${homeCorners}</span>
+            <span style="color: var(--text-secondary); font-weight: 700;">Corner Kicks</span>
+            <span>${awayCorners}</span>
+          </div>
+          <div style="height: 8px; background: var(--bg-surface-hover); border-radius: 9999px; overflow: hidden; display: flex;">
+            <div style="width: ${homeCornersPct}%; background: var(--color-primary); height: 100%;"></div>
+            <div style="width: ${100 - homeCornersPct}%; background: var(--border-color); height: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Discipline Badges -->
+        <div style="display: flex; justify-content: space-around; align-items: center; background: var(--bg-surface-hover); border-radius: var(--radius-lg); padding: 10px; margin-top: 4px; border: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 800; color: var(--text-primary);">
+            <span>🟨 Yellow Cards</span>
+            <span style="font-family: var(--font-mono); color: var(--color-primary); margin-left: 4px;">1 - 1</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 800; color: var(--text-primary);">
+            <span>🟥 Red Cards</span>
+            <span style="font-family: var(--font-mono); color: var(--text-muted); margin-left: 4px;">0 - 0</span>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
 
-  if (match.isLive) {
-    html += renderLiveTracker(match);
-  }
-
-  // Expanded list of 12 betting markets
+  // Expanded list of 8 betting markets
   const marketDetailsList = [
     {
       name: '1X2 Match Winner',
@@ -191,7 +276,7 @@ export function renderMatchDetailsView() {
 
   // Category Filter Chips Navigator
   html += `
-    <div style="margin-top: 16px;">
+    <div>
       <div style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding: 4px 0; scrollbar-width: none;">
         ${['All Markets', 'Main', 'First Half', 'Goals'].map(tab => {
           const isActive = activeFilter === tab;
@@ -304,10 +389,6 @@ export function renderMatchDetailsView() {
         odds: oddsVal
       });
     });
-  });
-
-  document.getElementById('trigger-stats-modal')?.addEventListener('click', () => {
-    alert(`Event Statistics:\n\nMatch State: ${match.isLive ? 'Live In-Play (' + match.timer + '\')' : 'Upcoming scheduled'}\nScore: ${match.teams.home.name} ${match.scores.home} - ${match.scores.away} ${match.teams.away.name}\nVenue: ${match.venue || 'Main Stadium'}`);
   });
 }
 
