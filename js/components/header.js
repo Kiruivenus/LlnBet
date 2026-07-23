@@ -9,7 +9,6 @@ export function renderHeader() {
   const isLoggedIn = state.data.isLoggedIn;
   const userData = state.data.user;
 
-  // Initialize mobile drawer overlay
   renderMobileDrawer();
 
   let rightToolsHtml = '';
@@ -26,7 +25,7 @@ export function renderHeader() {
         <span class="wallet-balance">${formatCurrency(userData.balance || 0)}</span>
       </div>
 
-      <!-- Bright Lime Green Deposit Button -->
+      <!-- Emerald Green Deposit Button -->
       <button class="btn-deposit" id="header-deposit-btn" aria-label="Deposit Funds">
         ${getMaterialIcon('add')}
         <span>Deposit</span>
@@ -44,11 +43,9 @@ export function renderHeader() {
       </button>
 
       <!-- Verified User Avatar -->
-      <div class="header-profile-btn" id="header-profile-trigger" title="Profile Account">
-        <div class="user-avatar">
-          ${initials}
-          <div class="verified-tick">✓</div>
-        </div>
+      <div class="user-avatar" id="header-profile-trigger" style="cursor: pointer;" title="Profile Account">
+        ${initials}
+        <div class="verified-tick">✓</div>
       </div>
     `;
   } else {
@@ -58,16 +55,16 @@ export function renderHeader() {
         ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
       </button>
 
-      <div class="header-auth-group">
-        <button class="btn-header-login" id="header-login-btn">Login</button>
-        <button class="btn-header-register" id="header-register-btn">Register</button>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="header-icon-btn" id="header-login-btn" style="width: auto; padding: 0 14px; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.82rem;">Login</button>
+        <button class="btn-deposit" id="header-register-btn" style="font-size: 0.82rem; padding: 8px 16px;">Register</button>
       </div>
     `;
   }
 
   container.innerHTML = `
-    <!-- Left: Brand Logo & Mobile Drawer Trigger -->
-    <div style="display: flex; align-items: center; gap: 12px;">
+    <!-- Left: Brand Emblem & Mobile Drawer Trigger -->
+    <div style="display: flex; align-items: center; gap: 10px;">
       <button class="header-icon-btn mobile-hamburger-btn" id="mobile-hamburger-trigger" aria-label="Open Menu" style="display: none;">
         ${getMaterialIcon('menu')}
       </button>
@@ -94,7 +91,6 @@ export function renderHeader() {
 
     <!-- Right: Wallet, Deposit, Avatar & Tools -->
     <div class="header-right-tools">
-      <!-- Mobile Compact Search Icon Button -->
       <button class="header-icon-btn mobile-search-btn" id="header-mobile-search-btn" aria-label="Search" style="display: none;">
         ${getMaterialIcon('search')}
       </button>
@@ -103,7 +99,7 @@ export function renderHeader() {
     </div>
   `;
 
-  // Bind Scroll Shadow Handler
+  // Bind Scroll Shadow
   window.addEventListener('scroll', () => {
     if (window.scrollY > 10) {
       container.classList.add('scrolled');
@@ -112,12 +108,12 @@ export function renderHeader() {
     }
   });
 
-  // Bind Hamburger Drawer Event
+  // Mobile Hamburger Trigger
   document.getElementById('mobile-hamburger-trigger')?.addEventListener('click', () => {
     openDrawer();
   });
 
-  // Brand Logo Click Listener
+  // Brand Logo Click
   document.getElementById('header-brand-logo')?.addEventListener('click', (e) => {
     e.preventDefault();
     state.setPage('home');
@@ -136,22 +132,10 @@ export function renderHeader() {
   document.getElementById('header-search-btn')?.addEventListener('click', openSearch);
   document.getElementById('header-mobile-search-btn')?.addEventListener('click', openSearch);
 
-  // Keyboard shortcut listener for Ctrl+K / Cmd+K search
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      openSearch();
-    }
-  });
-
   // Deposit CTA Trigger
   document.getElementById('header-deposit-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (state.data.isLoggedIn) {
-      state.setPage('profile');
-    } else {
-      state.setPage('login');
-    }
+    state.setPage(state.data.isLoggedIn ? 'profile' : 'login');
   });
 
   // Theme Toggle Trigger
@@ -169,27 +153,13 @@ export function renderHeader() {
     state.notify('theme');
   });
 
-  // User Profile / Wallet / Notification Triggers
   if (isLoggedIn) {
-    document.getElementById('header-wallet-trigger')?.addEventListener('click', () => {
-      state.setPage('profile');
-    });
-
-    document.getElementById('header-profile-trigger')?.addEventListener('click', () => {
-      state.setPage('profile');
-    });
-
-    document.getElementById('header-notif-btn')?.addEventListener('click', () => {
-      state.setPage('notifications');
-    });
+    document.getElementById('header-wallet-trigger')?.addEventListener('click', () => state.setPage('profile'));
+    document.getElementById('header-profile-trigger')?.addEventListener('click', () => state.setPage('profile'));
+    document.getElementById('header-notif-btn')?.addEventListener('click', () => state.setPage('notifications'));
   } else {
-    document.getElementById('header-login-btn')?.addEventListener('click', () => {
-      state.setPage('login');
-    });
-
-    document.getElementById('header-register-btn')?.addEventListener('click', () => {
-      state.setPage('register');
-    });
+    document.getElementById('header-login-btn')?.addEventListener('click', () => state.setPage('login'));
+    document.getElementById('header-register-btn')?.addEventListener('click', () => state.setPage('register'));
   }
 }
 

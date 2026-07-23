@@ -23,11 +23,14 @@ export function renderHomeView() {
     if (chipsList) {
       chipsList.innerHTML = sportsList.map(sport => {
         const count = matches.filter(m => m.sport === sport.id).length;
+        const liveCount = matches.filter(m => m.sport === sport.id && m.isLive).length;
         return `
           <button class="sport-chip ${activeSport === sport.id ? 'active' : ''}" data-sport="${sport.id}">
             <span>${getMaterialIcon(sport.icon)}</span>
             <span>${sport.name}</span>
-            <span class="sport-chip-count">${count}</span>
+            <span class="sport-chip-count">
+              ${liveCount > 0 ? `<span style="color: var(--color-danger); font-weight: 800;">● ${liveCount}</span> / ` : ''}${count}
+            </span>
           </button>
         `;
       }).join('');
@@ -44,7 +47,7 @@ export function renderHomeView() {
     const matchCardsList = container.querySelector('.match-cards-container');
     if (matchCardsList) {
       matchCardsList.innerHTML = sportMatches.length === 0 ? `
-        <div style="padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
+        <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
           No match fixtures available for this category right now.
         </div>
       ` : sportMatches.map(match => renderMatchCard(match, selections)).join('');
@@ -60,19 +63,19 @@ export function renderHomeView() {
   const activeIdx = window.homeCurrentSlideIdx;
 
   let html = `
-    <!-- Hero Promotional Slider (320px Desktop / 220px Mobile) -->
+    <!-- Hero Promotional Banner Carousel (300px Desktop / 220px Mobile) -->
     <div class="hero-slider-container">
       <div class="hero-slider-track" id="hero-slider-track">
         
         <!-- Slide 1: 100% Deposit Match -->
-        <div class="hero-slide ${activeIdx === 0 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(29, 75, 34, 0.95), rgba(37, 90, 40, 0.85)), url('/img/hero-banner-bg.png');">
+        <div class="hero-slide ${activeIdx === 0 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(5, 150, 105, 0.95), rgba(16, 185, 129, 0.82)), url('/img/hero-banner-bg.png');">
           <div class="hero-slide-content">
-            <span class="hero-badge">Welcome Offer</span>
-            <h1 class="hero-title">100% MATCH BONUS UP TO KES 50,000</h1>
-            <p class="hero-desc">Register today with LlnBet and double your initial wallet deposit instantly with zero rollover delays.</p>
+            <span class="hero-badge">Welcome Bonus</span>
+            <h1 class="hero-title">100% DEPOSIT MATCH UP TO KES 50,000</h1>
+            <p class="hero-desc">Register with LlnBet today and double your initial cashier deposit with instant wallet activation.</p>
             <div class="hero-actions-row">
-              <button class="hero-cta-btn" id="slide-deposit-btn">Claim Bonus</button>
-              <button class="hero-quick-odd" id="slide-explore-btn">Explore Matches</button>
+              <button class="hero-cta-btn" id="slide-deposit-btn">Claim 100% Bonus</button>
+              <button class="hero-quick-odd" id="slide-explore-btn">Explore Sports</button>
             </div>
           </div>
           <div class="hero-slide-graphic">
@@ -81,37 +84,37 @@ export function renderHomeView() {
         </div>
 
         <!-- Slide 2: Esports Specials -->
-        <div class="hero-slide ${activeIdx === 1 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(14, 18, 26, 0.95), rgba(255, 77, 79, 0.85));">
+        <div class="hero-slide ${activeIdx === 1 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(239, 68, 68, 0.85));">
           <div class="hero-slide-content">
-            <span class="hero-badge" style="color: #FF4D4F; border-color: rgba(255,77,79,0.3);">Esports Superboost</span>
-            <h1 class="hero-title">CYBERSPORTS BOOSTED COEFFICIENTS</h1>
-            <p class="hero-desc">High-speed live betting on Dota 2, Counter-Strike 2, and FIFA Virtual Leagues.</p>
+            <span class="hero-badge" style="background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4);">Esports Superboost</span>
+            <h1 class="hero-title">CYBERSPORTS BOOSTED ODDS</h1>
+            <p class="hero-desc">High-speed live in-play multipliers on Counter-Strike 2, Dota 2, and Virtual Leagues.</p>
             <div class="hero-actions-row">
-              <button class="hero-cta-btn" id="slide-esports-btn" style="background: linear-gradient(135deg, #FF4D4F, #FF7875); color: #fff;">Bet In-Play</button>
+              <button class="hero-cta-btn" id="slide-esports-btn" style="background: var(--color-danger);">Bet In-Play</button>
             </div>
           </div>
           <div class="hero-slide-graphic">
-            <span class="material-icons-round" style="font-size: 6rem; color: rgba(255,255,255,0.15);">sports_esports</span>
+            <span class="material-icons-round" style="font-size: 5.5rem; color: rgba(255,255,255,0.15);">sports_esports</span>
           </div>
         </div>
 
         <!-- Slide 3: Athletic Bilbao Partnership -->
-        <div class="hero-slide ${activeIdx === 2 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(69, 10, 10, 0.95), rgba(17, 17, 17, 0.9));">
+        <div class="hero-slide ${activeIdx === 2 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(69, 10, 10, 0.95), rgba(17, 24, 39, 0.9));">
           <div class="hero-slide-content">
-            <span class="hero-badge" style="color: #FFD700; border-color: rgba(255,215,0,0.3);">La Liga Official Partner</span>
+            <span class="hero-badge" style="background: rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.4);">La Liga Regional Partner</span>
             <h1 class="hero-title">ATHLETIC CLUB BILBAO SPECIALS</h1>
-            <p class="hero-desc">Support the lions of Basque country with customized prop markets and instant cashouts.</p>
+            <p class="hero-desc">Support the lions of Basque country with customized player props and guaranteed early cashout payouts.</p>
             <div class="hero-actions-row">
-              <button class="hero-cta-btn" id="slide-bilbao-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000;">View Fixtures</button>
+              <button class="hero-cta-btn" id="slide-bilbao-btn" style="background: var(--color-warning); color: #000;">View Fixtures</button>
             </div>
           </div>
           <div class="hero-slide-graphic">
-            <span class="material-icons-round" style="font-size: 6rem; color: rgba(255,215,0,0.15);">sports_soccer</span>
+            <span class="material-icons-round" style="font-size: 5.5rem; color: rgba(255,255,255,0.15);">sports_soccer</span>
           </div>
         </div>
 
         <!-- Slide 4: World Cup Spain vs Argentina -->
-        <div class="hero-slide ${activeIdx === 3 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(14, 18, 26, 0.95), rgba(3, 105, 161, 0.85));">
+        <div class="hero-slide ${activeIdx === 3 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(3, 105, 161, 0.85));">
           <div class="hero-slide-content">
             <span class="hero-badge">World Cup Final</span>
             <h1 class="hero-title">SPAIN vs ARGENTINA</h1>
@@ -126,7 +129,7 @@ export function renderHomeView() {
 
       </div>
 
-      <!-- Arrow Navigation Controls -->
+      <!-- Arrow Controls -->
       <button class="hero-arrow prev" id="hero-prev-btn">&lt;</button>
       <button class="hero-arrow next" id="hero-next-btn">&gt;</button>
 
@@ -134,23 +137,26 @@ export function renderHomeView() {
       <div class="hero-dots" id="hero-dots-container"></div>
     </div>
 
-    <!-- Sports Categories Horizontal Scrolling Chips -->
+    <!-- Sports Categories Horizontal Scrolling Pills -->
     <div class="sports-chips-wrapper">
       <div class="sports-chips-list">
         ${sportsList.map(sport => {
           const count = matches.filter(m => m.sport === sport.id).length;
+          const liveCount = matches.filter(m => m.sport === sport.id && m.isLive).length;
           return `
             <button class="sport-chip ${activeSport === sport.id ? 'active' : ''}" data-sport="${sport.id}">
               <span>${getMaterialIcon(sport.icon)}</span>
               <span>${sport.name}</span>
-              <span class="sport-chip-count">${count}</span>
+              <span class="sport-chip-count">
+                ${liveCount > 0 ? `<span style="color: var(--color-danger); font-weight: 800;">● ${liveCount}</span> / ` : ''}${count}
+              </span>
             </button>
           `;
         }).join('')}
       </div>
     </div>
 
-    <!-- Featured Match Cards Grid -->
+    <!-- Commercial Sportsbook Match Cards Section -->
     <div>
       <div class="section-title-row">
         <h2 class="section-title">Top Sports Fixtures</h2>
@@ -158,7 +164,7 @@ export function renderHomeView() {
 
       <div class="match-cards-container">
         ${sportMatches.length === 0 ? `
-          <div style="padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
+          <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
             No match fixtures available for this category right now.
           </div>
         ` : sportMatches.map(match => renderMatchCard(match, selections)).join('')}
@@ -166,24 +172,24 @@ export function renderHomeView() {
     </div>
 
     <!-- Casino & Virtuals Horizontal Showcase Section -->
-    <div style="margin-top: 12px;">
+    <div style="margin-top: 8px;">
       <div class="section-title-row">
         <h2 class="section-title">Casino & Instant Games</h2>
       </div>
       <div class="casino-showcase-grid">
-        <div class="casino-card" style="background-image: linear-gradient(135deg, #10b981, #047857);">
+        <div class="casino-card" style="background-image: linear-gradient(135deg, #059669, #10B981);">
           <div class="casino-card-overlay">
             <span class="casino-card-tag">Crash Game</span>
             <h3 class="casino-card-title">Aviator Rocket</h3>
           </div>
         </div>
-        <div class="casino-card" style="background-image: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+        <div class="casino-card" style="background-image: linear-gradient(135deg, #7C3AED, #A78BFA);">
           <div class="casino-card-overlay">
             <span class="casino-card-tag">Slot Tournament</span>
             <h3 class="casino-card-title">Gates of Olympus</h3>
           </div>
         </div>
-        <div class="casino-card" style="background-image: linear-gradient(135deg, #f59e0b, #b45309);">
+        <div class="casino-card" style="background-image: linear-gradient(135deg, #D97706, #FBBF24);">
           <div class="casino-card-overlay">
             <span class="casino-card-tag">Live Table</span>
             <h3 class="casino-card-title">Lightning Roulette</h3>
@@ -193,7 +199,7 @@ export function renderHomeView() {
     </div>
 
     <!-- Footer -->
-    <footer style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.82rem; display: flex; flex-direction: column; gap: 16px;">
+    <footer style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.82rem; display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
         <div style="max-width: 320px;">
           <h4 style="font-family: var(--font-heading); color: var(--text-primary); margin-bottom: 6px; font-weight: 800;">LlnBet Sportsbook</h4>
@@ -303,7 +309,7 @@ export function renderHomeView() {
   }
 }
 
-// Render Redesigned Match Card Component
+// Render Authentic Commercial Sportsbook Match Card Component
 export function renderMatchCard(match, selections) {
   const isHomeSelected = selections.some(s => s.id === `${match.id}_1`);
   const isDrawSelected = selections.some(s => s.id === `${match.id}_x`);
@@ -318,7 +324,7 @@ export function renderMatchCard(match, selections) {
 
   return `
     <div class="match-card" data-id="${match.id}">
-      <!-- Card Header -->
+      <!-- Hierarchy 1: Competition & Badges Header -->
       <div class="match-card-header">
         <div class="match-league-info">
           <span class="match-league-icon">${getMaterialIcon('emoji_events')}</span>
@@ -335,7 +341,7 @@ export function renderMatchCard(match, selections) {
         </div>
       </div>
 
-      <!-- Card Body (Teams & Score) -->
+      <!-- Hierarchy 2: Teams & Score -->
       <div class="match-card-body" data-match-id="${match.id}">
         <div class="match-teams-col">
           <div class="team-row">
@@ -355,7 +361,7 @@ export function renderMatchCard(match, selections) {
         </div>
       </div>
 
-      <!-- Odds Selector Buttons -->
+      <!-- Hierarchy 3: Three Authentic Odds Buttons -->
       <div class="match-odds-grid">
         <button class="odds-btn ${isHomeSelected ? 'selected' : ''}" 
           data-id="${homeOdd.selectionId}" 
@@ -392,7 +398,7 @@ export function renderMatchCard(match, selections) {
         ` : '<div></div>'}
       </div>
 
-      <!-- Card Footer -->
+      <!-- Hierarchy 4: Additional Markets Link -->
       <div class="match-card-footer">
         <span style="color: var(--text-muted);">Match ID: #${match.id.substring(0, 8)}</span>
         <div class="extra-markets-link" data-match-id="${match.id}">
