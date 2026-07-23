@@ -2329,53 +2329,66 @@ img {
   font-weight: 900;
 }
 
-/* Bottom Nav Center Floating Circular Bet Slip Pill */
+/* Reference-Aligned Bet Slip Capsule Pill Component */
 .mnav-betslip-center {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.betslip-center-circle {
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
-  background-color: #C3EAA5;
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(56, 102, 42, 0.25);
-  transition: transform var(--transition-fast);
+.betslip-center-pill {
+  width: 52px !important;
+  height: 32px !important;
+  border-radius: 9999px !important;
+  background-color: #C3EAA5 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  box-shadow: 0 2px 8px rgba(56, 102, 42, 0.18) !important;
+  transition: transform var(--transition-fast) !important;
 }
 
-.betslip-center-circle:active {
-  transform: scale(0.92);
+.betslip-center-pill:active {
+  transform: scale(0.92) !important;
 }
 
-.betslip-center-circle .nav-icon {
-  font-size: 22px;
-  color: var(--color-primary);
+.betslip-icon-ticket {
+  font-size: 20px !important;
+  color: #1A3E14 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transform: rotate(-10deg);
 }
 
 .mobile-betslip-badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background-color: var(--color-primary);
-  color: #ffffff;
-  font-size: 0.65rem;
-  font-weight: 900;
-  font-family: var(--font-mono);
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+  font-size: 0.65rem !important;
+  font-weight: 900 !important;
+  font-family: var(--font-mono) !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  padding: 0 4px !important;
+  border-radius: 9999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1.5px solid #FFFFFF !important;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.4) !important;
+}
+
+.betslip-label-text {
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  color: #1A2418 !important;
+  margin-top: 3px !important;
 }
 
 

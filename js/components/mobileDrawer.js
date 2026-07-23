@@ -147,13 +147,13 @@ export function renderMobileNavBar() {
       <span>Casino</span>
     </a>
 
-    <!-- Floating Center Bet Slip Pill -->
+    <!-- Reference-Aligned Bet Slip Capsule Pill -->
     <a href="#" class="mobile-nav-item mnav-betslip-center" id="mnav-betslip">
-      <div class="betslip-center-circle">
-        <span class="nav-icon">${getMaterialIcon('receipt')}</span>
+      <div class="betslip-center-pill">
+        <span class="betslip-icon-ticket">${getMaterialIcon('confirmation_number')}</span>
         ${betCount > 0 ? `<span class="mobile-betslip-badge">${betCount}</span>` : ''}
       </div>
-      <span style="margin-top: 2px;">Bet slip</span>
+      <span class="betslip-label-text">Bet slip</span>
     </a>
 
     <!-- Deposit Cashier Tab -->
