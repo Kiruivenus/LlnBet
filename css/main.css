@@ -186,15 +186,17 @@ img {
 
 .brand-name {
   font-family: var(--font-heading);
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 900;
   letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: #FFFFFF !important;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 
 .brand-name span {
-  color: var(--color-primary);
+  color: #4ADE80 !important;
 }
 
 .brand-tagline {
@@ -202,7 +204,7 @@ img {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Header Center Search Bar */
@@ -1647,15 +1649,13 @@ img {
   left: 0;
   right: 0;
   height: 62px;
-  background-color: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-top: 1px solid var(--border-color);
+  background-color: #FFFFFF !important;
+  border-top: 1px solid #D6E4D4 !important;
   z-index: 1000;
   padding: 0 4px;
   align-items: center;
   justify-content: space-around;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
 }
 
 @media (max-width: 900px) {
@@ -1672,9 +1672,9 @@ img {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
+  color: #52634F !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
   cursor: pointer;
   text-decoration: none;
   position: relative;
@@ -1682,27 +1682,34 @@ img {
   border: none;
   outline: none;
   transition: color var(--transition-fast);
+  opacity: 1 !important;
 }
 
 .mobile-nav-item .nav-icon {
-  font-size: 22px;
+  font-size: 22px !important;
+  color: #52634F !important;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mobile-nav-item.active {
-  color: var(--color-primary);
+  color: #38662A !important;
+  font-weight: 900 !important;
+}
+
+.mobile-nav-item.active .nav-icon {
+  color: #38662A !important;
 }
 
 .mobile-nav-item.active::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 25%;
-  right: 25%;
+  left: 20%;
+  right: 20%;
   height: 3px;
-  background-color: var(--color-primary);
+  background-color: #38662A !important;
   border-radius: 0 0 3px 3px;
 }
 
