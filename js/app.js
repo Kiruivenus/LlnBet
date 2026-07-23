@@ -4,6 +4,7 @@ import { route } from './router.js';
 import { renderHeader } from './components/header.js';
 import { renderSidebar } from './components/sidebar.js';
 import { renderBetslip } from './components/betslip.js';
+import { renderMobileNavBar } from './components/mobileDrawer.js';
 import { renderSearchModal } from './components/searchModal.js';
 import { getMaterialIcon } from './utils.js';
 
@@ -48,24 +49,22 @@ window.showConfirm = function(message, onConfirm) {
   const msgEl = document.getElementById('betpulse-confirm-message');
   const yesBtn = document.getElementById('betpulse-confirm-yes-btn');
   const cancelBtn = document.getElementById('betpulse-confirm-cancel-btn');
-  
+
   if (overlay && msgEl && yesBtn && cancelBtn) {
     msgEl.textContent = message;
     overlay.style.display = 'flex';
     setTimeout(() => {
       overlay.classList.add('active');
     }, 10);
-    
-    const handleClose = (agreed) => {
+
+    const handleClose = (confirmed) => {
       overlay.classList.remove('active');
       setTimeout(() => {
         overlay.style.display = 'none';
       }, 250);
-      
       yesBtn.removeEventListener('click', onYes);
       cancelBtn.removeEventListener('click', onCancel);
-      
-      if (agreed && onConfirm) {
+      if (confirmed && onConfirm) {
         onConfirm();
       }
     };
@@ -81,55 +80,6 @@ window.showConfirm = function(message, onConfirm) {
     }
   }
 };
-
-// Renders the Mobile Bottom Navigation Bar
-function renderMobileNavBar() {
-  const container = document.getElementById('mobile-nav-bar');
-  if (!container) return;
-
-  const curPage = state.data.currentPage;
-  const selections = state.data.betslip.selections;
-
-  container.innerHTML = `
-    <button class="mobile-nav-item ${curPage === 'home' ? 'active' : ''}" id="mobile-nav-home">
-      ${getMaterialIcon('home')}
-      <span>Home</span>
-    </button>
-    <button class="mobile-nav-item ${curPage === 'live' ? 'active' : ''}" id="mobile-nav-live">
-      ${getMaterialIcon('live')}
-      <span>Live</span>
-    </button>
-    
-    <!-- Centered floating yellow betslip button (Betika style) -->
-    <button class="mobile-nav-item betslip-center-btn" id="mobile-nav-betslip" aria-label="Betslip">
-      ${getMaterialIcon('jackpot')}
-      ${selections.length > 0 ? `<span class="mobile-betslip-badge-count">${selections.length}</span>` : ''}
-    </button>
-
-    <button class="mobile-nav-item ${curPage === 'my-bets' ? 'active' : ''}" id="mobile-nav-mybets">
-      ${getMaterialIcon('history')}
-      <span>My Bets</span>
-    </button>
-    <button class="mobile-nav-item ${curPage === 'profile' ? 'active' : ''}" id="mobile-nav-profile">
-      ${getMaterialIcon('user')}
-      <span>Profile</span>
-    </button>
-  `;
-
-  // Bind Events
-  document.getElementById('mobile-nav-home').addEventListener('click', () => state.setPage('home'));
-  document.getElementById('mobile-nav-live').addEventListener('click', () => state.setPage('live'));
-  document.getElementById('mobile-nav-mybets').addEventListener('click', () => state.setPage('my-bets'));
-  document.getElementById('mobile-nav-profile').addEventListener('click', () => state.setPage('profile'));
-
-  // Mobile slip sliding drawer toggle
-  document.getElementById('mobile-nav-betslip').addEventListener('click', () => {
-    const slip = document.getElementById('app-betslip');
-    if (slip) {
-      slip.classList.toggle('active');
-    }
-  });
-}
 
 // Bootstrap Application
 async function initApp() {
@@ -170,7 +120,6 @@ async function initApp() {
 
   state.subscribe('user', () => {
     renderHeader();
-    // Refresh profile balance if currently active
     if (state.data.currentPage === 'profile') {
       route();
     }
@@ -183,20 +132,54 @@ async function initApp() {
     }
   });
 
-  state.notify('matches');
-
-  // Dynamic splash loader fade-out and removal
-  setTimeout(() => {
-    const loader = document.getElementById('app-splash-loader');
-    if (loader) {
-      loader.classList.add('fade-out');
-      setTimeout(() => {
-        loader.remove();
-      }, 400);
+  // Browser Popstate Back/Forward History Listener
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.page) {
+      state.data.currentPage = e.state.page;
+      state.data.selectedMatchId = e.state.matchId || null;
+      route();
+      renderHeader();
+      renderSidebar();
+      renderMobileNavBar();
+    } else {
+      const path = window.location.pathname;
+      if (path.startsWith('/match/')) {
+        const id = path.replace('/match/', '');
+        state.data.currentPage = 'match-details';
+        state.data.selectedMatchId = id;
+      } else if (path === '/live') {
+        state.data.currentPage = 'live';
+      } else if (path === '/my-bets') {
+        state.data.currentPage = 'my-bets';
+      } else if (path === '/profile') {
+        state.data.currentPage = 'profile';
+      } else {
+        state.data.currentPage = 'home';
+      }
+      route();
+      renderHeader();
+      renderSidebar();
+      renderMobileNavBar();
     }
-  }, 1500);
+  });
 
-  console.log("LlnBet Sportsbook App successfully bootstrapped!");
+  // Keyboard Navigation shortcut (Cmd+K for search)
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      const searchModal = document.getElementById('search-modal');
+      if (searchModal) {
+        searchModal.classList.add('active');
+        const input = searchModal.querySelector('input');
+        if (input) input.focus();
+      }
+    }
+  });
 }
 
-document.addEventListener('DOMContentLoaded', initApp);
+// Start application after DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
