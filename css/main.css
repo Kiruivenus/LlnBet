@@ -1462,6 +1462,101 @@ img {
   }
 }
 
+/* Mobile Drawer Overlay & Sliding Panel */
+.mobile-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 15, 23, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 250ms ease, visibility 250ms ease;
+}
+
+.mobile-drawer-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-drawer-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-drawer-overlay.active .mobile-drawer-container {
+  transform: translateX(0);
+}
+
+.mobile-drawer-header {
+  height: var(--header-height);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.drawer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1200px) {
+  .app-shell {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "sidebar main";
+  }
+
+  .app-betslip {
+    position: fixed;
+    bottom: 60px;
+    right: 0;
+    width: 340px;
+    height: 500px;
+    box-shadow: var(--shadow-elevated);
+    border-radius: var(--radius-xl) 0 0 0;
+    transform: translateY(120%);
+    transition: transform var(--transition-smooth);
+    z-index: 150;
+  }
+
+  .app-betslip.active {
+    transform: translateY(0);
+  }
+
+  .mobile-nav-bar {
+    display: flex;
+  }
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -1478,13 +1573,25 @@ img {
     display: none;
   }
 
+  .mobile-hamburger-btn {
+    display: flex !important;
+  }
+
+  .brand-tagline {
+    display: none !important;
+  }
+
+  .header-right-tools {
+    gap: 6px;
+  }
+
   .app-main {
-    padding: var(--space-4);
+    padding: var(--space-3) var(--space-3);
     padding-bottom: 80px;
   }
 
   .hero-slider-container {
-    height: 220px;
+    height: 200px;
   }
 
   .hero-slide-content {
@@ -1502,7 +1609,61 @@ img {
 
 @media (max-width: 600px) {
   .app-header {
-    padding: 0 var(--space-4);
+    padding: 0 var(--space-3);
+  }
+
+  .header-icon-btn#header-theme-toggle,
+  .header-icon-btn#header-notif-btn {
+    display: none !important;
+  }
+
+  .header-wallet-badge {
+    padding: 4px 8px;
+    font-size: 0.76rem;
+  }
+
+  .btn-deposit {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.72rem;
+  }
+
+  .match-card {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .match-card-header {
+    font-size: 0.75rem;
+  }
+
+  .match-league-info {
+    font-size: 0.78rem;
+  }
+
+  .team-name {
+    font-size: 0.88rem;
+  }
+
+  .match-odds-grid {
+    gap: 4px;
+  }
+
+  .odds-btn {
+    padding: 8px 6px;
+  }
+
+  .odds-label {
+    font-size: 0.72rem;
+  }
+
+  .odds-value {
+    font-size: 0.8rem;
   }
 
   .app-betslip {
@@ -1510,3 +1671,4 @@ img {
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 }
+

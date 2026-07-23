@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
 import { sportsList, promotionsList } from '../data.js';
-import { getMaterialIcon, formatOdds, formatCurrency } from '../utils.js';
+import { getMaterialIcon, formatOdds, formatCurrency, formatDate } from '../utils.js';
 
 export function renderHomeView() {
   const container = document.getElementById('app-main');
@@ -336,7 +336,7 @@ export function renderMatchCard(match, selections) {
               <span class="pulse-dot"></span>
               <span>LIVE ${match.timer}'</span>
             </div>
-          ` : `<span style="font-family: var(--font-mono); font-weight: 700;">${match.kickoffTime}</span>`}
+          ` : `<span style="font-family: var(--font-mono); font-weight: 700;">${formatDate(match.kickoffTime)}</span>`}
           <div class="badge-cashout">💰 Cash Out</div>
         </div>
       </div>

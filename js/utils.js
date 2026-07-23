@@ -3,7 +3,7 @@ export function formatCurrency(value) {
   return 'KES ' + new Intl.NumberFormat('en-KE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value);
+  }).format(value || 0);
 }
 
 export function formatOdds(value) {
@@ -14,7 +14,21 @@ export function formatOdds(value) {
 }
 
 export function formatDate(dateString) {
-  return dateString;
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${day} ${month}, ${hours}:${minutes}`;
+  } catch (e) {
+    return dateString;
+  }
 }
 
 // Google Material Icons Round Provider
@@ -60,10 +74,10 @@ export function getMaterialIcon(name, className = '') {
 // Map old getSvgIcon function name to getMaterialIcon for compatibility
 export const getSvgIcon = getMaterialIcon;
 
-// Render CSS-based Team Badges instead of Emojis
+// Render CSS-based Team Badges
 export function renderTeamBadge(teamName) {
   const initials = teamName.substring(0, 3).toUpperCase();
-  let colorStyle = 'background: #334155; color: #f8fafc;'; // default slate
+  let colorStyle = 'background: #334155; color: #f8fafc;';
 
   if (teamName.includes('Arsenal')) {
     colorStyle = 'background: #ef4444; color: #ffffff; border: 1px solid #b91c1c;';
@@ -81,10 +95,6 @@ export function renderTeamBadge(teamName) {
     colorStyle = 'background: #552583; color: #fdb927; border: 1px solid #fdb927;';
   } else if (teamName.includes('Celtics')) {
     colorStyle = 'background: #007a33; color: #ffffff; border: 1px solid #005624;';
-  } else if (teamName.includes('Sinner')) {
-    colorStyle = 'background: #f97316; color: #ffffff;';
-  } else if (teamName.includes('Alcaraz')) {
-    colorStyle = 'background: #eab308; color: #0f172a;';
   }
 
   return `<span class="team-badge" style="${colorStyle} display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; width: 26px; height: 26px; border-radius: 50%; margin-right: 8px; text-transform: uppercase; vertical-align: middle;">${initials}</span>`;

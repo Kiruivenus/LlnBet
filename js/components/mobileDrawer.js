@@ -25,23 +25,23 @@ export function renderMobileDrawer() {
         { id: 'drawer-nav-live', label: 'Live Betting', icon: 'sensors', page: 'live' },
         { id: 'drawer-nav-virtuals', label: 'Virtuals', icon: 'sports_esports', page: 'home' },
         { id: 'drawer-nav-casino', label: 'Casino Games', icon: 'casino', page: 'home' },
-        { id: 'drawer-nav-promo', label: 'Promotions', icon: 'card_giftcard', page: 'promotions' }
+        { id: 'drawer-nav-promo', label: 'Promotions', icon: 'bonus', page: 'promotions' }
       ]
     },
     {
       title: 'MY ACCOUNT',
       items: [
-        { id: 'drawer-nav-deposit', label: 'Deposit / Cashier', icon: 'account_balance_wallet', page: 'profile' },
-        { id: 'drawer-nav-history', label: 'My Bets History', icon: 'receipt_long', page: 'my-bets' },
-        { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'group_add', page: 'referral' },
-        ...(isUserAdmin ? [{ id: 'drawer-nav-admin', label: 'Admin Portal', icon: 'admin_panel_settings', page: 'admin' }] : [])
+        { id: 'drawer-nav-deposit', label: 'Deposit / Cashier', icon: 'wallet', page: 'profile' },
+        { id: 'drawer-nav-history', label: 'My Bets History', icon: 'history', page: 'my-bets' },
+        { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'user', page: 'referral' },
+        ...(isUserAdmin ? [{ id: 'drawer-nav-admin', label: 'Admin Portal', icon: 'settings', page: 'admin' }] : [])
       ]
     },
     {
       title: 'SECURITY & SUPPORT',
       items: [
-        { id: 'drawer-nav-rg', label: 'Responsible Gaming', icon: 'verified_user', page: 'responsible-gaming' },
-        { id: 'drawer-nav-chat', label: '24/7 Live Support', icon: 'headset_mic', page: 'support' }
+        { id: 'drawer-nav-rg', label: 'Responsible Gaming', icon: 'shield', page: 'responsible-gaming' },
+        { id: 'drawer-nav-chat', label: '24/7 Live Support', icon: 'chat', page: 'support' }
       ]
     }
   ];
@@ -55,7 +55,7 @@ export function renderMobileDrawer() {
           </div>
           <span class="brand-name" style="font-size: 1.15rem;">Lln<span>Bet</span></span>
         </div>
-        <button class="header-icon-btn" id="close-drawer-btn">
+        <button class="header-icon-btn" id="close-drawer-btn" aria-label="Close Menu">
           ${getMaterialIcon('close')}
         </button>
       </div>
@@ -90,7 +90,7 @@ export function renderMobileDrawer() {
 
   if (isLoggedIn) {
     drawerContentHtml += `
-      <div class="drawer-logout-btn" id="drawer-logout-trigger" style="margin-top: 20px; padding: 12px; background: rgba(255, 77, 79, 0.1); color: var(--color-danger); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; cursor: pointer;">
+      <div class="drawer-logout-btn" id="drawer-logout-trigger" style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; cursor: pointer;">
         ${getMaterialIcon('logout')}
         <span>Logout</span>
       </div>
@@ -122,7 +122,7 @@ export function renderMobileDrawer() {
 
   document.getElementById('drawer-logout-trigger')?.addEventListener('click', () => {
     closeDrawer();
-    state.logout();
+    state.logoutUser();
   });
 }
 
@@ -131,7 +131,7 @@ export function renderMobileNavBar() {
   if (!navContainer) return;
 
   const curPage = state.data.currentPage;
-  const betCount = state.data.betslip ? state.data.betslip.length : 0;
+  const betCount = (state.data.betslip && state.data.betslip.selections) ? state.data.betslip.selections.length : 0;
 
   navContainer.innerHTML = `
     <a href="#" class="mobile-nav-item ${curPage === 'home' ? 'active' : ''}" id="mnav-sports">
@@ -145,19 +145,19 @@ export function renderMobileNavBar() {
     </a>
 
     <a href="#" class="mobile-nav-item" id="mnav-betslip">
-      <span class="nav-icon">${getMaterialIcon('receipt_long')}</span>
+      <span class="nav-icon">${getMaterialIcon('receipt')}</span>
       <span>Betslip</span>
       ${betCount > 0 ? `<span class="mobile-betslip-badge">${betCount}</span>` : ''}
     </a>
 
-    <a href="#" class="mobile-nav-item" id="mnav-casino">
-      <span class="nav-icon">${getMaterialIcon('casino')}</span>
-      <span>Casino</span>
+    <a href="#" class="mobile-nav-item ${curPage === 'my-bets' ? 'active' : ''}" id="mnav-mybets">
+      <span class="nav-icon">${getMaterialIcon('history')}</span>
+      <span>My Bets</span>
     </a>
 
-    <a href="#" class="mobile-nav-item" id="mnav-menu">
-      <span class="nav-icon">${getMaterialIcon('menu')}</span>
-      <span>Menu</span>
+    <a href="#" class="mobile-nav-item ${curPage === 'profile' ? 'active' : ''}" id="mnav-profile">
+      <span class="nav-icon">${getMaterialIcon('user')}</span>
+      <span>Profile</span>
     </a>
   `;
 
@@ -172,8 +172,8 @@ export function renderMobileNavBar() {
     }
   });
 
-  document.getElementById('mnav-casino')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('home'); });
-  document.getElementById('mnav-menu')?.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
+  document.getElementById('mnav-mybets')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('my-bets'); });
+  document.getElementById('mnav-profile')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('profile'); });
 }
 
 export function openDrawer() {

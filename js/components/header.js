@@ -55,17 +55,17 @@ export function renderHeader() {
         ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
       </button>
 
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button class="header-icon-btn" id="header-login-btn" style="width: auto; padding: 0 14px; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.82rem;">Login</button>
-        <button class="btn-deposit" id="header-register-btn" style="font-size: 0.82rem; padding: 8px 16px;">Register</button>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <button class="header-icon-btn" id="header-login-btn" style="width: auto; padding: 0 12px; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.8rem;">Login</button>
+        <button class="btn-deposit" id="header-register-btn" style="font-size: 0.8rem; padding: 6px 14px;">Register</button>
       </div>
     `;
   }
 
   container.innerHTML = `
     <!-- Left: Brand Emblem & Mobile Drawer Trigger -->
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <button class="header-icon-btn mobile-hamburger-btn" id="mobile-hamburger-trigger" aria-label="Open Menu" style="display: none;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button class="header-icon-btn mobile-hamburger-btn" id="mobile-hamburger-trigger" aria-label="Open Menu">
         ${getMaterialIcon('menu')}
       </button>
 
@@ -91,7 +91,7 @@ export function renderHeader() {
 
     <!-- Right: Wallet, Deposit, Avatar & Tools -->
     <div class="header-right-tools">
-      <button class="header-icon-btn mobile-search-btn" id="header-mobile-search-btn" aria-label="Search" style="display: none;">
+      <button class="header-icon-btn mobile-search-btn" id="header-mobile-search-btn" aria-label="Search">
         ${getMaterialIcon('search')}
       </button>
 
