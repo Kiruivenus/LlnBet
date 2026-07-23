@@ -46,12 +46,6 @@ export async function renderProfileView() {
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">${user?.name || 'Verified Player'} • Account Verified</p>
           </div>
         </div>
-
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge-live-indicator" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.75rem; padding: 4px 10px;">
-            <span class="pulse-dot"></span> Active Player
-          </span>
-        </div>
       </div>
 
       <!-- Dedicated Wallet Balance & Bonus Card (Just below phone number card) -->
