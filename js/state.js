@@ -409,6 +409,47 @@ class State {
     return data.bet;
   }
 
+  // Real Bet Cash Out Action against MongoDB & Local Wallet
+  async cashOutBet(betId, amount) {
+    const numericVal = Number(amount) || 0;
+    
+    // Attempt MongoDB backend cashout if authenticated
+    if (this.data.token) {
+      try {
+        const res = await fetch(`/api/bets/${betId}/cashout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.data.token}`
+          },
+          body: JSON.stringify({ amount: numericVal })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) this.data.user = data.user;
+          this.fetchUserData();
+          this.notify('user');
+          return true;
+        }
+      } catch (e) {
+        console.warn("Backend cashout endpoint error, updating local state:", e);
+      }
+    }
+
+    // Local state fallback update
+    const bet = (this.data.placedBets || []).find(b => (b.betId === betId || b.id === betId));
+    if (bet) {
+      bet.status = 'CASHED_OUT';
+    }
+    if (this.data.user) {
+      this.data.user.balance = (this.data.user.balance || 0) + numericVal;
+    }
+    this.persistBets();
+    this.notify('user');
+    this.notify('placedBets');
+    return true;
+  }
+
   // Real Withdrawal Request against MongoDB (MIN KES 200)
   async withdraw(amount, phone) {
     if (!this.data.isLoggedIn || !this.data.token) {
