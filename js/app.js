@@ -6,14 +6,26 @@ import { renderSidebar } from './components/sidebar.js';
 import { renderBetslip } from './components/betslip.js';
 import { renderMobileNavBar } from './components/mobileDrawer.js';
 import { renderSearchModal } from './components/searchModal.js';
-import { getMaterialIcon } from './utils.js';
 
 // Load theme preference on boot
-const savedTheme = localStorage.getItem('llnbet_theme') || 'dark';
+const savedTheme = localStorage.getItem('llnbet_theme') || 'light';
 if (savedTheme === 'light') {
   document.body.classList.add('light-theme');
 } else {
   document.body.classList.remove('light-theme');
+}
+
+// Helper to hide splash loader safely
+function hideSplashLoader() {
+  const loader = document.getElementById('app-splash-loader') || document.getElementById('splash-loader') || document.querySelector('.splash-loader-overlay');
+  if (loader) {
+    loader.classList.add('hidden');
+    loader.style.opacity = '0';
+    loader.style.pointerEvents = 'none';
+    setTimeout(() => {
+      loader.style.display = 'none';
+    }, 300);
+  }
 }
 
 // Global Custom Alert Monkey-patching
@@ -108,7 +120,11 @@ async function initApp() {
   }
 
   // Wait for state session restoration to finish before initial routing
-  await state.sessionPromise;
+  try {
+    await state.sessionPromise;
+  } catch (err) {
+    console.warn('Session restoration warning:', err);
+  }
 
   renderHeader();
   renderSidebar();
@@ -117,14 +133,8 @@ async function initApp() {
   renderSearchModal();
   route();
 
-  // Dismiss splash loader overlay smoothly after initial route rendering
-  const splashLoader = document.getElementById('splash-loader');
-  if (splashLoader) {
-    splashLoader.classList.add('hidden');
-    setTimeout(() => {
-      splashLoader.style.display = 'none';
-    }, 350);
-  }
+  // Hide splash loader overlay
+  hideSplashLoader();
 
   state.subscribe('currentPage', () => {
     route();
@@ -214,3 +224,6 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
+
+// Fallback safety timeout to ensure splash screen is never stuck
+setTimeout(hideSplashLoader, 800);

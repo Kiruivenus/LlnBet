@@ -115,5 +115,16 @@
 
   <!-- JS Entrypoint Module -->
   <script type="module" src="/js/app.js"></script>
+  <script>
+    setTimeout(function() {
+      var loader = document.getElementById('app-splash-loader') || document.querySelector('.splash-loader-overlay');
+      if (loader) {
+        loader.classList.add('hidden');
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(function() { loader.style.display = 'none'; }, 300);
+      }
+    }, 600);
+  </script>
 </body>
 </html>
