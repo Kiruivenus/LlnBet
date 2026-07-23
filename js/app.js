@@ -85,6 +85,28 @@ window.showConfirm = function(message, onConfirm) {
 async function initApp() {
   simulation.start();
 
+  // Parse initial browser URL pathname for direct deep links (e.g. /match/:id)
+  const initialPath = window.location.pathname;
+  if (initialPath.startsWith('/match/')) {
+    const id = initialPath.replace('/match/', '');
+    state.data.currentPage = 'match-details';
+    state.data.selectedMatchId = id;
+  } else if (initialPath === '/live') {
+    state.data.currentPage = 'live';
+  } else if (initialPath === '/my-bets') {
+    state.data.currentPage = 'my-bets';
+  } else if (initialPath === '/profile') {
+    state.data.currentPage = 'profile';
+  } else if (initialPath === '/login') {
+    state.data.currentPage = 'login';
+  } else if (initialPath === '/register') {
+    state.data.currentPage = 'register';
+  } else if (initialPath === '/promotions') {
+    state.data.currentPage = 'promotions';
+  } else if (initialPath === '/admin') {
+    state.data.currentPage = 'admin';
+  }
+
   // Wait for state session restoration to finish before initial routing
   await state.sessionPromise;
 
@@ -94,6 +116,15 @@ async function initApp() {
   renderMobileNavBar();
   renderSearchModal();
   route();
+
+  // Dismiss splash loader overlay smoothly after initial route rendering
+  const splashLoader = document.getElementById('splash-loader');
+  if (splashLoader) {
+    splashLoader.classList.add('hidden');
+    setTimeout(() => {
+      splashLoader.style.display = 'none';
+    }, 350);
+  }
 
   state.subscribe('currentPage', () => {
     route();
