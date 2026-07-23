@@ -45,6 +45,8 @@ export function route() {
       renderAdminView();
       break;
     case 'home':
+    case 'virtuals':
+    case 'casino':
       renderHomeView();
       break;
     case 'live':

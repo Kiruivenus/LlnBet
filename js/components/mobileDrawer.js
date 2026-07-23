@@ -24,8 +24,8 @@ export function renderMobileDrawer() {
       items: [
         { id: 'drawer-nav-prematch', label: 'Prematch', icon: 'sports_soccer', page: 'home' },
         { id: 'drawer-nav-live', label: 'Live Betting', icon: 'sensors', page: 'live' },
-        { id: 'drawer-nav-virtuals', label: 'Virtuals', icon: 'sports_esports', page: 'home' },
-        { id: 'drawer-nav-casino', label: 'Casino Games', icon: 'casino', page: 'home' },
+        { id: 'drawer-nav-virtuals', label: 'Virtuals', icon: 'sports_esports', page: 'virtuals' },
+        { id: 'drawer-nav-casino', label: 'Casino Games', icon: 'casino', page: 'casino' },
         { id: 'drawer-nav-promo', label: 'Promotions', icon: 'bonus', page: 'promotions' }
       ]
     },

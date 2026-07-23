@@ -45,7 +45,7 @@ export function renderSidebar() {
 
       <a href="#" class="sidebar-item ${curPage === 'promotions' ? 'active' : ''}" id="nav-promo">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon">${getMaterialIcon('card_giftcard')}</span>
+          <span class="sidebar-item-icon">${getMaterialIcon('bonus')}</span>
           <span>Promotions</span>
         </div>
       </a>
@@ -57,21 +57,21 @@ export function renderSidebar() {
 
       <a href="#" class="sidebar-item ${curPage === 'my-bets' ? 'active' : ''}" id="nav-mybets">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon">${getMaterialIcon('receipt_long')}</span>
+          <span class="sidebar-item-icon">${getMaterialIcon('history')}</span>
           <span>My Bets</span>
         </div>
       </a>
 
       <a href="#" class="sidebar-item ${curPage === 'profile' ? 'active' : ''}" id="nav-profile">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon">${getMaterialIcon('account_balance_wallet')}</span>
+          <span class="sidebar-item-icon">${getMaterialIcon('wallet')}</span>
           <span>Profile & Cashier</span>
         </div>
       </a>
 
       <a href="#" class="sidebar-item ${curPage === 'referral' ? 'active' : ''}" id="nav-referral">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon">${getMaterialIcon('group_add')}</span>
+          <span class="sidebar-item-icon">${getMaterialIcon('user')}</span>
           <span>Refer & Earn</span>
         </div>
       </a>
@@ -79,8 +79,8 @@ export function renderSidebar() {
       ${state.data.user && state.data.user.role === 'ADMIN' ? `
       <a href="#" class="sidebar-item ${curPage === 'admin' ? 'active' : ''}" id="nav-admin">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon" style="color: var(--color-accent-lime);">${getMaterialIcon('admin_panel_settings')}</span>
-          <span style="color: var(--color-accent-lime); font-weight: 800;">Admin Portal</span>
+          <span class="sidebar-item-icon" style="color: var(--color-primary);">${getMaterialIcon('settings')}</span>
+          <span style="color: var(--color-primary); font-weight: 800;">Admin Portal</span>
         </div>
       </a>
       ` : ''}
@@ -92,14 +92,14 @@ export function renderSidebar() {
 
       <a href="#" class="sidebar-item ${curPage === 'responsible-gaming' ? 'active' : ''}" id="nav-rg">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon">${getMaterialIcon('verified_user')}</span>
+          <span class="sidebar-item-icon">${getMaterialIcon('shield')}</span>
           <span>Responsible Gaming</span>
         </div>
       </a>
 
       <a href="#" class="sidebar-item ${curPage === 'support' ? 'active' : ''}" id="nav-chat">
         <div class="sidebar-item-left">
-          <span class="sidebar-item-icon">${getMaterialIcon('headset_mic')}</span>
+          <span class="sidebar-item-icon">${getMaterialIcon('chat')}</span>
           <span>24/7 Support</span>
         </div>
       </a>
@@ -116,8 +116,8 @@ export function renderSidebar() {
 
   bindNav('nav-prematch', 'home');
   bindNav('nav-live', 'live');
-  bindNav('nav-virtuals', 'home');
-  bindNav('nav-casino', 'home');
+  bindNav('nav-virtuals', 'virtuals');
+  bindNav('nav-casino', 'casino');
   bindNav('nav-promo', 'promotions');
   bindNav('nav-mybets', 'my-bets');
   bindNav('nav-profile', 'profile');
