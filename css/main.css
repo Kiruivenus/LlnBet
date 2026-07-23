@@ -488,14 +488,24 @@ img {
 /* ==========================================================================
    Hero Promotional Banner Carousel (300px Desktop / 220px Mobile)
    ========================================================================== */
+/* ==========================================================================
+   Hero Promotional Banner Carousel (Compact, Fitted & Zero Overflow)
+   ========================================================================== */
 .hero-slider-container {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 220px;
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  background-color: var(--bg-card);
+  background-color: #111827;
+}
+
+@media (max-width: 900px) {
+  .hero-slider-container {
+    height: 185px !important;
+    border-radius: 14px !important;
+  }
 }
 
 .hero-slider-track {
@@ -513,9 +523,10 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-8);
+  padding: 14px 20px;
   background-size: cover;
   background-position: center;
+  box-sizing: border-box;
 }
 
 .hero-slide.active {
@@ -524,51 +535,84 @@ img {
 }
 
 .hero-slide-content {
-  max-width: 58%;
+  max-width: 65%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-3);
+  justify-content: center;
+  gap: 4px;
   z-index: 2;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .hero-slide {
+    padding: 12px 14px !important;
+  }
+  .hero-slide-content {
+    max-width: 100% !important;
+  }
 }
 
 .hero-badge {
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-block;
 }
 
 .hero-title {
   font-family: var(--font-heading);
-  font-size: 1.75rem;
+  font-size: 1.2rem;
   font-weight: 900;
-  line-height: 1.25;
+  line-height: 1.15;
   color: #ffffff;
-  letter-spacing: -0.02em;
-}
-
-.hero-desc {
-  font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.45;
+  letter-spacing: -0.01em;
+  margin: 1px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+@media (max-width: 600px) {
+  .hero-title {
+    font-size: 0.95rem !important;
+    line-height: 1.15 !important;
+  }
+}
+
+.hero-desc {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 95%;
+}
+
+@media (max-width: 600px) {
+  .hero-desc {
+    font-size: 0.7rem !important;
+    line-height: 1.2 !important;
+  }
+}
+
 .hero-actions-row {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
+  gap: 6px;
+  margin-top: 4px;
   flex-wrap: wrap;
 }
 
@@ -576,12 +620,12 @@ img {
   background: var(--color-primary);
   color: #ffffff;
   font-weight: 800;
-  font-size: 0.88rem;
-  padding: 10px 22px;
-  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  padding: 5px 13px;
+  border-radius: 9999px;
   border: none;
   cursor: pointer;
-  box-shadow: var(--shadow-glow-green);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transition: all var(--transition-fast);
 }
 
@@ -591,16 +635,15 @@ img {
 }
 
 .hero-quick-odd {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
   font-family: var(--font-mono);
   font-weight: 800;
-  font-size: 0.8rem;
-  padding: 7px 12px;
-  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
 .hero-quick-odd:hover {
@@ -608,7 +651,7 @@ img {
 }
 
 .hero-slide-graphic {
-  width: 36%;
+  width: 32%;
   height: 100%;
   display: flex;
   align-items: center;
@@ -618,7 +661,7 @@ img {
 
 .hero-graphic-badge {
   font-family: var(--font-heading);
-  font-size: 4.5rem;
+  font-size: 3.5rem;
   font-weight: 900;
   color: #ffffff;
   opacity: 0.9;
@@ -628,8 +671,8 @@ img {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(17, 24, 39, 0.5);
   backdrop-filter: blur(6px);
@@ -648,26 +691,35 @@ img {
   color: var(--color-primary);
 }
 
-.hero-arrow.prev { left: 14px; }
-.hero-arrow.next { right: 14px; }
+.hero-arrow.prev { left: 10px; }
+.hero-arrow.next { right: 10px; }
 
+/* Pagination Dots Positioned Bottom-Right */
 .hero-dots {
   position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 8px;
+  right: 14px;
+  left: auto;
+  transform: none;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
   z-index: 10;
 }
 
 .hero-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
   cursor: pointer;
   transition: all var(--transition-smooth);
+}
+
+.hero-dot.active {
+  width: 14px;
+  border-radius: 9999px;
+  background: #ffffff;
 }
 
 .hero-dot.active {
