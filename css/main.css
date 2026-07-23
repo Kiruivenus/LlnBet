@@ -1288,62 +1288,122 @@ img {
 }
 
 /* ==========================================================================
-   Mobile Bottom Navigation Bar (60px)
+   Mobile Fixed Bottom Navigation Bar (100% High Contrast & Legible)
    ========================================================================== */
 .mobile-nav-bar {
   display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background-color: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-top: var(--glass-border);
-  z-index: 200;
-  padding: 0 var(--space-2);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 62px !important;
+  background-color: #FFFFFF !important;
+  border-top: 1px solid #D6E4D4 !important;
+  z-index: 1000 !important;
+  padding: 0 4px !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+@media (max-width: 1200px) {
+  .mobile-nav-bar {
+    display: flex !important;
+  }
 }
 
 .mobile-nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  color: var(--text-muted);
-  font-size: 0.65rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  position: relative;
+  flex: 1 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  color: #2D3A2C !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  position: relative !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  opacity: 1 !important;
 }
 
 .mobile-nav-item .nav-icon {
-  font-size: 20px;
+  font-size: 22px !important;
+  color: #2D3A2C !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .mobile-nav-item.active {
-  color: var(--color-primary);
+  color: #38662A !important;
+  font-weight: 900 !important;
+}
+
+.mobile-nav-item.active .nav-icon {
+  color: #38662A !important;
+}
+
+.mobile-nav-item.active::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 20% !important;
+  right: 20% !important;
+  height: 3px !important;
+  background-color: #38662A !important;
+  border-radius: 0 0 3px 3px !important;
+}
+
+/* Center Bet Slip Floating Pill */
+.mnav-betslip-center {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.betslip-center-circle {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 9999px !important;
+  background-color: #C3EAA5 !important;
+  color: #2D3A2C !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  box-shadow: 0 4px 14px rgba(56, 102, 42, 0.3) !important;
+  border: 2px solid #FFFFFF !important;
+}
+
+.betslip-center-circle .nav-icon {
+  font-size: 24px !important;
+  color: #38662A !important;
 }
 
 .mobile-betslip-badge {
-  position: absolute;
-  top: 4px;
-  right: 22%;
-  background-color: var(--color-primary);
-  color: #ffffff;
-  font-size: 0.65rem;
-  font-weight: 900;
-  font-family: var(--font-mono);
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-glow-green);
+  position: absolute !important;
+  top: -3px !important;
+  right: -3px !important;
+  background-color: #38662A !important;
+  color: #FFFFFF !important;
+  font-size: 0.65rem !important;
+  font-weight: 900 !important;
+  font-family: var(--font-mono) !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  padding: 0 4px !important;
+  border-radius: 9999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 2px solid #FFFFFF !important;
 }
 
 /* ==========================================================================
