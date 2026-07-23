@@ -1992,21 +1992,22 @@ img {
    ========================================================================== */
 .auth-page-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: calc(100vh - 160px);
-  padding: var(--space-6) var(--space-4);
+  padding: 32px 16px;
   width: 100%;
 }
 
 .auth-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
-  max-width: 440px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: 420px;
   width: 100%;
-  padding: 32px 28px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
