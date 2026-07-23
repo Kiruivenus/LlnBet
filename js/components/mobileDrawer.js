@@ -2,6 +2,8 @@ import { state } from '../state.js';
 import { getMaterialIcon } from '../utils.js';
 
 export function renderMobileDrawer() {
+  renderMobileNavBar();
+
   let drawerOverlay = document.getElementById('mobile-drawer-overlay');
   
   if (!drawerOverlay) {
@@ -17,39 +19,29 @@ export function renderMobileDrawer() {
 
   const menuSections = [
     {
-      title: 'MAIN',
+      title: 'SPORTSBOOK',
       items: [
-        { id: 'drawer-nav-prematch', label: 'Prematch', icon: 'home', page: 'home' },
-        { id: 'drawer-nav-live', label: 'Live Betting', icon: 'live', page: 'live' },
-        { id: 'drawer-nav-jackpot', label: 'Jackpots', icon: 'trophy', page: 'jackpot-streak' },
-        { id: 'drawer-nav-promo', label: 'Promotions', icon: 'bonus', page: 'promotions' }
+        { id: 'drawer-nav-prematch', label: 'Prematch', icon: 'sports_soccer', page: 'home' },
+        { id: 'drawer-nav-live', label: 'Live Betting', icon: 'sensors', page: 'live' },
+        { id: 'drawer-nav-virtuals', label: 'Virtuals', icon: 'sports_esports', page: 'home' },
+        { id: 'drawer-nav-casino', label: 'Casino Games', icon: 'casino', page: 'home' },
+        { id: 'drawer-nav-promo', label: 'Promotions', icon: 'card_giftcard', page: 'promotions' }
       ]
     },
     {
-      title: 'ACCOUNT',
+      title: 'MY ACCOUNT',
       items: [
-        { id: 'drawer-nav-deposit', label: 'Deposit', icon: 'deposit', page: 'profile' },
-        { id: 'drawer-nav-withdraw', label: 'Withdraw', icon: 'wallet', page: 'profile' },
-        { id: 'drawer-nav-history', label: 'Bet History', icon: 'history', page: 'my-bets' },
-        { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'user', page: 'referral' },
-        ...(isUserAdmin ? [{ id: 'drawer-nav-admin', label: 'Admin Portal', icon: 'shield', page: 'admin' }] : []),
-        { id: 'drawer-nav-app', label: 'Download App', icon: 'deposit', action: () => alert("Download Mobile App:\n\nAn SMS with the direct Android APK download link has been sent to your registered phone number.") }
+        { id: 'drawer-nav-deposit', label: 'Deposit / Cashier', icon: 'account_balance_wallet', page: 'profile' },
+        { id: 'drawer-nav-history', label: 'My Bets History', icon: 'receipt_long', page: 'my-bets' },
+        { id: 'drawer-nav-referral', label: 'Refer & Earn', icon: 'group_add', page: 'referral' },
+        ...(isUserAdmin ? [{ id: 'drawer-nav-admin', label: 'Admin Portal', icon: 'admin_panel_settings', page: 'admin' }] : [])
       ]
     },
     {
-      title: 'SUPPORT',
+      title: 'SECURITY & SUPPORT',
       items: [
-        { id: 'drawer-nav-chat', label: 'Live Chat', icon: 'chat', page: 'live-support' },
-        { id: 'drawer-nav-telegram', label: 'Telegram', icon: 'notification', action: () => alert("Telegram Support:\n\nOpening official LlnBet Kenya Telegram Channel (@LlnBetKenya)...") }
-      ]
-    },
-    {
-      title: 'LEGAL',
-      items: [
-        { id: 'drawer-nav-terms', label: 'Terms', icon: 'search', page: 'terms' },
-        { id: 'drawer-nav-privacy', label: 'Privacy', icon: 'shield', page: 'privacy' },
-        { id: 'drawer-nav-rg', label: 'Responsible Gaming', icon: 'shield', page: 'responsible-gaming' },
-        { id: 'drawer-nav-about', label: 'About', icon: 'user', page: 'about' }
+        { id: 'drawer-nav-rg', label: 'Responsible Gaming', icon: 'verified_user', page: 'responsible-gaming' },
+        { id: 'drawer-nav-chat', label: '24/7 Live Support', icon: 'headset_mic', page: 'support' }
       ]
     }
   ];
@@ -57,11 +49,13 @@ export function renderMobileDrawer() {
   let drawerContentHtml = `
     <div class="mobile-drawer-container">
       <div class="mobile-drawer-header">
-        <div class="brand" style="display:flex; align-items:center; gap:8px;">
-          <img src="/img/logo.png" alt="LlnBet Logo" class="brand-logo-img" style="height:32px; width:32px; border-radius:6px; object-fit:cover;" />
-          <div class="brand-name" style="font-family:var(--font-display); font-weight:900; font-size:1.3rem; letter-spacing:-0.03em; color:var(--text-primary); text-decoration:none;">Lln<span style="color:var(--accent-orange);">Bet</span></div>
+        <div class="header-brand">
+          <div class="brand-emblem" style="width: 34px; height: 34px;">
+            <img src="/img/logo.png" alt="LlnBet Logo" />
+          </div>
+          <span class="brand-name" style="font-size: 1.15rem;">Lln<span>Bet</span></span>
         </div>
-        <button class="icon-btn" id="close-drawer-btn" style="width:36px; height:36px;">
+        <button class="header-icon-btn" id="close-drawer-btn">
           ${getMaterialIcon('close')}
         </button>
       </div>
@@ -72,21 +66,18 @@ export function renderMobileDrawer() {
   menuSections.forEach(section => {
     drawerContentHtml += `
       <div class="drawer-section">
-        <div class="drawer-section-title">${section.title}</div>
+        <div class="sidebar-group-title">${section.title}</div>
         <div class="drawer-menu-list">
     `;
 
     section.items.forEach(item => {
       const isActive = curPage === item.page;
       drawerContentHtml += `
-        <div class="drawer-menu-item ${isActive ? 'active' : ''}" id="${item.id}">
-          <div class="drawer-item-left">
-            <span class="drawer-icon-box">
-              ${getMaterialIcon(item.icon)}
-            </span>
-            <span class="drawer-item-label">${item.label}</span>
+        <div class="sidebar-item ${isActive ? 'active' : ''}" id="${item.id}">
+          <div class="sidebar-item-left">
+            <span class="sidebar-item-icon">${getMaterialIcon(item.icon)}</span>
+            <span>${item.label}</span>
           </div>
-          ${isActive ? '<span class="drawer-active-pill"></span>' : ''}
         </div>
       `;
     });
@@ -97,11 +88,10 @@ export function renderMobileDrawer() {
     `;
   });
 
-  // Logout button at bottom if logged in
   if (isLoggedIn) {
     drawerContentHtml += `
-      <div class="drawer-logout-btn" id="drawer-logout-trigger">
-        <span class="drawer-logout-icon">${getMaterialIcon('logout')}</span>
+      <div class="drawer-logout-btn" id="drawer-logout-trigger" style="margin-top: 20px; padding: 12px; background: rgba(255, 77, 79, 0.1); color: var(--color-danger); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; cursor: pointer;">
+        ${getMaterialIcon('logout')}
         <span>Logout</span>
       </div>
     `;
@@ -115,9 +105,7 @@ export function renderMobileDrawer() {
   drawerOverlay.innerHTML = drawerContentHtml;
 
   // Bind Close Events
-  const closeBtn = document.getElementById('close-drawer-btn');
-  closeBtn?.addEventListener('click', closeDrawer);
-  
+  document.getElementById('close-drawer-btn')?.addEventListener('click', closeDrawer);
   drawerOverlay.addEventListener('click', (e) => {
     if (e.target === drawerOverlay) closeDrawer();
   });
@@ -125,14 +113,9 @@ export function renderMobileDrawer() {
   // Bind Menu Click Actions
   menuSections.forEach(section => {
     section.items.forEach(item => {
-      const el = document.getElementById(item.id);
-      el?.addEventListener('click', () => {
+      document.getElementById(item.id)?.addEventListener('click', () => {
         closeDrawer();
-        if (item.page) {
-          state.setPage(item.page);
-        } else if (item.action) {
-          item.action();
-        }
+        if (item.page) state.setPage(item.page);
       });
     });
   });
@@ -140,21 +123,67 @@ export function renderMobileDrawer() {
   document.getElementById('drawer-logout-trigger')?.addEventListener('click', () => {
     closeDrawer();
     state.logout();
-    alert("Logged Out: You have successfully signed out of your LlnBet account.");
   });
+}
+
+export function renderMobileNavBar() {
+  const navContainer = document.getElementById('mobile-nav-bar');
+  if (!navContainer) return;
+
+  const curPage = state.data.currentPage;
+  const betCount = state.data.betslip ? state.data.betslip.length : 0;
+
+  navContainer.innerHTML = `
+    <a href="#" class="mobile-nav-item ${curPage === 'home' ? 'active' : ''}" id="mnav-sports">
+      <span class="nav-icon">${getMaterialIcon('sports_soccer')}</span>
+      <span>Sports</span>
+    </a>
+
+    <a href="#" class="mobile-nav-item ${curPage === 'live' ? 'active' : ''}" id="mnav-live">
+      <span class="nav-icon">${getMaterialIcon('sensors')}</span>
+      <span>Live</span>
+    </a>
+
+    <a href="#" class="mobile-nav-item" id="mnav-betslip">
+      <span class="nav-icon">${getMaterialIcon('receipt_long')}</span>
+      <span>Betslip</span>
+      ${betCount > 0 ? `<span class="mobile-betslip-badge">${betCount}</span>` : ''}
+    </a>
+
+    <a href="#" class="mobile-nav-item" id="mnav-casino">
+      <span class="nav-icon">${getMaterialIcon('casino')}</span>
+      <span>Casino</span>
+    </a>
+
+    <a href="#" class="mobile-nav-item" id="mnav-menu">
+      <span class="nav-icon">${getMaterialIcon('menu')}</span>
+      <span>Menu</span>
+    </a>
+  `;
+
+  document.getElementById('mnav-sports')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('home'); });
+  document.getElementById('mnav-live')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('live'); });
+  
+  document.getElementById('mnav-betslip')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const slipEl = document.getElementById('app-betslip');
+    if (slipEl) {
+      slipEl.classList.toggle('active');
+    }
+  });
+
+  document.getElementById('mnav-casino')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('home'); });
+  document.getElementById('mnav-menu')?.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
 }
 
 export function openDrawer() {
   const overlay = document.getElementById('mobile-drawer-overlay');
-  if (overlay) {
-    overlay.classList.add('active');
-  }
+  if (overlay) overlay.classList.add('active');
 }
 
 export function closeDrawer() {
   const overlay = document.getElementById('mobile-drawer-overlay');
-  if (overlay) {
-    overlay.classList.remove('active');
-  }
+  if (overlay) overlay.classList.remove('active');
 }
+
 export default renderMobileDrawer;

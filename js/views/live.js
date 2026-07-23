@@ -9,7 +9,7 @@ export function renderLiveView() {
 
   const matches = simulation.getMatches();
   const liveMatches = matches.filter(m => m.isLive);
-  const selections = state.data.betslip.selections;
+  const selections = state.data.betslip ? state.data.betslip.selections : [];
 
   const activeSport = state.data.activeSport;
   const filteredLive = liveMatches.filter(m => m.sport === activeSport);
@@ -19,73 +19,64 @@ export function renderLiveView() {
   const tennisCount = liveMatches.filter(m => m.sport === 'tennis').length;
 
   let html = `
-    <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span class="section-badge" style="font-size: 0.85rem; padding: 4px 12px;">
+    <!-- Live Header -->
+    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge-live-indicator" style="padding: 4px 12px; font-size: 0.8rem;">
           <span class="pulse-dot"></span>
-          Live In-Play
+          <span>LIVE IN-PLAY</span>
         </span>
       </div>
-      <h1 style="font-size: 1.8rem;">Live Betting Dashboard</h1>
-      <p style="color: var(--text-secondary); font-size: 0.95rem;">Real-time odds, live trackers, and statistics. Odds updates update instantly.</p>
+      <h1 class="section-title" style="font-size: 1.6rem;">Live Betting Dashboard</h1>
+      <p style="color: var(--text-secondary); font-size: 0.88rem;">Real-time scores, dynamic multipliers, and instant cashouts.</p>
     </div>
 
-    <!-- Live sports tabs with scrollbar hiding system -->
-    <div class="sports-nav-wrapper" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-      <div class="sports-nav" style="padding-bottom: 0;">
-        <button class="sport-chip ${activeSport === 'football' ? 'active' : ''}" data-sport="football" style="border-radius: var(--radius-md);">
-          ${getMaterialIcon('soccer')}
+    <!-- Sports Chips Category Selection -->
+    <div class="sports-chips-wrapper">
+      <div class="sports-chips-list">
+        <button class="sport-chip ${activeSport === 'football' ? 'active' : ''}" data-sport="football">
+          <span>${getMaterialIcon('sports_soccer')}</span>
           <span>Football</span>
-          <span class="sport-chip-count" style="margin-left:6px;">${footballCount}</span>
+          <span class="sport-chip-count">${footballCount}</span>
         </button>
-        <button class="sport-chip ${activeSport === 'basketball' ? 'active' : ''}" data-sport="basketball" style="border-radius: var(--radius-md);">
-          ${getMaterialIcon('basketball')}
+        <button class="sport-chip ${activeSport === 'basketball' ? 'active' : ''}" data-sport="basketball">
+          <span>${getMaterialIcon('sports_basketball')}</span>
           <span>Basketball</span>
-          <span class="sport-chip-count" style="margin-left:6px;">${basketballCount}</span>
+          <span class="sport-chip-count">${basketballCount}</span>
         </button>
-        <button class="sport-chip ${activeSport === 'tennis' ? 'active' : ''}" data-sport="tennis" style="border-radius: var(--radius-md);">
-          ${getMaterialIcon('tennis')}
+        <button class="sport-chip ${activeSport === 'tennis' ? 'active' : ''}" data-sport="tennis">
+          <span>${getMaterialIcon('sports_tennis')}</span>
           <span>Tennis</span>
-          <span class="sport-chip-count" style="margin-left:6px;">${tennisCount}</span>
+          <span class="sport-chip-count">${tennisCount}</span>
         </button>
       </div>
     </div>
 
-    <!-- Compact matches grid listing (Betika style) -->
-    <div class="matches-list-container">
-      <div class="matches-list-header">
-        <span>Teams</span>
-        <div class="matches-header-odds">
-          <span>1</span>
-          <span>X</span>
-          <span>2</span>
+    <!-- Live Match Cards Grid -->
+    <div class="match-cards-container">
+      ${filteredLive.length === 0 ? `
+        <div style="padding: 60px 20px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; gap: 12px;">
+          <span class="material-icons-round" style="font-size: 3rem; color: var(--color-primary);">sensors</span>
+          <h3 style="color: var(--text-primary); font-family: var(--font-heading);">No Active Live Matches</h3>
+          <p style="font-size: 0.88rem; max-width: 420px;">There are no active live events for ${activeSport.toUpperCase()} at this moment. Explore upcoming prematch fixtures.</p>
+          <button class="btn-deposit" id="back-prematch-btn" style="margin-top: 8px;">Explore Prematch Events</button>
         </div>
-      </div>
-      <div class="match-list-items">
-        ${filteredLive.length === 0 ? `
-          <div style="text-align:center; padding:60px 20px; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:16px;">
-            <span class="material-icons-round" style="font-size: 3rem; color: var(--text-muted);">sensors</span>
-            <h3 style="color:var(--text-primary);">No Live ${activeSport.toUpperCase()} Matches</h3>
-            <p style="font-size:0.9rem; max-width:400px; line-height:1.5;">There are currently no active live matches in this category. Navigate to Prematch section to see upcoming events or check back shortly.</p>
-            <button class="hero-cta" id="back-prematch-btn" style="padding:10px 24px; font-size:0.9rem;">View Prematch Events</button>
-          </div>
-        ` : filteredLive.map(match => renderMatchCard(match, selections)).join('')}
-      </div>
+      ` : filteredLive.map(match => renderMatchCard(match, selections)).join('')}
     </div>
   `;
 
   container.innerHTML = html;
 
-  // Bind navigation events
-  container.querySelectorAll('.sport-chip').forEach(chip => {
+  // Bind Sports Chips
+  container.querySelectorAll('.sports-chips-list .sport-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const sport = chip.getAttribute('data-sport');
       state.setSport(sport);
     });
   });
 
-  // Handle odds click selection (handles compact odds button class)
-  container.querySelectorAll('.compact-odds-btn').forEach(btn => {
+  // Bind Odds Buttons
+  container.querySelectorAll('.odds-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const selectionId = btn.getAttribute('data-id');
@@ -94,8 +85,8 @@ export function renderLiveView() {
       const market = btn.getAttribute('data-market');
       const oddsVal = parseFloat(btn.getAttribute('data-value'));
 
-      const match = matches.find(m => m.id === matchId);
-      const matchName = match ? `${match.teams.home.name} vs ${match.teams.away.name}` : 'Match Event';
+      const matchObj = matches.find(m => m.id === matchId);
+      const matchName = matchObj ? `${matchObj.teams.home.name} vs ${matchObj.teams.away.name}` : 'Match Event';
 
       state.addSelection({
         id: selectionId,
@@ -108,11 +99,11 @@ export function renderLiveView() {
     });
   });
 
-  // Navigate to match details on row click
-  container.querySelectorAll('.match-list-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const matchId = row.getAttribute('data-id');
-      state.setPage('match-details', matchId);
+  // Bind Card Click Events
+  container.querySelectorAll('.match-card-body, .extra-markets-link').forEach(el => {
+    el.addEventListener('click', () => {
+      const matchId = el.getAttribute('data-match-id');
+      if (matchId) state.setPage('match-details', matchId);
     });
   });
 
@@ -120,4 +111,5 @@ export function renderLiveView() {
     state.setPage('home');
   });
 }
+
 export default renderLiveView;

@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
 import { sportsList, promotionsList } from '../data.js';
-import { getMaterialIcon, formatOdds, formatCurrency, renderTeamBadge } from '../utils.js';
+import { getMaterialIcon, formatOdds, formatCurrency } from '../utils.js';
 
 export function renderHomeView() {
   const container = document.getElementById('app-main');
@@ -9,19 +9,19 @@ export function renderHomeView() {
 
   const matches = simulation.getMatches();
   const activeSport = state.data.activeSport;
-  const selections = state.data.betslip.selections;
+  const selections = state.data.betslip ? state.data.betslip.selections : [];
 
   const sportMatches = matches.filter(m => m.sport === activeSport);
   const liveMatches = sportMatches.filter(m => m.isLive);
-  const upcomingMatches = sportMatches.filter(m => !m.isLive && new Date(m.kickoffTime) > new Date());
+  const upcomingMatches = sportMatches.filter(m => !m.isLive);
 
-  // Partial update check: if slider structure already exists, don't overwrite it to prevent resetting the autoplay timer
-  const hasSlider = container.querySelector('.hero-slider-wrapper');
+  // Check if slider wrapper exists to preserve smooth auto-slide interval
+  const hasSlider = container.querySelector('.hero-slider-container');
   if (hasSlider) {
-    // 1. Update sports nav chip counts and active state
-    const sportsNav = container.querySelector('.sports-nav');
-    if (sportsNav) {
-      sportsNav.innerHTML = sportsList.map(sport => {
+    // 1. Update sports category chip active states & counts
+    const chipsList = container.querySelector('.sports-chips-list');
+    if (chipsList) {
+      chipsList.innerHTML = sportsList.map(sport => {
         const count = matches.filter(m => m.sport === sport.id).length;
         return `
           <button class="sport-chip ${activeSport === sport.id ? 'active' : ''}" data-sport="${sport.id}">
@@ -32,7 +32,7 @@ export function renderHomeView() {
         `;
       }).join('');
 
-      sportsNav.querySelectorAll('.sport-chip').forEach(chip => {
+      chipsList.querySelectorAll('.sport-chip').forEach(chip => {
         chip.addEventListener('click', () => {
           const sportId = chip.getAttribute('data-sport');
           state.setSport(sportId);
@@ -40,46 +40,17 @@ export function renderHomeView() {
       });
     }
 
-    // 2. Update upcoming matches items
-    const matchItems = container.querySelector('.match-list-items');
-    if (matchItems) {
-      matchItems.innerHTML = upcomingMatches.length === 0 ? `
-        <div style="padding: 20px; text-align: center; color: var(--text-muted);">
-          No upcoming matches available for this sport.
+    // 2. Update match cards list
+    const matchCardsList = container.querySelector('.match-cards-container');
+    if (matchCardsList) {
+      matchCardsList.innerHTML = sportMatches.length === 0 ? `
+        <div style="padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
+          No match fixtures available for this category right now.
         </div>
-      ` : upcomingMatches.map(match => renderMatchCard(match, selections)).join('');
+      ` : sportMatches.map(match => renderMatchCard(match, selections)).join('');
 
-      matchItems.querySelectorAll('.compact-odds-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const selectionId = btn.getAttribute('data-id');
-          const matchId = btn.getAttribute('data-match-id');
-          const team = btn.getAttribute('data-team');
-          const market = btn.getAttribute('data-market');
-          const value = parseFloat(btn.getAttribute('data-value'));
-
-          const matchObj = simulation.getMatch(matchId);
-          const matchName = matchObj ? `${matchObj.teams.home.name} vs ${matchObj.teams.away.name}` : "Match";
-
-          state.addSelection({
-            id: selectionId,
-            matchId: matchId,
-            matchName: matchName,
-            team: team,
-            market: market,
-            odds: value
-          });
-        });
-      });
-
-      matchItems.querySelectorAll('.match-list-row').forEach(row => {
-        row.addEventListener('click', () => {
-          const matchId = row.getAttribute('data-id');
-          state.setPage('match-details', matchId);
-        });
-      });
+      bindMatchCardEvents(matchCardsList, matches);
     }
-
     return;
   }
 
@@ -89,89 +60,83 @@ export function renderHomeView() {
   const activeIdx = window.homeCurrentSlideIdx;
 
   let html = `
-    <!-- Premium Promo Hero Slider -->
-    <div class="hero-slider-wrapper">
+    <!-- Hero Promotional Slider (320px Desktop / 220px Mobile) -->
+    <div class="hero-slider-container">
       <div class="hero-slider-track" id="hero-slider-track">
         
-        <!-- Slide 1: Deposit Bonus -->
-        <div class="hero-slide ${activeIdx === 0 ? 'active' : ''}" style="background: linear-gradient(135deg, #0e121a 0%, #15803d 100%);">
+        <!-- Slide 1: 100% Deposit Match -->
+        <div class="hero-slide ${activeIdx === 0 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(29, 75, 34, 0.95), rgba(37, 90, 40, 0.85)), url('/img/hero-banner-bg.png');">
           <div class="hero-slide-content">
-            <span class="hero-tag">Special Promo</span>
-            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">100% BONUS ON THE 1ST DEPOSIT UP TO KES 50,000</h1>
-            <p class="hero-desc" style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">Register with LlnBet and receive 100% match bonus on your very first funding!</p>
-            <button class="hero-cta" id="slide-deposit-btn" style="margin-top:12px; font-weight:800; padding:8px 16px; font-size:0.8rem; border-radius:8px; border:none; background:var(--accent-emerald); color:#080a0f; cursor:pointer;">
-              Register / Deposit
-            </button>
+            <span class="hero-badge">Welcome Offer</span>
+            <h1 class="hero-title">100% MATCH BONUS UP TO KES 50,000</h1>
+            <p class="hero-desc">Register today with LlnBet and double your initial wallet deposit instantly with zero rollover delays.</p>
+            <div class="hero-actions-row">
+              <button class="hero-cta-btn" id="slide-deposit-btn">Claim Bonus</button>
+              <button class="hero-quick-odd" id="slide-explore-btn">Explore Matches</button>
+            </div>
           </div>
           <div class="hero-slide-graphic">
-            <div class="percent-badge">100%</div>
+            <div class="hero-graphic-badge">100%</div>
           </div>
         </div>
 
-        <!-- Slide 2: Cybersport -->
-        <div class="hero-slide ${activeIdx === 1 ? 'active' : ''}" style="background: linear-gradient(135deg, #080a0f 0%, #ff3d00 150%);">
+        <!-- Slide 2: Esports Specials -->
+        <div class="hero-slide ${activeIdx === 1 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(14, 18, 26, 0.95), rgba(255, 77, 79, 0.85));">
           <div class="hero-slide-content">
-            <span class="hero-tag" style="background:#ff3d00;">Esports Specials</span>
-            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">CATCH BEST COEFFICIENTS IN CYBERSPORT!</h1>
-            <p class="hero-desc" style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">Take advantage of premium boosted odds on Dota 2, League of Legends, Counter-Strike and virtual leagues.</p>
-            <button class="hero-cta" id="slide-esports-btn" style="margin-top:12px; font-weight:800; padding:8px 16px; font-size:0.8rem; border-radius:8px; border:none; background:#ff3d00; color:#fff; cursor:pointer;">
-              Make Your Bet
-            </button>
+            <span class="hero-badge" style="color: #FF4D4F; border-color: rgba(255,77,79,0.3);">Esports Superboost</span>
+            <h1 class="hero-title">CYBERSPORTS BOOSTED COEFFICIENTS</h1>
+            <p class="hero-desc">High-speed live betting on Dota 2, Counter-Strike 2, and FIFA Virtual Leagues.</p>
+            <div class="hero-actions-row">
+              <button class="hero-cta-btn" id="slide-esports-btn" style="background: linear-gradient(135deg, #FF4D4F, #FF7875); color: #fff;">Bet In-Play</button>
+            </div>
           </div>
           <div class="hero-slide-graphic">
-            <span class="material-icons-round" style="font-size:6.5rem; color:rgba(255,61,0,0.12); animation: float 3s ease-in-out infinite;">sports_esports</span>
+            <span class="material-icons-round" style="font-size: 6rem; color: rgba(255,255,255,0.15);">sports_esports</span>
           </div>
         </div>
 
         <!-- Slide 3: Athletic Bilbao Partnership -->
-        <div class="hero-slide ${activeIdx === 2 ? 'active' : ''}" style="background: linear-gradient(135deg, #450a0a 0%, #111 100%);">
+        <div class="hero-slide ${activeIdx === 2 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(69, 10, 10, 0.95), rgba(17, 17, 17, 0.9));">
           <div class="hero-slide-content">
-            <span class="hero-tag" style="background:#fdb927; color:#111;">La Liga Partner</span>
-            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">OFFICIAL REGIONAL PARTNER - ATHLETIC BILBAO</h1>
-            <p class="hero-desc" style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">Support the lions of Basque country with customized selections and guaranteed live payouts.</p>
-            <button class="hero-cta" id="slide-bilbao-btn" style="margin-top:12px; font-weight:800; padding:8px 16px; font-size:0.8rem; border-radius:8px; border:none; background:#fdb927; color:#111; cursor:pointer;">
-              Place Your Bets!
-            </button>
-          </div>
-          <div class="hero-slide-graphic">
-            <span class="material-icons-round" style="font-size:6.5rem; color:rgba(253,185,39,0.12); animation: float 3s ease-in-out infinite;">sports_soccer</span>
-          </div>
-        </div>
-
-        <!-- Slide 4: Spain vs Argentina Special Match -->
-        <div class="hero-slide ${activeIdx === 3 ? 'active' : ''}" style="background: linear-gradient(135deg, #0e121a 0%, #0369a1 100%);">
-          <div class="hero-slide-content">
-            <span class="hero-tag" style="background:#38bdf8; color:#0f172a;">World Cup 2026</span>
-            <h1 class="hero-title" style="font-size:1.4rem; line-height:1.2; font-family:var(--font-display); font-weight:800; color:#fff;">Spain vs Argentina</h1>
-            <p class="hero-desc" style="font-size:0.82rem; color:rgba(255,255,255,0.7); margin-top:4px;">Lamine Yamal vs Lionel Messi! Boosted 1X2 market odds active right now.</p>
-            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-              <button class="quick-stake-btn slide-bet-btn" data-sel-id="spain_arg_1" data-val="2.25" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; cursor:pointer; outline:none; height:auto; width:auto; border-radius:4px;">W1: 2.25</button>
-              <button class="quick-stake-btn slide-bet-btn" data-sel-id="spain_arg_x" data-val="2.94" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; cursor:pointer; outline:none; height:auto; width:auto; border-radius:4px;">Draw: 2.94</button>
-              <button class="quick-stake-btn slide-bet-btn" data-sel-id="spain_arg_2" data-val="3.72" style="padding:4px 10px; font-size:0.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; cursor:pointer; outline:none; height:auto; width:auto; border-radius:4px;">W2: 3.72</button>
+            <span class="hero-badge" style="color: #FFD700; border-color: rgba(255,215,0,0.3);">La Liga Official Partner</span>
+            <h1 class="hero-title">ATHLETIC CLUB BILBAO SPECIALS</h1>
+            <p class="hero-desc">Support the lions of Basque country with customized prop markets and instant cashouts.</p>
+            <div class="hero-actions-row">
+              <button class="hero-cta-btn" id="slide-bilbao-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000;">View Fixtures</button>
             </div>
           </div>
           <div class="hero-slide-graphic">
-            <div style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.06); padding:8px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-              <span style="font-size:1.8rem;">🇪🇸</span>
-              <span style="font-weight:900; color:#fff; font-size:0.8rem;">VS</span>
-              <span style="font-size:1.8rem;">🇦🇷</span>
+            <span class="material-icons-round" style="font-size: 6rem; color: rgba(255,215,0,0.15);">sports_soccer</span>
+          </div>
+        </div>
+
+        <!-- Slide 4: World Cup Spain vs Argentina -->
+        <div class="hero-slide ${activeIdx === 3 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(14, 18, 26, 0.95), rgba(3, 105, 161, 0.85));">
+          <div class="hero-slide-content">
+            <span class="hero-badge">World Cup Final</span>
+            <h1 class="hero-title">SPAIN vs ARGENTINA</h1>
+            <p class="hero-desc">Lamine Yamal vs Lionel Messi! Boosted 1X2 market odds active right now.</p>
+            <div class="hero-actions-row">
+              <button class="hero-quick-odd slide-bet-btn" data-sel-id="spain_arg_1" data-val="2.25">W1: 2.25</button>
+              <button class="hero-quick-odd slide-bet-btn" data-sel-id="spain_arg_x" data-val="2.94">X: 2.94</button>
+              <button class="hero-quick-odd slide-bet-btn" data-sel-id="spain_arg_2" data-val="3.72">W2: 3.72</button>
             </div>
           </div>
         </div>
 
       </div>
 
-      <!-- Arrow Controls -->
+      <!-- Arrow Navigation Controls -->
       <button class="hero-arrow prev" id="hero-prev-btn">&lt;</button>
       <button class="hero-arrow next" id="hero-next-btn">&gt;</button>
 
-      <!-- Dots Indicators -->
+      <!-- Pagination Dots -->
       <div class="hero-dots" id="hero-dots-container"></div>
     </div>
 
-    <!-- Sports Category Horizontal Chips Navigation -->
-    <div class="sports-nav-wrapper">
-      <div class="sports-nav">
+    <!-- Sports Categories Horizontal Scrolling Chips -->
+    <div class="sports-chips-wrapper">
+      <div class="sports-chips-list">
         ${sportsList.map(sport => {
           const count = matches.filter(m => m.sport === sport.id).length;
           return `
@@ -185,130 +150,70 @@ export function renderHomeView() {
       </div>
     </div>
 
-
-
-    <!-- Upcoming Matches Section (Compact List layout) -->
+    <!-- Featured Match Cards Grid -->
     <div>
-      <div class="section-header">
-        <h2 class="section-title">Upcoming Fixtures</h2>
+      <div class="section-title-row">
+        <h2 class="section-title">Top Sports Fixtures</h2>
       </div>
 
-      <div class="matches-list-container">
-        <div class="matches-list-header">
-          <span>Teams</span>
-          <div class="matches-header-odds">
-            <span>1</span>
-            <span>X</span>
-            <span>2</span>
+      <div class="match-cards-container">
+        ${sportMatches.length === 0 ? `
+          <div style="padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-color);">
+            No match fixtures available for this category right now.
+          </div>
+        ` : sportMatches.map(match => renderMatchCard(match, selections)).join('')}
+      </div>
+    </div>
+
+    <!-- Casino & Virtuals Horizontal Showcase Section -->
+    <div style="margin-top: 12px;">
+      <div class="section-title-row">
+        <h2 class="section-title">Casino & Instant Games</h2>
+      </div>
+      <div class="casino-showcase-grid">
+        <div class="casino-card" style="background-image: linear-gradient(135deg, #10b981, #047857);">
+          <div class="casino-card-overlay">
+            <span class="casino-card-tag">Crash Game</span>
+            <h3 class="casino-card-title">Aviator Rocket</h3>
           </div>
         </div>
-        <div class="match-list-items">
-          ${upcomingMatches.length === 0 ? `
-            <div class="skeleton-matches-list" style="padding:10px;">
-              ${[1, 2, 3, 4, 5].map(() => `
-                <div class="skeleton-match-row" style="padding:14px var(--spacing-md); margin-bottom:10px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); display:flex; flex-direction:column; gap:10px;">
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div class="skeleton-box" style="width: 100px; height: 12px;"></div>
-                    <div class="skeleton-box" style="width: 65px; height: 12px;"></div>
-                  </div>
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                      <div class="skeleton-box" style="width: 150px; height: 16px;"></div>
-                      <div class="skeleton-box" style="width: 120px; height: 16px;"></div>
-                    </div>
-                    <div style="display:flex; gap:6px;">
-                      <div class="skeleton-box" style="width: 54px; height: 32px; border-radius: var(--radius-sm);"></div>
-                      <div class="skeleton-box" style="width: 54px; height: 32px; border-radius: var(--radius-sm);"></div>
-                      <div class="skeleton-box" style="width: 54px; height: 32px; border-radius: var(--radius-sm);"></div>
-                    </div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          ` : upcomingMatches.map(match => renderMatchCard(match, selections)).join('')}
-        </div>
-      </div>
-    </div>
-
-    <!-- Promotions Cards Row -->
-    <div style="margin-top:20px;">
-      <h2 class="section-title" style="margin-bottom:16px;">Featured Bonuses</h2>
-      <div class="promotions-grid">
-        ${promotionsList.slice(1, 3).map(promo => `
-          <div class="promo-card">
-            <div class="promo-img-placeholder">
-              <span class="promo-img-logo">${promo.logoText}</span>
-              <span class="promo-tag">${promo.tag}</span>
-            </div>
-            <div class="promo-content">
-              <h3 class="promo-title">${promo.title}</h3>
-              <p class="promo-desc">${promo.desc}</p>
-              <button class="promo-btn promo-claim-btn">Opt In</button>
-            </div>
+        <div class="casino-card" style="background-image: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+          <div class="casino-card-overlay">
+            <span class="casino-card-tag">Slot Tournament</span>
+            <h3 class="casino-card-title">Gates of Olympus</h3>
           </div>
-        `).join('')}
+        </div>
+        <div class="casino-card" style="background-image: linear-gradient(135deg, #f59e0b, #b45309);">
+          <div class="casino-card-overlay">
+            <span class="casino-card-tag">Live Table</span>
+            <h3 class="casino-card-title">Lightning Roulette</h3>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Responsible Gambling notice banner -->
-    <div class="responsible-banner">
-      <div class="responsible-icon">
-        ${getMaterialIcon('shield')}
-      </div>
-      <div class="responsible-text-area">
-        <h4 class="responsible-heading">Play Responsibly (18+)</h4>
-        <p class="responsible-desc">Betting should be entertaining and structured. Set deposit limits, session limits, or self-exclude by contacting support. NCPG support helpline is confidential and available 24/7.</p>
-      </div>
-    </div>
-
-    <!-- Professional Sportsbook Footer -->
-    <footer class="app-footer">
-      <div class="footer-grid">
-        <div class="footer-col">
-          <h4 class="footer-title">About LlnBet</h4>
-          <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">LlnBet is a leading licensed online sports betting operator in Kenya providing state-of-the-art live feeds, secure transaction channels, and multi-market calculators.</p>
+    <!-- Footer -->
+    <footer style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.82rem; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div style="max-width: 320px;">
+          <h4 style="font-family: var(--font-heading); color: var(--text-primary); margin-bottom: 6px; font-weight: 800;">LlnBet Sportsbook</h4>
+          <p>LlnBet is a premier licensed online sportsbook operating under Betting Control and Licensing Board License BCLB-2026-A829.</p>
         </div>
-        <div class="footer-col">
-          <h4 class="footer-title">Information</h4>
-          <ul class="footer-links">
-            <li><a href="#" class="footer-link-btn" data-page="promotions">Promotions</a></li>
-            <li><a href="#" class="footer-link-btn" data-page="profile">My Account</a></li>
-            <li><a href="#" class="footer-link-btn" data-page="profile">Deposit/Withdraw</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4 class="footer-title">Responsible Gaming</h4>
-          <ul class="footer-links">
-            <li><a href="#" id="footer-rg-btn">Gaming Limits</a></li>
-            <li><a href="#" id="footer-se-btn">Self-Exclusion</a></li>
-            <li><a href="#" id="footer-support-btn">Support Helpline</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4 class="footer-title">Licensing</h4>
-          <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">LlnBet is regulated and licensed by the Betting Control and Licensing Board. License No. BCLB-2026-A829. All software audited for fairness and random compliance.</p>
+        <div>
+          <h4 style="font-family: var(--font-heading); color: var(--text-primary); margin-bottom: 6px; font-weight: 800;">Responsible Gaming</h4>
+          <p>Please bet responsibly. 18+ Only. Gambling can be addictive if not managed properly.</p>
         </div>
       </div>
-      
-      <div class="footer-bottom">
-        <span>© 2026 LlnBet Sportsbook. All rights reserved. Registered customer data encrypted.</span>
-        <div class="footer-logos" style="display:flex; align-items:center; gap:16px;">
-          <span style="display:flex; align-items:center; gap:4px;">
-            ${getMaterialIcon('credit_card')}
-            M-Pesa / Visa
-          </span>
-          <span style="display:flex; align-items:center; gap:4px;">
-            ${getMaterialIcon('shield')}
-            18+ Safe
-          </span>
-        </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 16px; font-size: 0.75rem;">
+        <span>© 2026 LlnBet International Sportsbook. All rights reserved.</span>
+        <span>Secured via Safaricom M-Pesa STK Gateway</span>
       </div>
     </footer>
   `;
 
   container.innerHTML = html;
 
-  // Initialize Slider Logic
+  // Initialize Slider Controls
   const slides = container.querySelectorAll('.hero-slide');
   const dotsContainer = document.getElementById('hero-dots-container');
   let currentSlideIdx = window.homeCurrentSlideIdx || 0;
@@ -324,7 +229,6 @@ export function renderHomeView() {
       <div class="hero-dot ${idx === currentSlideIdx ? 'active' : ''}" data-idx="${idx}"></div>
     `).join('');
 
-    // Bind dots click events
     dotsContainer.querySelectorAll('.hero-dot').forEach(dot => {
       dot.addEventListener('click', () => {
         const target = parseInt(dot.getAttribute('data-idx'));
@@ -335,16 +239,16 @@ export function renderHomeView() {
   };
 
   const goToSlide = (idx) => {
-    if (!container.querySelector('.hero-slider-wrapper')) return;
+    if (!container.querySelector('.hero-slider-container')) return;
     slides[currentSlideIdx].classList.remove('active');
     currentSlideIdx = (idx + slides.length) % slides.length;
-    window.homeCurrentSlideIdx = currentSlideIdx; // Persist globally across page updates
+    window.homeCurrentSlideIdx = currentSlideIdx;
     slides[currentSlideIdx].classList.add('active');
     renderDots();
   };
 
   const nextSlide = () => {
-    if (!container.querySelector('.hero-slider-wrapper')) {
+    if (!container.querySelector('.hero-slider-container')) {
       if (window.homeSliderInterval) {
         clearInterval(window.homeSliderInterval);
         window.homeSliderInterval = null;
@@ -355,7 +259,7 @@ export function renderHomeView() {
   };
 
   const prevSlide = () => {
-    if (!container.querySelector('.hero-slider-wrapper')) {
+    if (!container.querySelector('.hero-slider-container')) {
       if (window.homeSliderInterval) {
         clearInterval(window.homeSliderInterval);
         window.homeSliderInterval = null;
@@ -366,82 +270,153 @@ export function renderHomeView() {
   };
 
   const startAutoplay = () => {
-    window.homeSliderInterval = setInterval(nextSlide, 7000);
+    window.homeSliderInterval = setInterval(nextSlide, 5000);
   };
 
   const resetAutoplay = () => {
-    if (window.homeSliderInterval) {
-      clearInterval(window.homeSliderInterval);
-    }
+    if (window.homeSliderInterval) clearInterval(window.homeSliderInterval);
     startAutoplay();
   };
 
-  // Bind controls
-  document.getElementById('hero-prev-btn')?.addEventListener('click', () => {
-    prevSlide();
-    resetAutoplay();
-  });
+  document.getElementById('hero-prev-btn')?.addEventListener('click', () => { prevSlide(); resetAutoplay(); });
+  document.getElementById('hero-next-btn')?.addEventListener('click', () => { nextSlide(); resetAutoplay(); });
 
-  document.getElementById('hero-next-btn')?.addEventListener('click', () => {
-    nextSlide();
-    resetAutoplay();
-  });
-
-  // Start initialization
   renderDots();
   startAutoplay();
 
-  // Bind custom links inside slides
-  document.getElementById('slide-deposit-btn')?.addEventListener('click', () => {
-    state.setPage('profile');
-  });
+  // Bind Slide CTAs
+  document.getElementById('slide-deposit-btn')?.addEventListener('click', () => state.setPage('profile'));
+  document.getElementById('slide-esports-btn')?.addEventListener('click', () => state.setPage('live'));
+  document.getElementById('slide-bilbao-btn')?.addEventListener('click', () => state.setPage('home'));
 
-  document.getElementById('slide-esports-btn')?.addEventListener('click', () => {
-    state.setPage('live');
-  });
-
-  document.getElementById('slide-bilbao-btn')?.addEventListener('click', () => {
-    state.setPage('home');
-  });
-
-  container.querySelectorAll('.slide-bet-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const selectionId = btn.getAttribute('data-sel-id');
-      const team = selectionId.includes('1') ? 'Spain' : selectionId.includes('x') ? 'Draw' : 'Argentina';
-      const odds = parseFloat(btn.getAttribute('data-val'));
-
-      state.addSelection({
-        id: selectionId,
-        matchId: 'sim-spain-arg',
-        matchName: 'Spain vs Argentina',
-        team: team,
-        market: '1X2',
-        odds: odds
-      });
-    });
-  });
-
-  container.querySelectorAll('.sport-chip').forEach(chip => {
+  // Bind Category Chips
+  container.querySelectorAll('.sports-chips-list .sport-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const sportId = chip.getAttribute('data-sport');
       state.setSport(sportId);
     });
   });
 
-  // Odds buttons click selection (handles compact odds button class)
-  container.querySelectorAll('.compact-odds-btn').forEach(btn => {
+  const matchCardsContainer = container.querySelector('.match-cards-container');
+  if (matchCardsContainer) {
+    bindMatchCardEvents(matchCardsContainer, matches);
+  }
+}
+
+// Render Redesigned Match Card Component
+export function renderMatchCard(match, selections) {
+  const isHomeSelected = selections.some(s => s.id === `${match.id}_1`);
+  const isDrawSelected = selections.some(s => s.id === `${match.id}_x`);
+  const isAwaySelected = selections.some(s => s.id === `${match.id}_2`);
+
+  const mainMarket = match.markets && match.markets.length > 0 ? match.markets[0] : null;
+  if (!mainMarket) return '';
+
+  const homeOdd = mainMarket.odds[0];
+  const drawOdd = mainMarket.odds[1];
+  const awayOdd = mainMarket.odds[2];
+
+  return `
+    <div class="match-card" data-id="${match.id}">
+      <!-- Card Header -->
+      <div class="match-card-header">
+        <div class="match-league-info">
+          <span class="match-league-icon">${getMaterialIcon('emoji_events')}</span>
+          <span>${match.league || 'International Championship'}</span>
+        </div>
+        <div class="match-badges-group">
+          ${match.isLive ? `
+            <div class="badge-live-indicator">
+              <span class="pulse-dot"></span>
+              <span>LIVE ${match.timer}'</span>
+            </div>
+          ` : `<span style="font-family: var(--font-mono); font-weight: 700;">${match.kickoffTime}</span>`}
+          <div class="badge-cashout">💰 Cash Out</div>
+        </div>
+      </div>
+
+      <!-- Card Body (Teams & Score) -->
+      <div class="match-card-body" data-match-id="${match.id}">
+        <div class="match-teams-col">
+          <div class="team-row">
+            <div class="team-name-group">
+              <div class="team-flag">${match.teams.home.name.substring(0, 2).toUpperCase()}</div>
+              <span class="team-name">${match.teams.home.name}</span>
+            </div>
+            ${match.isLive ? `<span class="team-score">${match.scores.home}</span>` : ''}
+          </div>
+          <div class="team-row">
+            <div class="team-name-group">
+              <div class="team-flag">${match.teams.away.name.substring(0, 2).toUpperCase()}</div>
+              <span class="team-name">${match.teams.away.name}</span>
+            </div>
+            ${match.isLive ? `<span class="team-score">${match.scores.away}</span>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Odds Selector Buttons -->
+      <div class="match-odds-grid">
+        <button class="odds-btn ${isHomeSelected ? 'selected' : ''}" 
+          data-id="${homeOdd.selectionId}" 
+          data-match-id="${match.id}"
+          data-team="${match.teams.home.name}" 
+          data-market="Home Win" 
+          data-value="${homeOdd.value}">
+          <span class="odds-label">1</span>
+          <span class="odds-value">${formatOdds(homeOdd.value)}</span>
+        </button>
+
+        ${drawOdd ? `
+          <button class="odds-btn ${isDrawSelected ? 'selected' : ''}" 
+            data-id="${drawOdd.selectionId}" 
+            data-match-id="${match.id}"
+            data-team="Draw" 
+            data-market="Draw" 
+            data-value="${drawOdd.value}">
+            <span class="odds-label">X</span>
+            <span class="odds-value">${formatOdds(drawOdd.value)}</span>
+          </button>
+        ` : '<div></div>'}
+
+        ${awayOdd ? `
+          <button class="odds-btn ${isAwaySelected ? 'selected' : ''}" 
+            data-id="${awayOdd.selectionId}" 
+            data-match-id="${match.id}"
+            data-team="${match.teams.away.name}" 
+            data-market="Away Win" 
+            data-value="${awayOdd.value}">
+            <span class="odds-label">2</span>
+            <span class="odds-value">${formatOdds(awayOdd.value)}</span>
+          </button>
+        ` : '<div></div>'}
+      </div>
+
+      <!-- Card Footer -->
+      <div class="match-card-footer">
+        <span style="color: var(--text-muted);">Match ID: #${match.id.substring(0, 8)}</span>
+        <div class="extra-markets-link" data-match-id="${match.id}">
+          <span>+${match.markets.length * 4} Markets</span>
+          <span>&rarr;</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindMatchCardEvents(container, matches) {
+  // Bind Odds Selectors
+  container.querySelectorAll('.odds-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      
       const selectionId = btn.getAttribute('data-id');
       const matchId = btn.getAttribute('data-match-id');
       const team = btn.getAttribute('data-team');
       const market = btn.getAttribute('data-market');
       const oddsVal = parseFloat(btn.getAttribute('data-value'));
-      
-      const match = matches.find(m => m.id === matchId);
-      const matchName = match ? `${match.teams.home.name} vs ${match.teams.away.name}` : 'Match Event';
+
+      const matchObj = matches.find(m => m.id === matchId);
+      const matchName = matchObj ? `${matchObj.teams.home.name} vs ${matchObj.teams.away.name}` : 'Match Event';
 
       state.addSelection({
         id: selectionId,
@@ -454,151 +429,13 @@ export function renderHomeView() {
     });
   });
 
-  // Navigate to match details on row click
-  container.querySelectorAll('.match-list-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const matchId = row.getAttribute('data-id');
-      state.setPage('match-details', matchId);
+  // Bind Match Navigation Triggers
+  container.querySelectorAll('.match-card-body, .extra-markets-link').forEach(el => {
+    el.addEventListener('click', () => {
+      const matchId = el.getAttribute('data-match-id');
+      if (matchId) state.setPage('match-details', matchId);
     });
   });
-
-  container.querySelectorAll('.footer-link-btn').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const page = link.getAttribute('data-page');
-      state.setPage(page);
-    });
-  });
-
-
-
-  document.getElementById('footer-rg-btn')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    alert("Gaming Limits:\n\nCustomize your session duration, wager size caps, and loss limits inside your Profile settings.");
-  });
-
-  document.getElementById('footer-se-btn')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    alert("Self-Exclusion:\n\nYou can request permanent or temporary exclusion of your account inside profile page.");
-  });
-
-  document.getElementById('footer-support-btn')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    alert("Support Helpline:\n\nConfidential gambling support is available 24/7. Call NCPG support lines at 1-800-GAMBLER.");
-  });
-
-  container.querySelectorAll('.promo-claim-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      alert("Promotion Opt-in: You have successfully registered for this promotion!");
-    });
-  });
-}
-
-// Compact match row layout renderer
-export function renderMatchCard(match, selections) {
-  const isHomeSelected = selections.some(s => s.id === `${match.id}_1`);
-  const isDrawSelected = selections.some(s => s.id === `${match.id}_x`);
-  const isAwaySelected = selections.some(s => s.id === `${match.id}_2`);
-
-  const mainMarket = match.markets[0];
-  const homeOdd = mainMarket.odds[0];
-  const drawOdd = mainMarket.odds[1];
-  const awayOdd = mainMarket.odds[2];
-
-  const homeFlash = simulation.getFlashState(match.id, homeOdd.selectionId);
-  const drawFlash = drawOdd ? simulation.getFlashState(match.id, drawOdd.selectionId) : null;
-  const awayFlash = awayOdd ? simulation.getFlashState(match.id, awayOdd.selectionId) : null;
-
-  return `
-    <div class="match-list-row" data-id="${match.id}">
-      
-      <!-- Meta details: Icon + League + Time -->
-      <div class="match-row-meta">
-        <span style="display:flex; align-items:center; gap:6px;">
-          ${getMaterialIcon(match.sport === 'football' ? 'soccer' : match.sport === 'basketball' ? 'basketball' : 'tennis')}
-          <span>${match.league}</span>
-        </span>
-        <span>
-          ${match.isLive ? `
-            <span class="live-indicator">
-              <span class="pulse-dot"></span>
-              ${match.timer}'
-            </span>
-          ` : match.kickoffTime}
-        </span>
-      </div>
-
-      <!-- Main info: Stacked teams + Inline pill odds -->
-      <div class="match-row-main">
-        
-        <div class="match-row-teams">
-          <div class="match-row-team-line">
-            <span>${match.teams.home.name}</span>
-            ${match.isLive ? `<span class="match-row-score">${match.scores.home}</span>` : ''}
-          </div>
-          <div class="match-row-team-line" style="margin-top:2px;">
-            <span>${match.teams.away.name}</span>
-            ${match.isLive ? `<span class="match-row-score">${match.scores.away}</span>` : ''}
-          </div>
-        </div>
-
-        <div class="match-row-odds">
-          ${homeOdd.isSuspended || homeOdd.value === null ? `
-            <button class="compact-odds-btn suspended" disabled style="opacity:0.4; cursor:not-allowed; background:var(--bg-obsidian); border-color:var(--border-color); color:var(--text-muted); font-weight:700;">-</button>
-          ` : `
-            <button class="compact-odds-btn ${isHomeSelected ? 'selected' : ''} ${homeFlash === 'up' ? 'flash-up' : homeFlash === 'down' ? 'flash-down' : ''}" 
-              data-id="${homeOdd.selectionId}" 
-              data-match-id="${match.id}"
-              data-team="${match.teams.home.name}" 
-              data-market="Home Win" 
-              data-value="${homeOdd.value}">
-              ${formatOdds(homeOdd.value)}
-            </button>
-          `}
-
-          ${drawOdd ? (drawOdd.isSuspended || drawOdd.value === null ? `
-            <button class="compact-odds-btn suspended" disabled style="opacity:0.4; cursor:not-allowed; background:var(--bg-obsidian); border-color:var(--border-color); color:var(--text-muted); font-weight:700;">-</button>
-          ` : `
-            <button class="compact-odds-btn ${isDrawSelected ? 'selected' : ''} ${drawFlash === 'up' ? 'flash-up' : drawFlash === 'down' ? 'flash-down' : ''}" 
-              data-id="${drawOdd.selectionId}" 
-              data-match-id="${match.id}"
-              data-team="Draw" 
-              data-market="Draw" 
-              data-value="${drawOdd.value}">
-              ${formatOdds(drawOdd.value)}
-            </button>
-          `) : `
-            <div style="width:54px; height:32px;"></div>
-          `}
-
-          ${awayOdd ? (awayOdd.isSuspended || awayOdd.value === null ? `
-            <button class="compact-odds-btn suspended" disabled style="opacity:0.4; cursor:not-allowed; background:var(--bg-obsidian); border-color:var(--border-color); color:var(--text-muted); font-weight:700;">-</button>
-          ` : `
-            <button class="compact-odds-btn ${isAwaySelected ? 'selected' : ''} ${awayFlash === 'up' ? 'flash-up' : awayFlash === 'down' ? 'flash-down' : ''}" 
-              data-id="${awayOdd.selectionId}" 
-              data-match-id="${match.id}"
-              data-team="${match.teams.away.name}" 
-              data-market="Away Win" 
-              data-value="${awayOdd.value}">
-              ${formatOdds(awayOdd.value)}
-            </button>
-          `) : `
-            <div style="width:54px; height:32px;"></div>
-          `}
-        </div>
-
-      </div>
-
-      <!-- Footer: Cashout icon + Markets count -->
-      <div class="match-row-footer">
-        <span style="display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted);">
-          💰 Cash Out Active
-        </span>
-        <span class="match-row-markets">+${match.markets.length * 4} Markets</span>
-      </div>
-
-    </div>
-  `;
 }
 
 export default renderHomeView;

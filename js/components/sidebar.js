@@ -8,147 +8,123 @@ export function renderSidebar() {
   const curPage = state.data.currentPage;
 
   container.innerHTML = `
-    <!-- Main Menu Section -->
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Sportsbook</h3>
-      <ul class="sidebar-menu">
-        <li class="sidebar-item ${curPage === 'home' ? 'active' : ''}">
-          <button id="nav-prematch">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('home')}
-              Prematch
-            </span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'live' ? 'active' : ''}">
-          <button id="nav-live">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('live')}
-              Live Betting
-            </span>
-            <span class="sidebar-badge live">Live</span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'promotions' ? 'active' : ''}">
-          <button id="nav-promo">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('bonus')}
-              Promotions
-            </span>
-            <span class="sidebar-badge">Hot</span>
-          </button>
-        </li>
-      </ul>
+    <!-- Sportsbook Navigation Group -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Sportsbook</div>
+
+      <a href="#" class="sidebar-item ${curPage === 'home' ? 'active' : ''}" id="nav-prematch">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('sports_soccer')}</span>
+          <span>Prematch</span>
+        </div>
+        <span class="sidebar-badge count">342</span>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'live' ? 'active' : ''}" id="nav-live">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('sensors')}</span>
+          <span>Live Betting</span>
+        </div>
+        <span class="sidebar-badge live">LIVE</span>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'virtuals' ? 'active' : ''}" id="nav-virtuals">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('sports_esports')}</span>
+          <span>Virtuals</span>
+        </div>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'casino' ? 'active' : ''}" id="nav-casino">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('casino')}</span>
+          <span>Casino</span>
+        </div>
+        <span class="sidebar-badge count">HOT</span>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'promotions' ? 'active' : ''}" id="nav-promo">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('card_giftcard')}</span>
+          <span>Promotions</span>
+        </div>
+      </a>
     </div>
 
-    <!-- User Account Section -->
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">My Account</h3>
-      <ul class="sidebar-menu">
-        <li class="sidebar-item ${curPage === 'my-bets' ? 'active' : ''}">
-          <button id="nav-mybets">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('history')}
-              My Bets
-            </span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'profile' ? 'active' : ''}">
-          <button id="nav-profile">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('user')}
-              Profile & cashier
-            </span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'referral' ? 'active' : ''}">
-          <button id="nav-referral">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('user')}
-              Refer & Earn
-            </span>
-          </button>
-        </li>
-        ${state.data.user && state.data.user.role === 'ADMIN' ? `
-        <li class="sidebar-item ${curPage === 'admin' ? 'active' : ''}">
-          <button id="nav-admin">
-            <span class="sidebar-item-content" style="color: var(--accent-orange);">
-              ${getMaterialIcon('shield')}
-              Admin Portal
-            </span>
-          </button>
-        </li>
-        ` : ''}
-      </ul>
+    <!-- My Account Group -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">My Account</div>
+
+      <a href="#" class="sidebar-item ${curPage === 'my-bets' ? 'active' : ''}" id="nav-mybets">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('receipt_long')}</span>
+          <span>My Bets</span>
+        </div>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'profile' ? 'active' : ''}" id="nav-profile">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('account_balance_wallet')}</span>
+          <span>Profile & Cashier</span>
+        </div>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'referral' ? 'active' : ''}" id="nav-referral">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('group_add')}</span>
+          <span>Refer & Earn</span>
+        </div>
+      </a>
+
+      ${state.data.user && state.data.user.role === 'ADMIN' ? `
+      <a href="#" class="sidebar-item ${curPage === 'admin' ? 'active' : ''}" id="nav-admin">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon" style="color: var(--color-accent-lime);">${getMaterialIcon('admin_panel_settings')}</span>
+          <span style="color: var(--color-accent-lime); font-weight: 800;">Admin Portal</span>
+        </div>
+      </a>
+      ` : ''}
     </div>
 
-    <!-- Info / Security Section -->
-    <div class="sidebar-section">
-      <h3 class="sidebar-title">Play Safe</h3>
-      <ul class="sidebar-menu">
-        <li class="sidebar-item ${curPage === 'responsible-gaming' ? 'active' : ''}">
-          <button id="nav-rg">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('shield')}
-              Responsible Gaming
-            </span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'about' ? 'active' : ''}">
-          <button id="nav-about">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('user')}
-              About LlnBet
-            </span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'terms' ? 'active' : ''}">
-          <button id="nav-terms">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('search')}
-              Terms & Conditions
-            </span>
-          </button>
-        </li>
-        <li class="sidebar-item ${curPage === 'privacy' ? 'active' : ''}">
-          <button id="nav-privacy">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('shield')}
-              Privacy Policy
-            </span>
-          </button>
-        </li>
-      </ul>
-    </div>
+    <!-- Security & Responsible Gaming Group -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Play Safe</div>
 
-    <!-- Customer Support -->
-    <div class="sidebar-section" style="margin-top: auto; padding-top: 20px;">
-      <h3 class="sidebar-title">Support</h3>
-      <ul class="sidebar-menu">
-        <li class="sidebar-item ${curPage === 'live-support' ? 'active' : ''}">
-          <button id="nav-chat">
-            <span class="sidebar-item-content">
-              ${getMaterialIcon('chat')}
-              Live Chat (24/7)
-            </span>
-          </button>
-        </li>
-      </ul>
+      <a href="#" class="sidebar-item ${curPage === 'responsible-gaming' ? 'active' : ''}" id="nav-rg">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('verified_user')}</span>
+          <span>Responsible Gaming</span>
+        </div>
+      </a>
+
+      <a href="#" class="sidebar-item ${curPage === 'support' ? 'active' : ''}" id="nav-chat">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('headset_mic')}</span>
+          <span>24/7 Support</span>
+        </div>
+      </a>
     </div>
   `;
 
-  // Bind Events
-  document.getElementById('nav-prematch').addEventListener('click', () => state.setPage('home'));
-  document.getElementById('nav-live').addEventListener('click', () => state.setPage('live'));
-  document.getElementById('nav-promo').addEventListener('click', () => state.setPage('promotions'));
-  document.getElementById('nav-mybets').addEventListener('click', () => state.setPage('my-bets'));
-  document.getElementById('nav-profile').addEventListener('click', () => state.setPage('profile'));
-  document.getElementById('nav-referral').addEventListener('click', () => state.setPage('referral'));
-  document.getElementById('nav-rg').addEventListener('click', () => state.setPage('responsible-gaming'));
-  document.getElementById('nav-about').addEventListener('click', () => state.setPage('about'));
-  document.getElementById('nav-terms').addEventListener('click', () => state.setPage('terms'));
-  document.getElementById('nav-privacy').addEventListener('click', () => state.setPage('privacy'));
-  document.getElementById('nav-chat').addEventListener('click', () => state.setPage('live-support'));
-  document.getElementById('nav-admin')?.addEventListener('click', () => state.setPage('admin'));
+  // Bind Event Listeners
+  const bindNav = (id, page) => {
+    document.getElementById(id)?.addEventListener('click', (e) => {
+      e.preventDefault();
+      state.setPage(page);
+    });
+  };
+
+  bindNav('nav-prematch', 'home');
+  bindNav('nav-live', 'live');
+  bindNav('nav-virtuals', 'home');
+  bindNav('nav-casino', 'home');
+  bindNav('nav-promo', 'promotions');
+  bindNav('nav-mybets', 'my-bets');
+  bindNav('nav-profile', 'profile');
+  bindNav('nav-referral', 'referral');
+  bindNav('nav-rg', 'responsible-gaming');
+  bindNav('nav-chat', 'support');
+  bindNav('nav-admin', 'admin');
 }
+
 export default renderSidebar;

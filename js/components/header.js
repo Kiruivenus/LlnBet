@@ -12,95 +12,118 @@ export function renderHeader() {
   // Initialize mobile drawer overlay
   renderMobileDrawer();
 
-  let rightSideHtml = '';
+  let rightToolsHtml = '';
 
   if (isLoggedIn && userData) {
-    rightSideHtml = `
-      <!-- Wallet / Deposit Area -->
-      <div class="wallet-badge" id="header-wallet-trigger">
-        <span class="wallet-balance-wrap" style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
-          ${getMaterialIcon('wallet')}
-          <span class="wallet-balance">${formatCurrency(userData.balance)}</span>
-        </span>
-        <button class="deposit-btn" id="header-deposit-btn">
-          Deposit
-        </button>
+    const initials = userData.name 
+      ? userData.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() 
+      : 'LP';
+
+    rightToolsHtml = `
+      <!-- Wallet Balance Pill -->
+      <div class="header-wallet-badge" id="header-wallet-trigger" style="cursor: pointer;" title="View Cashier Wallet">
+        <span class="header-wallet-icon">${getMaterialIcon('account_balance_wallet')}</span>
+        <span class="wallet-balance">${formatCurrency(userData.balance || 0)}</span>
       </div>
 
-      <!-- Live Notification Bell -->
-      <button class="icon-btn" id="header-notif-btn" aria-label="Notifications">
-        ${getMaterialIcon('notification')}
-        <span class="badge-dot"></span>
+      <!-- Bright Lime Green Deposit Button -->
+      <button class="btn-deposit" id="header-deposit-btn" aria-label="Deposit Funds">
+        ${getMaterialIcon('add')}
+        <span>Deposit</span>
+      </button>
+
+      <!-- Notifications Bell -->
+      <button class="header-icon-btn" id="header-notif-btn" aria-label="Notifications" title="Notifications">
+        ${getMaterialIcon('notifications')}
+        <span class="unread-dot"></span>
       </button>
 
       <!-- Theme Switcher Button -->
-      <button class="icon-btn" id="header-theme-toggle" aria-label="Toggle Theme" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-surface); border: none; color: var(--text-primary); cursor: pointer; margin-left: 4px;">
+      <button class="header-icon-btn" id="header-theme-toggle" aria-label="Toggle Theme" title="Toggle Theme">
         ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
       </button>
+
+      <!-- Verified User Avatar -->
+      <div class="header-profile-btn" id="header-profile-trigger" title="Profile Account">
+        <div class="user-avatar">
+          ${initials}
+          <div class="verified-tick">✓</div>
+        </div>
+      </div>
     `;
   } else {
-    rightSideHtml = `
-      <div style="display:flex; align-items:center; gap:6px;">
-        <!-- Theme Switcher Button -->
-        <button class="icon-btn" id="header-theme-toggle" aria-label="Toggle Theme" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-surface); border: none; color: var(--text-primary); cursor: pointer; margin-right: 6px;">
-          ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
-        </button>
-        <button class="quick-stake-btn" id="header-login-btn" style="padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight:700; border: 1px solid var(--accent-emerald); color:var(--accent-emerald); background:none; cursor:pointer;">
-          Login
-        </button>
-        <button class="hero-cta" id="header-register-btn" style="padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight:700; background:linear-gradient(to right, var(--accent-emerald), var(--accent-orange)); border:none; color:var(--bg-obsidian); cursor:pointer; min-height:auto; box-shadow:none;">
-          Register
-        </button>
+    rightToolsHtml = `
+      <!-- Theme Switcher -->
+      <button class="header-icon-btn" id="header-theme-toggle" aria-label="Toggle Theme" title="Toggle Theme">
+        ${getMaterialIcon(document.body.classList.contains('light-theme') ? 'dark_mode' : 'light_mode')}
+      </button>
+
+      <div class="header-auth-group">
+        <button class="btn-header-login" id="header-login-btn">Login</button>
+        <button class="btn-header-register" id="header-register-btn">Register</button>
       </div>
     `;
   }
 
   container.innerHTML = `
-    <!-- Brand & Smartphone Hamburger Trigger -->
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button class="mobile-hamburger-btn" id="mobile-hamburger-trigger" aria-label="Open Navigation Menu">
+    <!-- Left: Brand Logo & Mobile Drawer Trigger -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button class="header-icon-btn mobile-hamburger-btn" id="mobile-hamburger-trigger" aria-label="Open Menu" style="display: none;">
         ${getMaterialIcon('menu')}
       </button>
 
-      <a href="#" class="brand" id="header-brand-logo" style="display:flex; align-items:center; gap:8px;">
-        <img src="/img/logo.png" alt="LlnBet Logo" class="brand-logo-img" style="height:32px; width:32px; border-radius:6px; object-fit:cover;" />
-        <div class="brand-name" style="font-family:var(--font-display); font-weight:900; font-size:1.3rem; letter-spacing:-0.03em; color:var(--text-primary); text-decoration:none;">Lln<span style="color:var(--accent-orange);">Bet</span></div>
+      <a href="#" class="header-brand" id="header-brand-logo">
+        <div class="brand-emblem">
+          <img src="/img/logo.png" alt="LlnBet Logo" />
+        </div>
+        <div class="brand-title-group">
+          <span class="brand-name">Lln<span>Bet</span></span>
+          <span class="brand-tagline">Sportsbook</span>
+        </div>
       </a>
     </div>
 
-    <!-- Desktop Search Trigger -->
-    <div class="header-center">
-      <button class="search-trigger" id="header-search-btn">
-        <span style="display:flex; align-items:center;">
-          ${getMaterialIcon('search', 'search-icon')}
-          Search teams, leagues, players...
-        </span>
-        <span class="search-shortcut">Ctrl K</span>
-      </button>
+    <!-- Center: Large Desktop Search Bar -->
+    <div class="header-search-container">
+      <div class="header-search-bar" id="header-search-btn">
+        <span class="header-search-icon">${getMaterialIcon('search')}</span>
+        <span class="header-search-placeholder">Search teams, leagues, matches...</span>
+        <span class="header-search-badge">⌘K</span>
+      </div>
     </div>
 
-    <!-- Header Operations / User Info & Mobile Actions -->
-    <div class="header-right" style="display:flex; align-items:center; gap:8px;">
-      <!-- Mobile Compact Search Button -->
-      <button class="icon-btn mobile-search-btn" id="header-mobile-search-btn" aria-label="Search">
+    <!-- Right: Wallet, Deposit, Avatar & Tools -->
+    <div class="header-right-tools">
+      <!-- Mobile Compact Search Icon Button -->
+      <button class="header-icon-btn mobile-search-btn" id="header-mobile-search-btn" aria-label="Search" style="display: none;">
         ${getMaterialIcon('search')}
       </button>
 
-      ${rightSideHtml}
+      ${rightToolsHtml}
     </div>
   `;
+
+  // Bind Scroll Shadow Handler
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 10) {
+      container.classList.add('scrolled');
+    } else {
+      container.classList.remove('scrolled');
+    }
+  });
 
   // Bind Hamburger Drawer Event
   document.getElementById('mobile-hamburger-trigger')?.addEventListener('click', () => {
     openDrawer();
   });
 
-  document.getElementById('header-brand-logo').addEventListener('click', (e) => {
+  // Brand Logo Click Listener
+  document.getElementById('header-brand-logo')?.addEventListener('click', (e) => {
     e.preventDefault();
     state.setPage('home');
   });
 
-  // Search Modal Trigger (Both Desktop & Mobile Buttons)
+  // Search Modal Triggers
   const openSearch = () => {
     const searchModal = document.getElementById('search-modal');
     if (searchModal) {
@@ -113,37 +136,46 @@ export function renderHeader() {
   document.getElementById('header-search-btn')?.addEventListener('click', openSearch);
   document.getElementById('header-mobile-search-btn')?.addEventListener('click', openSearch);
 
-  // Deposit Button Trigger
-  const triggerDeposit = () => {
+  // Keyboard shortcut listener for Ctrl+K / Cmd+K search
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      openSearch();
+    }
+  });
+
+  // Deposit CTA Trigger
+  document.getElementById('header-deposit-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (state.data.isLoggedIn) {
       state.setPage('profile');
     } else {
       state.setPage('login');
     }
-  };
-
-  document.getElementById('header-deposit-btn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    triggerDeposit();
   });
 
-
-
-  // Bind Theme Toggle Listener
+  // Theme Toggle Trigger
   document.getElementById('header-theme-toggle')?.addEventListener('click', () => {
     const isLight = document.body.classList.contains('light-theme');
     if (isLight) {
       document.body.classList.remove('light-theme');
+      document.body.classList.add('dark-theme');
       localStorage.setItem('llnbet_theme', 'dark');
     } else {
+      document.body.classList.remove('dark-theme');
       document.body.classList.add('light-theme');
       localStorage.setItem('llnbet_theme', 'light');
     }
     state.notify('theme');
   });
 
+  // User Profile / Wallet / Notification Triggers
   if (isLoggedIn) {
     document.getElementById('header-wallet-trigger')?.addEventListener('click', () => {
+      state.setPage('profile');
+    });
+
+    document.getElementById('header-profile-trigger')?.addEventListener('click', () => {
       state.setPage('profile');
     });
 
@@ -160,4 +192,5 @@ export function renderHeader() {
     });
   }
 }
+
 export default renderHeader;
