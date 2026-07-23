@@ -141,10 +141,10 @@ export function renderMobileNavBar() {
       <span>Sports</span>
     </a>
 
-    <!-- Casino Tab -->
-    <a href="#" class="mobile-nav-item ${curPage === 'casino' ? 'active' : ''}" id="mnav-casino">
-      <span class="nav-icon">${getMaterialIcon('casino')}</span>
-      <span>Casino</span>
+    <!-- Live Betting Tab (Replaces Casino) -->
+    <a href="#" class="mobile-nav-item ${curPage === 'live' ? 'active' : ''}" id="mnav-live">
+      <span class="nav-icon">${getMaterialIcon('sensors')}</span>
+      <span>Live</span>
     </a>
 
     <!-- Reference-Aligned Bet Slip Capsule Pill -->
@@ -162,15 +162,15 @@ export function renderMobileNavBar() {
       <span>Deposit</span>
     </a>
 
-    <!-- Menu Hamburger Drawer Trigger -->
-    <a href="#" class="mobile-nav-item" id="mnav-menu">
-      <span class="nav-icon">${getMaterialIcon('menu')}</span>
-      <span>Menu</span>
+    <!-- My Bets History Tab (Replaces Menu) -->
+    <a href="#" class="mobile-nav-item ${curPage === 'my-bets' ? 'active' : ''}" id="mnav-mybets">
+      <span class="nav-icon">${getMaterialIcon('history')}</span>
+      <span>My Bets</span>
     </a>
   `;
 
   document.getElementById('mnav-sports')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('home'); });
-  document.getElementById('mnav-casino')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('casino'); });
+  document.getElementById('mnav-live')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('live'); });
   
   document.getElementById('mnav-betslip')?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -178,7 +178,7 @@ export function renderMobileNavBar() {
   });
 
   document.getElementById('mnav-deposit')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('profile'); });
-  document.getElementById('mnav-menu')?.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
+  document.getElementById('mnav-mybets')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('my-bets'); });
 }
 
 export function openDrawer() {
