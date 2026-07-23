@@ -205,10 +205,10 @@ export function renderBetslip() {
         </button>
       `}
 
-      <!-- Share Booking Code Button -->
+      <!-- Auto-Loading Shareable Betslip Link Button -->
       <button class="btn-share-bet" id="betslip-share-code-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 16px; background: rgba(56, 102, 42, 0.1); color: #38662A; border: 1.5px dashed #38662A; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.85rem; cursor: pointer; margin-top: 10px; transition: all 200ms ease;">
         <span class="material-icons-round" style="font-size: 18px;">share</span>
-        <span>Share Booking Code</span>
+        <span>Share Bet Link (Auto-Loads Selections)</span>
       </button>
 
     </div>
@@ -257,22 +257,31 @@ export function renderBetslip() {
     state.setSelectionStake('global_multi', val);
   });
 
-  // Share Booking Code Action Handler
+  // Share Auto-Loading Link Action Handler
   document.getElementById('betslip-share-code-btn')?.addEventListener('click', async () => {
+    const payload = selections.map(s => ({
+      id: s.id,
+      matchId: s.matchId,
+      matchName: s.matchName,
+      team: s.team,
+      market: s.market,
+      odds: s.odds
+    }));
+
+    const encodedData = btoa(encodeURIComponent(JSON.stringify(payload)));
+    const shareUrl = `${window.location.origin}/?share=${encodedData}`;
     const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
     const bookingCode = `LLN-${randomHex}`;
-    const shareUrl = `${window.location.origin}/?code=${bookingCode}`;
-    const shareText = `Check out my LlnBet accumulator ticket (${selections.length} picks, ${formatOdds(formattedOdds)} odds)! Use code ${bookingCode} to load it instantly: ${shareUrl}`;
+    const shareText = `🔥 Check out my LlnBet accumulator ticket (${selections.length} picks, ${formatOdds(formattedOdds)} total odds)! Tap this link to load my exact selections into your betslip instantly: ${shareUrl}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `LlnBet Booking Code ${bookingCode}`,
+          title: `LlnBet Accumulator Ticket (${bookingCode})`,
           text: shareText,
           url: shareUrl
         });
       } catch (err) {
-        // Fallback to clipboard if user cancels or share API fails
         await copyToClipboard(bookingCode, shareUrl);
       }
     } else {
@@ -311,9 +320,9 @@ async function copyToClipboard(code, url) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(url);
     }
-    alert(`🎉 Booking Code: ${code}\n\nBooking code and link copied to clipboard!\nShare it with your friends to load these selections instantly.`);
+    alert(`🎉 Share Link Copied to Clipboard!\n\n${url}\n\nWhen your friends click or tap this link, all ${code} selections will automatically load into their betslip!`);
   } catch (err) {
-    alert(`🎉 Booking Code: ${code}\n\nUse this booking code on LlnBet to load these selections!`);
+    alert(`🎉 Shareable Link:\n\n${url}`);
   }
 }
 

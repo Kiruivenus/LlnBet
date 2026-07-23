@@ -3,7 +3,7 @@ import { simulation } from './simulation.js';
 import { route } from './router.js';
 import { renderHeader } from './components/header.js';
 import { renderSidebar } from './components/sidebar.js';
-import { renderBetslip } from './components/betslip.js';
+import { renderBetslip, openBetslipDrawer } from './components/betslip.js';
 import { renderMobileNavBar } from './components/mobileDrawer.js';
 import { renderSearchModal } from './components/searchModal.js';
 
@@ -119,6 +119,22 @@ async function initApp() {
     state.data.currentPage = 'admin';
   }
 
+  // Check for auto-loading shareable betslip link (?share=...)
+  const urlParams = new URLSearchParams(window.location.search);
+  const shareData = urlParams.get('share');
+  if (shareData) {
+    try {
+      const decodedJson = decodeURIComponent(atob(shareData));
+      const loadedSelections = JSON.parse(decodedJson);
+      if (Array.isArray(loadedSelections) && loadedSelections.length > 0) {
+        state.data.betslip.selections = loadedSelections;
+        state.persistBetslip();
+      }
+    } catch (err) {
+      console.warn('Failed to parse shared betslip link:', err);
+    }
+  }
+
   // Wait for state session restoration to finish before initial routing
   try {
     await state.sessionPromise;
@@ -135,6 +151,14 @@ async function initApp() {
 
   // Hide splash loader overlay
   hideSplashLoader();
+
+  // Auto-open betslip drawer if selections were loaded from share link
+  if (shareData && state.data.betslip.selections.length > 0) {
+    setTimeout(() => {
+      openBetslipDrawer();
+      alert(`🎉 ${state.data.betslip.selections.length} selection(s) automatically loaded into your betslip from the shared link!`);
+    }, 500);
+  }
 
   state.subscribe('currentPage', () => {
     route();
