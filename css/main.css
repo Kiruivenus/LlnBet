@@ -1607,68 +1607,210 @@ img {
   }
 }
 
+/* Fixed Mobile Bottom 5-Tab Bar */
+.mobile-nav-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 62px;
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-color);
+  z-index: 1000;
+  padding: 0 4px;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 900px) {
+  .mobile-nav-bar {
+    display: flex !important;
+  }
+}
+
+.mobile-nav-item {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: color var(--transition-fast);
+}
+
+.mobile-nav-item .nav-icon {
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-nav-item.active {
+  color: var(--color-primary);
+}
+
+.mobile-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  background-color: var(--color-primary);
+  border-radius: 0 0 3px 3px;
+}
+
+.mobile-betslip-badge {
+  position: absolute;
+  top: 4px;
+  right: 20%;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow-green);
+}
+
 @media (max-width: 600px) {
   .app-header {
-    padding: 0 var(--space-3);
+    padding: 0 8px !important;
+    gap: 4px !important;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+
+  .header-brand {
+    gap: 6px;
+  }
+
+  .brand-name {
+    font-size: 1rem !important;
   }
 
   .header-icon-btn#header-theme-toggle,
-  .header-icon-btn#header-notif-btn {
+  .header-icon-btn#header-notif-btn,
+  .mobile-search-btn {
     display: none !important;
   }
 
+  .header-right-tools {
+    gap: 4px !important;
+    flex-shrink: 0;
+  }
+
   .header-wallet-badge {
-    padding: 4px 8px;
-    font-size: 0.76rem;
+    padding: 3px 6px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .header-wallet-icon {
+    font-size: 14px !important;
   }
 
   .btn-deposit {
-    padding: 5px 10px;
-    font-size: 0.76rem;
+    padding: 5px 8px !important;
+    font-size: 0.72rem !important;
+    border-radius: var(--radius-pill);
   }
 
   .user-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 0.72rem;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .app-main {
+    padding: 10px 8px !important;
+    padding-bottom: 76px !important;
   }
 
   .match-card {
-    padding: 12px 14px;
-    gap: 10px;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .match-card-header {
-    font-size: 0.75rem;
-  }
-
-  .match-league-info {
-    font-size: 0.78rem;
-  }
-
-  .team-name {
-    font-size: 0.88rem;
-  }
-
-  .match-odds-grid {
+    font-size: 0.72rem !important;
+    flex-wrap: wrap;
     gap: 4px;
   }
 
+  .match-league-info {
+    font-size: 0.75rem !important;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .team-name {
+    font-size: 0.85rem !important;
+  }
+
+  .team-flag {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 10px !important;
+  }
+
+  .match-odds-grid {
+    gap: 4px !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    width: 100% !important;
+  }
+
   .odds-btn {
-    padding: 8px 6px;
+    padding: 6px 4px !important;
+    min-width: 0 !important;
   }
 
   .odds-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem !important;
   }
 
   .odds-value {
-    font-size: 0.8rem;
+    font-size: 0.78rem !important;
+  }
+
+  .match-card-footer {
+    font-size: 0.72rem !important;
+    padding-top: 6px !important;
+  }
+
+  .extra-markets-link {
+    font-size: 0.72rem !important;
   }
 
   .app-betslip {
-    width: 100vw;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    width: 100vw !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
   }
 }
+
 
