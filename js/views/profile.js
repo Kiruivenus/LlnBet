@@ -34,29 +34,74 @@ export async function renderProfileView() {
 
   const drawProfile = () => {
     container.innerHTML = `
-      <!-- Player Profile Header Card -->
-      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 24px; border-radius: var(--radius-xl); border: 1px solid var(--border-color); box-shadow: var(--shadow-card);">
+      <!-- Player Profile Phone Number Header Card -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 20px 24px; border-radius: var(--radius-xl); border: 1px solid var(--border-color); box-shadow: var(--shadow-card); margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 16px;">
-          <div class="user-avatar" style="width: 58px; height: 58px; font-size: 1.4rem;">
+          <div class="user-avatar" style="width: 54px; height: 54px; font-size: 1.3rem;">
             ${user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'LP'}
             <div class="verified-tick" style="width: 18px; height: 18px; font-size: 10px;">✓</div>
           </div>
           <div>
-            <h2 style="font-size: 1.3rem; font-family: var(--font-heading); font-weight: 800; color: var(--text-primary);">+${user?.phone || '254700000000'}</h2>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">${user?.name || 'Verified Player'}</p>
+            <h2 style="font-size: 1.25rem; font-family: var(--font-heading); font-weight: 800; color: var(--text-primary);">+${user?.phone || '254700000000'}</h2>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">${user?.name || 'Verified Player'} • Account Verified</p>
           </div>
         </div>
 
-        <div style="text-align: right;">
-          <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Wallet Balance</span>
-          <div style="font-family: var(--font-mono); font-weight: 800; font-size: 1.4rem; color: var(--color-primary); margin-top: 2px;">
-            ${formatCurrency(user?.balance || 0)}
-          </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge-live-indicator" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.75rem; padding: 4px 10px;">
+            <span class="pulse-dot"></span> Active Player
+          </span>
         </div>
       </div>
 
+      <!-- Dedicated Wallet Balance & Bonus Card (Just below phone number card) -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 20px 24px; box-shadow: var(--shadow-card); margin-bottom: 20px; display: flex; flex-direction: column; gap: 16px;">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(56, 102, 42, 0.12); color: #38662A; display: flex; align-items: center; justify-content: center;">
+              ${getMaterialIcon('account_balance_wallet')}
+            </div>
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary);">Wallet & Bonus Overview</h3>
+              <p style="font-size: 0.75rem; color: var(--text-secondary);">Real cash balance and promotional bonus credits</p>
+            </div>
+          </div>
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Currency: KES</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          
+          <!-- Real Cash Balance Card -->
+          <div style="background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Real Cash Balance</span>
+              <span class="material-icons-round" style="font-size: 18px; color: var(--color-primary);">payments</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 900; font-size: 1.5rem; color: var(--color-primary);">
+              ${formatCurrency(user?.balance || 0)}
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Withdrawable & playable funds</span>
+          </div>
+
+          <!-- Bonus Credit Card -->
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: #D97706; text-transform: uppercase;">Bonus Credit</span>
+              <span class="material-icons-round" style="font-size: 18px; color: #D97706;">card_giftcard</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 900; font-size: 1.5rem; color: #D97706;">
+              ${formatCurrency(user?.bonusBalance !== undefined ? user.bonusBalance : 500)}
+            </div>
+            <span style="font-size: 0.72rem; color: #D97706;">100% Welcome match bonus</span>
+          </div>
+
+        </div>
+
+      </div>
+
       <!-- Financial Cashier Grid (Deposit & Withdraw Cards) -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 20px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
         
         <!-- DEPOSIT CASHIER CARD -->
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 24px; border-radius: var(--radius-xl); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 18px;">
