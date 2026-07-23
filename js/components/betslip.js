@@ -21,7 +21,6 @@ export function renderBetslip() {
 
   const selections = state.data.betslip ? state.data.betslip.selections : [];
   const user = state.data.user;
-  const balance = user ? user.balance : 0;
   const allMatches = simulation.getMatches ? simulation.getMatches() : [];
 
   const activeTab = state.data.betslipTab || 'normal';
@@ -50,8 +49,8 @@ export function renderBetslip() {
 
   let html = `
     <!-- Mobile Drawer Pull Handle -->
-    <div style="display: flex; justify-content: center; padding-top: 8px; cursor: pointer;" id="betslip-pull-handle">
-      <div style="width: 36px; height: 4px; border-radius: 9999px; background-color: var(--border-color-hover);"></div>
+    <div style="display: flex; justify-content: center; padding-top: 10px; cursor: pointer;" id="betslip-pull-handle">
+      <div style="width: 42px; height: 5px; border-radius: 9999px; background-color: var(--border-color-hover);"></div>
     </div>
 
     <!-- Betslip Header -->
@@ -94,7 +93,13 @@ export function renderBetslip() {
         <div class="betslip-empty-state">
           <span class="betslip-empty-icon">${getMaterialIcon('confirmation_number')}</span>
           <p class="betslip-empty-text">Your betslip is currently empty.</p>
-          <p style="font-size: 0.78rem;">Click on any odds button across football, basketball, or tennis to build your accumulator slip.</p>
+          <p style="font-size: 0.78rem; margin-bottom: 16px;">Click on any odds button across football, basketball, or tennis to build your accumulator slip.</p>
+
+          <!-- Booking Code Loader Input -->
+          <div style="display: flex; gap: 6px; width: 100%; max-width: 320px; margin: 0 auto;">
+            <input type="text" id="betslip-load-code-input" placeholder="Enter Booking Code (e.g. LLN-8F92)" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;" />
+            <button id="betslip-load-code-btn" class="btn-deposit" style="padding: 8px 14px; font-size: 0.8rem;">Load</button>
+          </div>
         </div>
       </div>
     `;
@@ -103,6 +108,31 @@ export function renderBetslip() {
 
     document.getElementById('betslip-close-mobile-x-btn')?.addEventListener('click', closeBetslipDrawer);
     document.getElementById('betslip-pull-handle')?.addEventListener('click', closeBetslipDrawer);
+
+    // Code loader handler for empty state
+    document.getElementById('betslip-load-code-btn')?.addEventListener('click', () => {
+      const codeInput = document.getElementById('betslip-load-code-input')?.value.trim();
+      if (!codeInput) {
+        alert("Please enter a valid booking code.");
+        return;
+      }
+      // Demo booking code auto-populator
+      const sampleMatches = simulation.getMatches().slice(0, 2);
+      if (sampleMatches.length > 0) {
+        sampleMatches.forEach(m => {
+          state.addSelection({
+            id: `${m.id}_m1`,
+            matchId: m.id,
+            matchName: `${m.teams.home.name} vs ${m.teams.away.name}`,
+            team: m.teams.home.name,
+            market: '1X2 Match Winner',
+            odds: m.markets[0]?.odds[0]?.value || 1.85
+          });
+        });
+        alert(`Booking Code ${codeInput.toUpperCase()} Loaded Successfully! Added ${sampleMatches.length} selections.`);
+      }
+    });
+
     return;
   }
 
@@ -174,6 +204,13 @@ export function renderBetslip() {
           Place Bet (KES ${currentStake})
         </button>
       `}
+
+      <!-- Share Booking Code Button -->
+      <button class="btn-share-bet" id="betslip-share-code-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px 16px; background: rgba(56, 102, 42, 0.1); color: #38662A; border: 1.5px dashed #38662A; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.85rem; cursor: pointer; margin-top: 10px; transition: all 200ms ease;">
+        <span class="material-icons-round" style="font-size: 18px;">share</span>
+        <span>Share Booking Code</span>
+      </button>
+
     </div>
   `;
 
@@ -220,6 +257,29 @@ export function renderBetslip() {
     state.setSelectionStake('global_multi', val);
   });
 
+  // Share Booking Code Action Handler
+  document.getElementById('betslip-share-code-btn')?.addEventListener('click', async () => {
+    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const bookingCode = `LLN-${randomHex}`;
+    const shareUrl = `${window.location.origin}/?code=${bookingCode}`;
+    const shareText = `Check out my LlnBet accumulator ticket (${selections.length} picks, ${formatOdds(formattedOdds)} odds)! Use code ${bookingCode} to load it instantly: ${shareUrl}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `LlnBet Booking Code ${bookingCode}`,
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (err) {
+        // Fallback to clipboard if user cancels or share API fails
+        await copyToClipboard(bookingCode, shareUrl);
+      }
+    } else {
+      await copyToClipboard(bookingCode, shareUrl);
+    }
+  });
+
   // Place Bet Submission
   document.getElementById('betslip-place-bet-btn')?.addEventListener('click', async () => {
     if (!state.data.isLoggedIn) {
@@ -243,6 +303,18 @@ export function renderBetslip() {
       btn.textContent = `Place Bet (KES ${currentStake})`;
     }
   });
+}
+
+// Copy booking code to clipboard helper
+async function copyToClipboard(code, url) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+    }
+    alert(`🎉 Booking Code: ${code}\n\nBooking code and link copied to clipboard!\nShare it with your friends to load these selections instantly.`);
+  } catch (err) {
+    alert(`🎉 Booking Code: ${code}\n\nUse this booking code on LlnBet to load these selections!`);
+  }
 }
 
 export function openBetslipDrawer() {

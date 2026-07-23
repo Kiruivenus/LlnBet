@@ -1683,8 +1683,8 @@ img {
     left: 0 !important;
     right: 0 !important;
     width: 100vw !important;
-    height: 84vh !important;
-    max-height: 620px !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
     background-color: var(--bg-card) !important;
     border-radius: 20px 20px 0 0 !important;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.25) !important;
