@@ -6,6 +6,19 @@ export function renderBetslip() {
   const container = document.getElementById('app-betslip');
   if (!container) return;
 
+  // Create or retrieve global betslip backdrop element for mobile
+  let backdrop = document.getElementById('betslip-backdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'betslip-backdrop';
+    backdrop.className = 'betslip-backdrop';
+    document.body.appendChild(backdrop);
+
+    backdrop.addEventListener('click', () => {
+      closeBetslipDrawer();
+    });
+  }
+
   const selections = state.data.betslip ? state.data.betslip.selections : [];
   const user = state.data.user;
   const balance = user ? user.balance : 0;
@@ -36,10 +49,15 @@ export function renderBetslip() {
   const expiredCount = analyzedSelections.filter(s => s.isExpiredOrStarted).length;
 
   let html = `
+    <!-- Mobile Drawer Pull Handle -->
+    <div style="display: flex; justify-content: center; padding-top: 8px; cursor: pointer;" id="betslip-pull-handle">
+      <div style="width: 36px; height: 4px; border-radius: 9999px; background-color: var(--border-color-hover);"></div>
+    </div>
+
     <!-- Betslip Header -->
     <div class="betslip-header">
       <div class="betslip-title-group">
-        <span style="color: var(--color-primary); display: flex; align-items: center;">${getMaterialIcon('receipt_long')}</span>
+        <span style="color: var(--color-primary); display: flex; align-items: center;">${getMaterialIcon('receipt')}</span>
         <h3 class="betslip-title">Betslip</h3>
         ${selections.length > 0 ? `<span class="betslip-count-badge">${selections.length}</span>` : ''}
       </div>
@@ -83,11 +101,8 @@ export function renderBetslip() {
 
     container.innerHTML = html;
 
-    const closeSlip = () => {
-      const slip = document.getElementById('app-betslip');
-      if (slip) slip.classList.remove('active');
-    };
-    document.getElementById('betslip-close-mobile-x-btn')?.addEventListener('click', closeSlip);
+    document.getElementById('betslip-close-mobile-x-btn')?.addEventListener('click', closeBetslipDrawer);
+    document.getElementById('betslip-pull-handle')?.addEventListener('click', closeBetslipDrawer);
     return;
   }
 
@@ -113,7 +128,7 @@ export function renderBetslip() {
     `;
   });
 
-  html += `</div>`; // Close betslip-body
+  html += `</div>`;
 
   // Calculations & Stake Inputs
   const formattedOdds = validTotalOdds > 1.0 ? parseFloat(validTotalOdds.toFixed(2)) : 1.0;
@@ -164,13 +179,9 @@ export function renderBetslip() {
 
   container.innerHTML = html;
 
-  // Bind Event Handlers
-  const closeSlip = () => {
-    const slip = document.getElementById('app-betslip');
-    if (slip) slip.classList.remove('active');
-  };
-
-  document.getElementById('betslip-close-mobile-x-btn')?.addEventListener('click', closeSlip);
+  // Bind Close Handlers
+  document.getElementById('betslip-close-mobile-x-btn')?.addEventListener('click', closeBetslipDrawer);
+  document.getElementById('betslip-pull-handle')?.addEventListener('click', closeBetslipDrawer);
 
   document.getElementById('betslip-remove-all-btn')?.addEventListener('click', () => {
     state.clearBetslip();
@@ -224,6 +235,7 @@ export function renderBetslip() {
 
       const bet = await state.placeBet(currentStake, formattedOdds, payout);
       alert(`Bet Placed Successfully!\n\nTicket ID: ${bet.betId || bet.id}\nStake: KES ${currentStake}\nTotal Odds: ${formattedOdds}\nPossible Win: KES ${payout.toFixed(2)}`);
+      closeBetslipDrawer();
     } catch (err) {
       alert(err.message || "Failed to place bet.");
     } finally {
@@ -231,6 +243,20 @@ export function renderBetslip() {
       btn.textContent = `Place Bet (KES ${currentStake})`;
     }
   });
+}
+
+export function openBetslipDrawer() {
+  const slip = document.getElementById('app-betslip');
+  const backdrop = document.getElementById('betslip-backdrop');
+  if (slip) slip.classList.add('active');
+  if (backdrop) backdrop.classList.add('active');
+}
+
+export function closeBetslipDrawer() {
+  const slip = document.getElementById('app-betslip');
+  const backdrop = document.getElementById('betslip-backdrop');
+  if (slip) slip.classList.remove('active');
+  if (backdrop) backdrop.classList.remove('active');
 }
 
 export default renderBetslip;

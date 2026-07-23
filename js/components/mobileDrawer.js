@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { getMaterialIcon } from '../utils.js';
+import { openBetslipDrawer, closeBetslipDrawer } from './betslip.js';
 
 export function renderMobileDrawer() {
   renderMobileNavBar();
@@ -166,10 +167,7 @@ export function renderMobileNavBar() {
   
   document.getElementById('mnav-betslip')?.addEventListener('click', (e) => {
     e.preventDefault();
-    const slipEl = document.getElementById('app-betslip');
-    if (slipEl) {
-      slipEl.classList.toggle('active');
-    }
+    openBetslipDrawer();
   });
 
   document.getElementById('mnav-mybets')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('my-bets'); });
