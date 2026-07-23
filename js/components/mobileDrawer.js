@@ -135,43 +135,50 @@ export function renderMobileNavBar() {
   const betCount = (state.data.betslip && state.data.betslip.selections) ? state.data.betslip.selections.length : 0;
 
   navContainer.innerHTML = `
+    <!-- Sports Tab -->
     <a href="#" class="mobile-nav-item ${curPage === 'home' ? 'active' : ''}" id="mnav-sports">
-      <span class="nav-icon">${getMaterialIcon('sports_soccer')}</span>
+      <span class="nav-icon">${getMaterialIcon('emoji_events')}</span>
       <span>Sports</span>
     </a>
 
-    <a href="#" class="mobile-nav-item ${curPage === 'live' ? 'active' : ''}" id="mnav-live">
-      <span class="nav-icon">${getMaterialIcon('sensors')}</span>
-      <span>Live</span>
+    <!-- Casino Tab -->
+    <a href="#" class="mobile-nav-item ${curPage === 'casino' ? 'active' : ''}" id="mnav-casino">
+      <span class="nav-icon">${getMaterialIcon('casino')}</span>
+      <span>Casino</span>
     </a>
 
-    <a href="#" class="mobile-nav-item" id="mnav-betslip">
-      <span class="nav-icon">${getMaterialIcon('receipt')}</span>
-      <span>Betslip</span>
-      ${betCount > 0 ? `<span class="mobile-betslip-badge">${betCount}</span>` : ''}
+    <!-- Floating Center Bet Slip Pill -->
+    <a href="#" class="mobile-nav-item mnav-betslip-center" id="mnav-betslip">
+      <div class="betslip-center-circle">
+        <span class="nav-icon">${getMaterialIcon('receipt')}</span>
+        ${betCount > 0 ? `<span class="mobile-betslip-badge">${betCount}</span>` : ''}
+      </div>
+      <span style="margin-top: 2px;">Bet slip</span>
     </a>
 
-    <a href="#" class="mobile-nav-item ${curPage === 'my-bets' ? 'active' : ''}" id="mnav-mybets">
-      <span class="nav-icon">${getMaterialIcon('history')}</span>
-      <span>My Bets</span>
+    <!-- Deposit Cashier Tab -->
+    <a href="#" class="mobile-nav-item ${curPage === 'profile' ? 'active' : ''}" id="mnav-deposit">
+      <span class="nav-icon">${getMaterialIcon('attach_money')}</span>
+      <span>Deposit</span>
     </a>
 
-    <a href="#" class="mobile-nav-item ${curPage === 'profile' ? 'active' : ''}" id="mnav-profile">
-      <span class="nav-icon">${getMaterialIcon('user')}</span>
-      <span>Profile</span>
+    <!-- Menu Hamburger Drawer Trigger -->
+    <a href="#" class="mobile-nav-item" id="mnav-menu">
+      <span class="nav-icon">${getMaterialIcon('menu')}</span>
+      <span>Menu</span>
     </a>
   `;
 
   document.getElementById('mnav-sports')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('home'); });
-  document.getElementById('mnav-live')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('live'); });
+  document.getElementById('mnav-casino')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('casino'); });
   
   document.getElementById('mnav-betslip')?.addEventListener('click', (e) => {
     e.preventDefault();
     openBetslipDrawer();
   });
 
-  document.getElementById('mnav-mybets')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('my-bets'); });
-  document.getElementById('mnav-profile')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('profile'); });
+  document.getElementById('mnav-deposit')?.addEventListener('click', (e) => { e.preventDefault(); state.setPage('profile'); });
+  document.getElementById('mnav-menu')?.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
 }
 
 export function openDrawer() {

@@ -1,34 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@500;600;700;800&display=swap');
 
 :root {
-  /* Restrained Commercial Sportsbook Color Palette */
-  --color-primary: #10B981;          /* Emerald Green (Action CTAs & Selected Odds) */
-  --color-primary-dark: #059669;     /* Dark Emerald Hover */
-  --color-primary-light: #D1FAE5;    /* Light Emerald Glow */
-  --color-accent-lime: #22C55E;      /* Bright Accent Green */
-  --color-accent-glow: rgba(16, 185, 129, 0.2);
-  
-  --color-success: #10B981;
-  --color-danger: #EF4444;           /* Live / Loss Indicators */
+  /* Commercial Olive & Forest Green Sportsbook Palette (Reference Aligned) */
+  --header-bg: #38662A;               /* Deep Olive Forest Green Header */
+  --header-text: #FFFFFF;
+  --header-btn-bg: #4C803B;           /* Rounded tool icon buttons */
+
+  --color-primary: #38662A;          /* Forest Olive Primary Accent */
+  --color-primary-dark: #2A4F20;
+  --color-primary-light: #DEEADE;
+  --color-accent-lime: #10B981;
+
+  --color-success: #38662A;
+  --color-danger: #EF4444;
   --color-warning: #F59E0B;
 
-  /* Light Theme - Clean Commercial Look */
-  --bg-page: #F4F5F7;
-  --bg-card: #FFFFFF;
+  /* Light Theme - Soft Sage Background & Pure White Cards */
+  --bg-page: #EAF2E8;                 /* Soft Sage Tinted Body Background */
+  --bg-card: #FFFFFF;                 /* Crisp Pure White Cards */
   --bg-surface: #FFFFFF;
-  --bg-surface-hover: #F8FAFC;
-  --bg-surface-active: #F1F5F9;
-  --bg-subtle: #F8FAFC;
-  
-  --border-color: #E5E7EB;
-  --border-color-hover: #CBD5E1;
-  
-  --text-primary: #111827;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
+  --bg-surface-hover: #F2F7F1;
+  --bg-accordion-header: #DEEADE;     /* Light Green Accordion Banner */
+
+  /* Odds Chips Styling */
+  --odds-chip-bg: #E8F3E6;           /* Mint Green Odds Buttons */
+  --odds-chip-hover: #D7EAD4;
+  --odds-chip-active: #C3EAA5;        /* Selected Active Odds Chip */
+
+  --border-color: #D6E4D4;            /* Soft Sage Border */
+  --border-color-hover: #B8D1B5;
+
+  --text-primary: #1A2418;            /* High Contrast Dark Green-Black */
+  --text-secondary: #52634F;          /* Medium Olive Gray */
+  --text-muted: #7A8C77;              /* Muted Greenish Gray */
   --text-inverse: #FFFFFF;
 
-  /* Specs: 60px Header Height & Whitespace Grid */
+  /* Specs: 60px Header Height & Layout Dimensions */
   --header-height: 60px;
   --sidebar-width: 250px;
   --betslip-width: 340px;
@@ -45,53 +52,49 @@
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
-  --space-8: 32px;
 
-  /* Border Radii - 16px rounded-xl containers */
+  /* Border Radii */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
+  --radius-xl: 14px;
   --radius-pill: 9999px;
 
   /* Elevation Shadows */
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
-  --shadow-elevated: 0 12px 32px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
-  --shadow-glow-green: 0 4px 20px rgba(16, 185, 129, 0.3);
+  --shadow-subtle: 0 1px 3px rgba(46, 89, 32, 0.04);
+  --shadow-card: 0 2px 8px rgba(46, 89, 32, 0.05);
+  --shadow-elevated: 0 8px 24px rgba(46, 89, 32, 0.12);
 
-  --glass-bg: rgba(255, 255, 255, 0.94);
-  --glass-blur: blur(16px);
-  --glass-border: 1px solid rgba(229, 231, 235, 0.8);
+  --glass-bg: rgba(56, 102, 42, 0.98);
+  --glass-blur: blur(12px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.15);
 
-  /* Micro-interaction Transitions */
   --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Dark Theme Overrides */
 body.dark-theme,
 [data-theme="dark"] {
-  --bg-page: #0B0F17;
-  --bg-card: #141B27;
-  --bg-surface: #141B27;
-  --bg-surface-hover: #1E2838;
-  --bg-surface-active: #28354A;
-  --bg-subtle: #080A0F;
+  --header-bg: #1B2B18;
+  --header-btn-bg: #2B4226;
 
-  --border-color: #1F2937;
-  --border-color-hover: #374151;
+  --bg-page: #0D140C;
+  --bg-card: #142013;
+  --bg-surface: #142013;
+  --bg-surface-hover: #1E2E1C;
+  --bg-accordion-header: #22361F;
+
+  --odds-chip-bg: #1D301B;
+  --odds-chip-hover: #274024;
+  --odds-chip-active: #38662A;
+
+  --border-color: #233621;
+  --border-color-hover: #334E30;
 
   --text-primary: #FFFFFF;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-inverse: #111827;
+  --text-secondary: #97AB94;
+  --text-muted: #6B7D68;
 
-  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 12px 32px -4px rgba(0, 0, 0, 0.5);
-
-  --glass-bg: rgba(20, 27, 39, 0.94);
-  --glass-border: 1px solid rgba(31, 41, 55, 0.8);
+  --glass-bg: rgba(27, 43, 24, 0.98);
 }

@@ -140,10 +140,9 @@ img {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: var(--glass-border);
+  background-color: var(--header-bg);
+  color: var(--header-text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2179,15 +2178,139 @@ img {
   margin-top: 6px;
 }
 
-.auth-link {
-  color: var(--color-primary);
-  font-weight: 800;
-  text-decoration: none;
-}
-
 .auth-link:hover {
   text-decoration: underline;
 }
+
+/* ==========================================================================
+   Match Odds Chips 6 Grid & Center Bet Slip Circular Button
+   ========================================================================== */
+.match-odds-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+@media (max-width: 600px) {
+  .match-odds-grid-6 {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+  }
+}
+
+.odds-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  background-color: var(--odds-chip-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  min-width: 62px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.odds-chip:hover {
+  background-color: var(--odds-chip-hover);
+  border-color: var(--border-color-hover);
+}
+
+.odds-chip:active {
+  transform: scale(0.96);
+}
+
+.odds-chip-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.odds-chip-value {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.odds-chip.selected {
+  background-color: var(--odds-chip-active) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 2px 8px rgba(56, 102, 42, 0.2);
+}
+
+.odds-chip.selected .odds-chip-label {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.odds-chip.selected .odds-chip-value {
+  color: var(--text-primary);
+  font-weight: 900;
+}
+
+/* Bottom Nav Center Floating Circular Bet Slip Pill */
+.mnav-betslip-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.betslip-center-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background-color: #C3EAA5;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(56, 102, 42, 0.25);
+  transition: transform var(--transition-fast);
+}
+
+.betslip-center-circle:active {
+  transform: scale(0.92);
+}
+
+.betslip-center-circle .nav-icon {
+  font-size: 22px;
+  color: var(--color-primary);
+}
+
+.mobile-betslip-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 
 

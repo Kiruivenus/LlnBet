@@ -314,97 +314,125 @@ export function renderMatchCard(match, selections) {
   const isHomeSelected = selections.some(s => s.id === `${match.id}_1`);
   const isDrawSelected = selections.some(s => s.id === `${match.id}_x`);
   const isAwaySelected = selections.some(s => s.id === `${match.id}_2`);
+  const is1XSelected = selections.some(s => s.id === `${match.id}_1x`);
+  const is12Selected = selections.some(s => s.id === `${match.id}_12`);
+  const is2XSelected = selections.some(s => s.id === `${match.id}_2x`);
 
   const mainMarket = match.markets && match.markets.length > 0 ? match.markets[0] : null;
   if (!mainMarket) return '';
 
-  const homeOdd = mainMarket.odds[0];
-  const drawOdd = mainMarket.odds[1];
-  const awayOdd = mainMarket.odds[2];
+  const homeOddVal = mainMarket.odds[0]?.value || 1.85;
+  const drawOddVal = mainMarket.odds[1]?.value || 3.40;
+  const awayOddVal = mainMarket.odds[2]?.value || 3.90;
+
+  // Double chance odds calculations
+  const odd1X = parseFloat((1 / ((1 / homeOddVal) + (1 / drawOddVal))).toFixed(2)) || 1.22;
+  const odd12 = parseFloat((1 / ((1 / homeOddVal) + (1 / awayOddVal))).toFixed(2)) || 1.28;
+  const odd2X = parseFloat((1 / ((1 / drawOddVal) + (1 / awayOddVal))).toFixed(2)) || 1.80;
 
   return `
     <div class="match-card" data-id="${match.id}">
-      <!-- Hierarchy 1: Competition & Badges Header -->
+      <!-- Match Card Header: Date & Options -->
       <div class="match-card-header">
-        <div class="match-league-info">
-          <span class="match-league-icon">${getMaterialIcon('emoji_events')}</span>
-          <span>${match.league || 'International Championship'}</span>
+        <div style="display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 0.78rem;">
+          <span style="font-size: 14px;">⚽</span>
+          <span style="font-weight: 600;">${formatDate(match.kickoffTime)}</span>
         </div>
-        <div class="match-badges-group">
-          ${match.isLive ? `
-            <div class="badge-live-indicator">
-              <span class="pulse-dot"></span>
-              <span>LIVE ${match.timer}'</span>
-            </div>
-          ` : `<span style="font-family: var(--font-mono); font-weight: 700;">${formatDate(match.kickoffTime)}</span>`}
-          <div class="badge-cashout">💰 Cash Out</div>
-        </div>
+        <button class="header-icon-btn" style="width: 24px; height: 24px; color: var(--text-muted);" aria-label="More Options">
+          ⋮
+        </button>
       </div>
 
-      <!-- Hierarchy 2: Teams & Score -->
-      <div class="match-card-body" data-match-id="${match.id}">
-        <div class="match-teams-col">
-          <div class="team-row">
-            <div class="team-name-group">
+      <!-- Teams & Stage Subtitle -->
+      <div class="match-card-body" data-match-id="${match.id}" style="cursor: pointer; padding: 4px 0 8px 0;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
               <div class="team-flag">${match.teams.home.name.substring(0, 2).toUpperCase()}</div>
-              <span class="team-name">${match.teams.home.name}</span>
+              <span style="font-weight: 800; font-size: 0.95rem; color: var(--text-primary);">${match.teams.home.name}</span>
             </div>
-            ${match.isLive ? `<span class="team-score">${match.scores.home}</span>` : ''}
+            ${match.isLive ? `<span style="font-weight: 900; color: var(--color-primary); font-family: var(--font-mono);">${match.scores.home}</span>` : ''}
           </div>
-          <div class="team-row">
-            <div class="team-name-group">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
               <div class="team-flag">${match.teams.away.name.substring(0, 2).toUpperCase()}</div>
-              <span class="team-name">${match.teams.away.name}</span>
+              <span style="font-weight: 800; font-size: 0.95rem; color: var(--text-primary);">${match.teams.away.name}</span>
             </div>
-            ${match.isLive ? `<span class="team-score">${match.scores.away}</span>` : ''}
+            ${match.isLive ? `<span style="font-weight: 900; color: var(--color-primary); font-family: var(--font-mono);">${match.scores.away}</span>` : ''}
           </div>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+          2nd qualifying round. Main path. First match
         </div>
       </div>
 
-      <!-- Hierarchy 3: Three Authentic Odds Buttons -->
-      <div class="match-odds-grid">
-        <button class="odds-btn ${isHomeSelected ? 'selected' : ''}" 
-          data-id="${homeOdd.selectionId}" 
+      <!-- 6 Horizontal Odds Chips Grid -->
+      <div class="match-odds-grid-6">
+        <!-- W1 -->
+        <button class="odds-chip ${isHomeSelected ? 'selected' : ''}" 
+          data-id="${match.id}_1" 
           data-match-id="${match.id}"
           data-team="${match.teams.home.name}" 
-          data-market="Home Win" 
-          data-value="${homeOdd.value}">
-          <span class="odds-label">1</span>
-          <span class="odds-value">${formatOdds(homeOdd.value)}</span>
+          data-market="Home Win (W1)" 
+          data-value="${homeOddVal}">
+          <span class="odds-chip-label">W1</span>
+          <span class="odds-chip-value">${formatOdds(homeOddVal)}</span>
         </button>
 
-        ${drawOdd ? `
-          <button class="odds-btn ${isDrawSelected ? 'selected' : ''}" 
-            data-id="${drawOdd.selectionId}" 
-            data-match-id="${match.id}"
-            data-team="Draw" 
-            data-market="Draw" 
-            data-value="${drawOdd.value}">
-            <span class="odds-label">X</span>
-            <span class="odds-value">${formatOdds(drawOdd.value)}</span>
-          </button>
-        ` : '<div></div>'}
+        <!-- DRAW -->
+        <button class="odds-chip ${isDrawSelected ? 'selected' : ''}" 
+          data-id="${match.id}_x" 
+          data-match-id="${match.id}"
+          data-team="Draw" 
+          data-market="Draw" 
+          data-value="${drawOddVal}">
+          <span class="odds-chip-label">${isDrawSelected ? '✓ DRAW' : 'DRAW'}</span>
+          <span class="odds-chip-value">${formatOdds(drawOddVal)}</span>
+        </button>
 
-        ${awayOdd ? `
-          <button class="odds-btn ${isAwaySelected ? 'selected' : ''}" 
-            data-id="${awayOdd.selectionId}" 
-            data-match-id="${match.id}"
-            data-team="${match.teams.away.name}" 
-            data-market="Away Win" 
-            data-value="${awayOdd.value}">
-            <span class="odds-label">2</span>
-            <span class="odds-value">${formatOdds(awayOdd.value)}</span>
-          </button>
-        ` : '<div></div>'}
-      </div>
+        <!-- W2 -->
+        <button class="odds-chip ${isAwaySelected ? 'selected' : ''}" 
+          data-id="${match.id}_2" 
+          data-match-id="${match.id}"
+          data-team="${match.teams.away.name}" 
+          data-market="Away Win (W2)" 
+          data-value="${awayOddVal}">
+          <span class="odds-chip-label">W2</span>
+          <span class="odds-chip-value">${formatOdds(awayOddVal)}</span>
+        </button>
 
-      <!-- Hierarchy 4: Additional Markets Link -->
-      <div class="match-card-footer">
-        <span style="color: var(--text-muted);">Match ID: #${match.id.substring(0, 8)}</span>
-        <div class="extra-markets-link" data-match-id="${match.id}">
-          <span>+${match.markets.length * 4} Markets</span>
-          <span>&rarr;</span>
-        </div>
+        <!-- 1X -->
+        <button class="odds-chip ${is1XSelected ? 'selected' : ''}" 
+          data-id="${match.id}_1x" 
+          data-match-id="${match.id}"
+          data-team="${match.teams.home.name} or Draw" 
+          data-market="Double Chance (1X)" 
+          data-value="${odd1X}">
+          <span class="odds-chip-label">1X</span>
+          <span class="odds-chip-value">${formatOdds(odd1X)}</span>
+        </button>
+
+        <!-- 12 -->
+        <button class="odds-chip ${is12Selected ? 'selected' : ''}" 
+          data-id="${match.id}_12" 
+          data-match-id="${match.id}"
+          data-team="${match.teams.home.name} or ${match.teams.away.name}" 
+          data-market="Double Chance (12)" 
+          data-value="${odd12}">
+          <span class="odds-chip-label">12</span>
+          <span class="odds-chip-value">${formatOdds(odd12)}</span>
+        </button>
+
+        <!-- 2X -->
+        <button class="odds-chip ${is2XSelected ? 'selected' : ''}" 
+          data-id="${match.id}_2x" 
+          data-match-id="${match.id}"
+          data-team="${match.teams.away.name} or Draw" 
+          data-market="Double Chance (2X)" 
+          data-value="${odd2X}">
+          <span class="odds-chip-label">2X</span>
+          <span class="odds-chip-value">${formatOdds(odd2X)}</span>
+        </button>
       </div>
     </div>
   `;
@@ -412,7 +440,7 @@ export function renderMatchCard(match, selections) {
 
 function bindMatchCardEvents(container, matches) {
   // Bind Odds Selectors
-  container.querySelectorAll('.odds-btn').forEach(btn => {
+  container.querySelectorAll('.odds-chip, .odds-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const selectionId = btn.getAttribute('data-id');
