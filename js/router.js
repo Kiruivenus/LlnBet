@@ -17,6 +17,7 @@ import { renderTermsView } from './views/terms.js';
 import { renderReferralView } from './views/referral.js';
 import { renderNotificationsView } from './views/notifications.js';
 import { renderAdminView } from './views/admin.js';
+import { renderResultsView } from './views/results.js';
 
 export function route() {
   const page = state.data.currentPage;
@@ -51,6 +52,9 @@ export function route() {
       break;
     case 'live':
       renderLiveView();
+      break;
+    case 'results':
+      renderResultsView();
       break;
     case 'match-details':
       renderMatchDetailsView();

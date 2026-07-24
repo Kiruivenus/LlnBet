@@ -28,6 +28,13 @@ export function renderSidebar() {
         <span class="sidebar-badge live">LIVE</span>
       </a>
 
+      <a href="#" class="sidebar-item ${curPage === 'results' ? 'active' : ''}" id="nav-results">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon">${getMaterialIcon('history')}</span>
+          <span>Match Results</span>
+        </div>
+      </a>
+
       <a href="#" class="sidebar-item ${curPage === 'virtuals' ? 'active' : ''}" id="nav-virtuals">
         <div class="sidebar-item-left">
           <span class="sidebar-item-icon">${getMaterialIcon('sports_esports')}</span>
@@ -116,6 +123,7 @@ export function renderSidebar() {
 
   bindNav('nav-prematch', 'home');
   bindNav('nav-live', 'live');
+  bindNav('nav-results', 'results');
   bindNav('nav-virtuals', 'virtuals');
   bindNav('nav-casino', 'casino');
   bindNav('nav-promo', 'promotions');

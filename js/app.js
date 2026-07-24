@@ -105,6 +105,8 @@ async function initApp() {
     state.data.selectedMatchId = id;
   } else if (initialPath === '/live') {
     state.data.currentPage = 'live';
+  } else if (initialPath === '/results') {
+    state.data.currentPage = 'results';
   } else if (initialPath === '/my-bets') {
     state.data.currentPage = 'my-bets';
   } else if (initialPath === '/profile') {

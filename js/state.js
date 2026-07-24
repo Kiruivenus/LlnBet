@@ -7,6 +7,7 @@ export function parsePath(path) {
   const p = path.replace(/\/$/, '').toLowerCase();
   if (p === '' || p === '/') return { page: 'home', matchId: null };
   if (p === '/live') return { page: 'live', matchId: null };
+  if (p === '/results' || p === '/match-results') return { page: 'results', matchId: null };
   if (p === '/jackpots' || p === '/jackpot-streak') return { page: 'jackpot-streak', matchId: null };
   if (p === '/promotions') return { page: 'promotions', matchId: null };
   if (p === '/my-bets') return { page: 'my-bets', matchId: null };
@@ -34,6 +35,7 @@ export function getPathForPage(page, matchId) {
   switch (page) {
     case 'home': return '/';
     case 'live': return '/live';
+    case 'results': return '/results';
     case 'jackpot-streak': return '/jackpots';
     case 'promotions': return '/promotions';
     case 'my-bets': return '/my-bets';
