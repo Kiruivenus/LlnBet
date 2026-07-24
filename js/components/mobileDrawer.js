@@ -52,7 +52,7 @@ export function renderMobileDrawer() {
     <div class="mobile-drawer-container">
       <div class="mobile-drawer-header">
         <div class="header-brand">
-          <div class="brand-emblem" style="width: 34px; height: 34px;">
+          <div class="brand-emblem" style="background: transparent; box-shadow: none;">
             <img src="/img/logo.png" alt="LlnBet Logo" />
           </div>
           <span class="brand-name" style="font-size: 1.15rem;">Lln<span>Bet</span></span>
