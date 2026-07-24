@@ -1,14 +1,13 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
 import { renderMatchCard } from './home.js';
-import { getMaterialIcon, isMatchAvailableForBetting } from '../utils.js';
+import { getMaterialIcon, isLiveMatch } from '../utils.js';
 
 export function renderLiveView() {
   const container = document.getElementById('app-main');
   if (!container) return;
 
-  const matches = simulation.getMatches().filter(isMatchAvailableForBetting);
-  const liveMatches = matches.filter(m => m.isLive);
+  const liveMatches = simulation.getMatches().filter(isLiveMatch);
   const selections = state.data.betslip ? state.data.betslip.selections : [];
 
   const activeSport = state.data.activeSport;

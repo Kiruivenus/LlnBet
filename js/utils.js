@@ -106,13 +106,13 @@ export function isMatchAvailableForBetting(match) {
   
   // 1. Explicit status check
   const statusUpper = String(match.status || '').toUpperCase();
-  if (statusUpper === 'FT' || statusUpper === 'FINISHED' || statusUpper === 'POSTPONED' || statusUpper === 'CANCELLED' || statusUpper === 'ENDED') {
+  if (statusUpper.includes('FT') || statusUpper.includes('FINAL') || statusUpper.includes('FINISHED') || statusUpper.includes('POSTPONED') || statusUpper.includes('CANCELLED') || statusUpper.includes('ENDED')) {
     return false;
   }
   
   // 2. Timer string check
   const timerStr = String(match.timer || '').toUpperCase();
-  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === '90+' || timerStr === "90'+" || timerStr.includes('ENDED')) {
+  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === '90+' || timerStr === "90'+" || timerStr === '90' || timerStr.includes('ENDED')) {
     return false;
   }
   
@@ -121,14 +121,34 @@ export function isMatchAvailableForBetting(match) {
     return false;
   }
 
-  // 4. Kickoff date check - if kickoff was over 3 hours ago and match is not active live
+  // 4. Kickoff date check - if kickoff was over 3.5 hours ago, it has ended
   if (match.kickoffTime) {
     const kickoff = new Date(match.kickoffTime);
     const now = new Date();
     const diffHours = (now.getTime() - kickoff.getTime()) / (1000 * 60 * 60);
-    if (diffHours > 3 && !match.isLive) {
+    if (diffHours > 3.5) {
       return false;
     }
+  }
+
+  return true;
+}
+
+// Strict checker specifically for currently ongoing Live matches
+export function isLiveMatch(match) {
+  if (!match || !match.isLive) return false;
+  if (!isMatchAvailableForBetting(match)) return false;
+
+  const timerStr = String(match.timer || '').toUpperCase();
+  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === '90+' || timerStr === "90'" || timerStr === '90') {
+    return false;
+  }
+
+  if (match.kickoffTime) {
+    const kickoff = new Date(match.kickoffTime);
+    const now = new Date();
+    const diffHours = (now.getTime() - kickoff.getTime()) / (1000 * 60 * 60);
+    if (diffHours > 3) return false;
   }
 
   return true;
