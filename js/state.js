@@ -1,4 +1,6 @@
 // Global Application State (MongoDB & JWT Session Integration)
+import { isMatchAvailableForBetting } from './utils.js';
+import { simulation } from './simulation.js';
 
 // Clean URL Path Routing Helpers
 export function parsePath(path) {
@@ -270,6 +272,14 @@ class State {
     if (existingIndex > -1) {
       this.removeSelection(selection.id);
       return;
+    }
+
+    if (simulation && simulation.getMatchById) {
+      const matchObj = simulation.getMatchById(selection.matchId);
+      if (matchObj && !isMatchAvailableForBetting(matchObj)) {
+        alert("This match has already finished or expired and cannot be added to your betslip.");
+        return;
+      }
     }
 
     this.data.betslip.selections = this.data.betslip.selections.filter(s => s.matchId !== selection.matchId);

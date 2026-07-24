@@ -1,13 +1,14 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
 import { sportsList, promotionsList } from '../data.js';
-import { getMaterialIcon, formatOdds, formatCurrency, formatDate } from '../utils.js';
+import { getMaterialIcon, formatOdds, formatCurrency, formatDate, isMatchAvailableForBetting } from '../utils.js';
 
 export function renderHomeView() {
   const container = document.getElementById('app-main');
   if (!container) return;
 
-  const matches = simulation.getMatches();
+  // Filter out past/finished/expired matches so only active unplayed or live games are shown
+  const matches = simulation.getMatches().filter(isMatchAvailableForBetting);
   const activeSport = state.data.activeSport;
   const selections = state.data.betslip ? state.data.betslip.selections : [];
 
@@ -110,20 +111,6 @@ export function renderHomeView() {
           </div>
           <div class="hero-slide-graphic">
             <span class="material-icons-round" style="font-size: 5.5rem; color: rgba(255,255,255,0.15);">sports_soccer</span>
-          </div>
-        </div>
-
-        <!-- Slide 4: World Cup Spain vs Argentina -->
-        <div class="hero-slide ${activeIdx === 3 ? 'active' : ''}" style="background-image: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(3, 105, 161, 0.85));">
-          <div class="hero-slide-content">
-            <span class="hero-badge">World Cup Final</span>
-            <h1 class="hero-title">SPAIN vs ARGENTINA</h1>
-            <p class="hero-desc">Lamine Yamal vs Lionel Messi! Boosted 1X2 market odds active right now.</p>
-            <div class="hero-actions-row">
-              <button class="hero-quick-odd slide-bet-btn" data-sel-id="spain_arg_1" data-val="2.25">W1: 2.25</button>
-              <button class="hero-quick-odd slide-bet-btn" data-sel-id="spain_arg_x" data-val="2.94">X: 2.94</button>
-              <button class="hero-quick-odd slide-bet-btn" data-sel-id="spain_arg_2" data-val="3.72">W2: 3.72</button>
-            </div>
           </div>
         </div>
 

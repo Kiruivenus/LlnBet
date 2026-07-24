@@ -99,3 +99,37 @@ export function renderTeamBadge(teamName) {
 
   return `<span class="team-badge" style="${colorStyle} display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; width: 26px; height: 26px; border-radius: 50%; margin-right: 8px; text-transform: uppercase; vertical-align: middle;">${initials}</span>`;
 }
+
+// Check if a match is active (unplayed or live) and valid for betting
+export function isMatchAvailableForBetting(match) {
+  if (!match) return false;
+  
+  // 1. Explicit status check
+  const statusUpper = String(match.status || '').toUpperCase();
+  if (statusUpper === 'FT' || statusUpper === 'FINISHED' || statusUpper === 'POSTPONED' || statusUpper === 'CANCELLED' || statusUpper === 'ENDED') {
+    return false;
+  }
+  
+  // 2. Timer string check
+  const timerStr = String(match.timer || '').toUpperCase();
+  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === '90+' || timerStr === "90'+" || timerStr.includes('ENDED')) {
+    return false;
+  }
+  
+  // 3. Flags check
+  if (match.isFinished || match.isExpired) {
+    return false;
+  }
+
+  // 4. Kickoff date check - if kickoff was over 3 hours ago and match is not active live
+  if (match.kickoffTime) {
+    const kickoff = new Date(match.kickoffTime);
+    const now = new Date();
+    const diffHours = (now.getTime() - kickoff.getTime()) / (1000 * 60 * 60);
+    if (diffHours > 3 && !match.isLive) {
+      return false;
+    }
+  }
+
+  return true;
+}
