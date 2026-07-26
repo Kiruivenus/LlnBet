@@ -413,15 +413,37 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
     const cleanedPhone = formatPhoneNumber(phone);
     const roundedAmount = Math.round(numericAmount);
 
+    const mpesaEnv = process.env.MPESA_ENV || 'sandbox';
+    const baseUrl = mpesaEnv === 'live' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
+
     const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
+    const passkey = process.env.MPESA_PASSKEY || '';
+    const dbPartyB = await getSetting('mpesaPartyB', '');
+    const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || process.env.MPESA_TILL_NUMBER || '';
+    const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || shortcode;
 
-    // Fallback simulation if API keys are placeholders
-    if (!consumerKey || consumerKey === 'your_sandbox_consumer_key' || !consumerSecret || consumerSecret === 'your_sandbox_consumer_secret') {
+    const isPlaceholder = !consumerKey ||
+      consumerKey.includes('your_') ||
+      !consumerSecret ||
+      consumerSecret.includes('your_') ||
+      !passkey ||
+      passkey.includes('your_') ||
+      !shortcode;
+
+    // In Live Mode, if credentials are missing or placeholders, return explicit error
+    if (mpesaEnv === 'live' && isPlaceholder) {
+      return res.status(400).json({
+        error: "Live Safaricom Credentials Required",
+        details: "To receive STK Push prompts on your phone, please enter your valid Safaricom Daraja MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, and MPESA_PASSKEY in Vercel Environment Variables or Admin Portal."
+      });
+    }
+
+    // In Sandbox Mode, if keys are placeholders, run simulation
+    if (mpesaEnv === 'sandbox' && isPlaceholder) {
       const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
       memoryTransactions.set(mockCheckoutId, { status: 'pending', amount: roundedAmount, phone: cleanedPhone, userId });
 
-      // Auto-credit simulated deposit after 3 seconds for smooth flow
       setTimeout(async () => {
         try {
           const u = userId ? await User.findById(userId) : await User.findOne({ phone: cleanedPhone });
@@ -455,9 +477,9 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
       return res.json({ simulated: true, CheckoutRequestID: mockCheckoutId, message: "STK push prompt sent to phone. Enter M-Pesa PIN." });
     }
 
-    const mpesaEnv = process.env.MPESA_ENV || 'sandbox';
-    const baseUrl = mpesaEnv === 'live' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
-
+    // -----------------------------------------------------------------
+    // REAL SAFARICOM DARAJA STK PUSH REQUEST
+    // -----------------------------------------------------------------
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
     const tokenResponse = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       method: 'GET',
@@ -466,19 +488,15 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
 
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text();
-      return res.status(502).json({ error: "Safaricom OAuth Token Generation failed.", details: errText });
+      return res.status(502).json({ error: "Safaricom OAuth Token Generation Failed.", details: errText });
     }
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    const dbPartyB = await getSetting('mpesaPartyB', '');
-    const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || '174379';
-    const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || shortcode;
-    const passkey = process.env.MPESA_PASSKEY || '';
     const timestamp = getMpesaTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
-    const callbackUrl = process.env.MPESA_CALLBACK_URL || '';
+    const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://lln-bet.vercel.app/api/mpesa-callback';
     const transactionType = process.env.MPESA_TRANSACTION_TYPE || 'CustomerBuyGoodsOnline';
 
     const payload = {
@@ -506,14 +524,15 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
 
     const stkData = await stkResponse.json();
 
-    if (!stkResponse.ok) {
-      return res.status(stkResponse.status).json({ error: "Safaricom Daraja API rejected the request.", details: stkData });
+    if (!stkResponse.ok || stkData.ResponseCode !== "0") {
+      const errorMessage = stkData.errorMessage || stkData.ResponseDescription || JSON.stringify(stkData);
+      return res.status(stkResponse.status || 400).json({ error: "Safaricom Daraja API Rejected Request", details: errorMessage });
     }
 
     const checkoutId = stkData.CheckoutRequestID;
     memoryTransactions.set(checkoutId, { status: 'pending', amount: roundedAmount, phone: cleanedPhone, userId });
 
-    return res.json({ simulated: false, CheckoutRequestID: checkoutId, message: stkData.CustomerMessage });
+    return res.json({ simulated: false, CheckoutRequestID: checkoutId, message: stkData.CustomerMessage || "STK push prompt sent to your mobile phone." });
 
   } catch (error) {
     console.error("[MPESA SERVER ERROR]:", error);
