@@ -389,8 +389,8 @@ function authenticateToken(req, res, next) {
 // M-PESA & WALLET FINANCIAL ENDPOINTS (MIN KES 200 DEPOSIT & WITHDRAWAL)
 // ---------------------------------------------------------------------
 
-// Endpoint: Trigger M-Pesa STK Push Express (MIN KES 200)
-app.post('/api/stkpush', async (req, res) => {
+// Endpoint: Trigger M-Pesa STK Push Express
+app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], async (req, res) => {
   try {
     const { phone, amount, userId } = req.body;
 
@@ -582,7 +582,7 @@ app.post('/api/mpesa-callback', async (req, res) => {
 });
 
 // Endpoint: Poll STK Transaction Status
-app.get('/api/status/:checkoutId', (req, res) => {
+app.get(['/api/status/:checkoutId', '/status/:checkoutId'], (req, res) => {
   const checkoutId = req.params.checkoutId;
   const tx = memoryTransactions.get(checkoutId);
   if (!tx) return res.json({ status: 'pending' });
@@ -1069,7 +1069,7 @@ app.post('/api/admin/withdrawals/:id/status', authenticateAdmin, async (req, res
 });
 
 // Public Endpoint: Get general system config limits and Party B details
-app.get('/api/settings', async (req, res) => {
+app.get(['/api/settings', '/settings'], async (req, res) => {
   try {
     const minDeposit = await getSetting('minDeposit', 200);
     const maxDeposit = await getSetting('maxDeposit', 500000);
@@ -1087,7 +1087,7 @@ app.get('/api/settings', async (req, res) => {
 });
 
 // 5. Get system config settings
-app.get('/api/admin/settings', authenticateAdmin, async (req, res) => {
+app.get(['/api/admin/settings', '/admin/settings'], authenticateAdmin, async (req, res) => {
   try {
     const minDeposit = await getSetting('minDeposit', 200);
     const maxDeposit = await getSetting('maxDeposit', 500000);
@@ -1105,7 +1105,7 @@ app.get('/api/admin/settings', authenticateAdmin, async (req, res) => {
 });
 
 // 6. Update system config settings
-app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
+app.post(['/api/admin/settings', '/admin/settings'], authenticateAdmin, async (req, res) => {
   try {
     const { minDeposit, maxDeposit, minWithdrawal, maxWithdrawal, mpesaPartyB } = req.body;
 

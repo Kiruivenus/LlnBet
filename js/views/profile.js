@@ -252,7 +252,11 @@ export async function renderProfileView() {
     depBtn?.addEventListener('click', async () => {
       const amt = parseInt(depValInput.value) || 0;
       if (!amt || amt < minDeposit) {
-        alert(`Minimum deposit amount is KES ${minDeposit}.`);
+        alert(`Minimum deposit amount is KES ${minDeposit.toLocaleString()}.`);
+        return;
+      }
+      if (amt > maxDeposit) {
+        alert(`Maximum deposit amount is KES ${maxDeposit.toLocaleString()}.`);
         return;
       }
 
@@ -397,9 +401,17 @@ export async function renderProfileView() {
 
     document.getElementById('profile-with-mpesa-btn')?.addEventListener('click', async () => {
       const amt = parseInt(withValInput.value) || 0;
+      if (!amt || amt < minWithdrawal) {
+        alert(`Minimum withdrawal amount is KES ${minWithdrawal.toLocaleString()}.`);
+        return;
+      }
+      if (amt > maxWithdrawal) {
+        alert(`Maximum withdrawal amount is KES ${maxWithdrawal.toLocaleString()}.`);
+        return;
+      }
       try {
         await state.withdraw(amt, user?.phone);
-        alert(`Withdrawal Approved! KES ${amt} has been sent to your M-Pesa line.`);
+        alert(`Withdrawal Approved! KES ${amt.toLocaleString()} has been sent to your M-Pesa line.`);
         renderProfileView();
       } catch (err) {
         alert("Withdrawal Error: " + err.message);
