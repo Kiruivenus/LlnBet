@@ -472,24 +472,26 @@ app.post('/api/stkpush', async (req, res) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    const dbPartyB = await getSetting('mpesaPartyB', '174379');
-    const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || '174379';
+    const dbPartyB = await getSetting('mpesaPartyB', '');
+    const shortcode = process.env.MPESA_SHORTCODE || dbPartyB || '174379';
+    const tillNumber = process.env.MPESA_TILL_NUMBER || shortcode;
     const passkey = process.env.MPESA_PASSKEY || '';
     const timestamp = getMpesaTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
     const callbackUrl = process.env.MPESA_CALLBACK_URL || '';
+    const transactionType = process.env.MPESA_TRANSACTION_TYPE || 'CustomerBuyGoodsOnline';
 
     const payload = {
       BusinessShortCode: shortcode,
       Password: password,
       Timestamp: timestamp,
-      TransactionType: "CustomerPayBillOnline",
+      TransactionType: transactionType,
       Amount: roundedAmount,
       PartyA: cleanedPhone,
-      PartyB: shortcode,
+      PartyB: transactionType === 'CustomerBuyGoodsOnline' ? tillNumber : shortcode,
       PhoneNumber: cleanedPhone,
       CallBackURL: callbackUrl,
-      AccountReference: "BetPulseWallet",
+      AccountReference: process.env.MPESA_ACCOUNT_REF || "LlnBetWallet",
       TransactionDesc: "Wallet Deposit"
     };
 
