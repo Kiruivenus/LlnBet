@@ -56,7 +56,7 @@ export async function connectDb() {
             { key: 'maxDeposit', value: 500000 },
             { key: 'minWithdrawal', value: 200 },
             { key: 'maxWithdrawal', value: 100000 },
-            { key: 'mpesaPartyB', value: '254700000000' }
+            { key: 'mpesaPartyB', value: process.env.MPESA_SHORTCODE || process.env.MPESA_TILL_NUMBER || '174379' }
           ]);
           console.log("[SETTINGS SEED] Default limits and Party B successfully seeded to database!");
         }

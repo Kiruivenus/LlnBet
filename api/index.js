@@ -473,8 +473,8 @@ app.post('/api/stkpush', async (req, res) => {
     const accessToken = tokenData.access_token;
 
     const dbPartyB = await getSetting('mpesaPartyB', '');
-    const shortcode = process.env.MPESA_SHORTCODE || dbPartyB || '174379';
-    const tillNumber = process.env.MPESA_TILL_NUMBER || shortcode;
+    const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || '174379';
+    const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || shortcode;
     const passkey = process.env.MPESA_PASSKEY || '';
     const timestamp = getMpesaTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
