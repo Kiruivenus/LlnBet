@@ -204,31 +204,32 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
 
   const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
-  const passkey = process.env.MPESA_PASSKEY || '';
+  const passkey = process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
 
   const partyBSetting = await Setting.findOne({ key: 'mpesaPartyB' });
   const dbPartyB = partyBSetting ? String(partyBSetting.value) : '';
-  const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || process.env.MPESA_TILL_NUMBER || '';
+  const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || process.env.MPESA_TILL_NUMBER || '174379';
   const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || shortcode;
 
   const isPlaceholder = !consumerKey ||
     consumerKey.includes('your_') ||
     !consumerSecret ||
-    consumerSecret.includes('your_') ||
-    !passkey ||
-    passkey.includes('your_') ||
-    !shortcode;
+    consumerSecret.includes('your_');
 
-  // In Live Mode, if keys are missing/placeholders, abort with clear error
+  // In Live Mode, if keys are missing/placeholders, abort with clear actionable guidance
   if (mpesaEnv === 'live' && isPlaceholder) {
-    const errorDetails = mapDarajaError('LIVE_CREDENTIALS_MISSING', 'Live Safaricom credentials missing in environment');
-    tx.humanError = errorDetails;
+    const errorDetails = mapDarajaError('LIVE_CREDENTIALS_MISSING', 'Live Safaricom credentials required. Please configure MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in Vercel Environment Variables.');
+    tx.humanError = {
+      title: 'Live Safaricom Credentials Required',
+      explanation: 'Your Vercel deployment is set to Live Mode (MPESA_ENV=live), but MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET are set to placeholder values.',
+      suggestion: 'Add your live Safaricom Daraja API credentials in Vercel Environment Variables (or set MPESA_ENV=sandbox for testing).'
+    };
     appendStateHistory(tx, 'FAILED', 'Live Safaricom Credentials Required', 'LIVE_CREDENTIALS_MISSING', errorDetails.explanation);
     await tx.save();
-    throw new Error(errorDetails.explanation);
+    throw new Error("Live Safaricom Credentials Required: Please configure valid MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in Vercel Environment Variables.");
   }
 
-  // In Sandbox Mode with placeholder keys, run sandbox simulation
+  // In Sandbox Mode with placeholder keys, run sandbox simulation cleanly
   if (mpesaEnv === 'sandbox' && isPlaceholder) {
     const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
     const mockMerchantId = `SIM-M-${Math.floor(Math.random() * 900000 + 100000)}`;
@@ -236,14 +237,14 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
     tx.checkoutRequestID = mockCheckoutId;
     tx.merchantRequestID = mockMerchantId;
 
-    appendStateHistory(tx, 'STK_SENT', `STK Push prompt dispatched to +${cleanedPhone} (Sandbox Test Mode)`);
+    appendStateHistory(tx, 'STK_SENT', `STK Push prompt initiated for +${cleanedPhone} (Sandbox Test Mode)`);
     await tx.save();
 
     setTimeout(async () => {
       try {
         const freshTx = await MpesaTransaction.findOne({ reference });
         if (freshTx && freshTx.status === 'STK_SENT') {
-          appendStateHistory(freshTx, 'AWAITING_PIN', 'Waiting for user M-Pesa PIN confirmation...');
+          appendStateHistory(freshTx, 'AWAITING_PIN', 'Simulating M-Pesa PIN confirmation prompt...');
           await freshTx.save();
 
           // Auto-credit sandbox simulated deposit after 3.5 seconds
