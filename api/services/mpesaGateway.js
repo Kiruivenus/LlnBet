@@ -376,9 +376,10 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
 export async function processMpesaCallback(callbackData) {
   await connectDb();
 
-  const callbackBody = callbackData.Body?.stkCallback;
+  const callbackBody = callbackData?.Body?.stkCallback;
   if (!callbackBody) {
-    throw new Error("Invalid M-Pesa callback payload format.");
+    console.log("[CALLBACK HEALTH PING] Received non-STK webhook ping. Responding with 200 OK.");
+    return { success: true, ResultCode: 0, ResultDesc: "Callback URL health check accepted" };
   }
 
   const checkoutRequestID = callbackBody.CheckoutRequestID;

@@ -431,7 +431,7 @@ app.post(['/api/mpesa-callback', '/mpesa-callback'], async (req, res) => {
     return res.json({ ResultCode: 0, ResultDesc: "Callback accepted", ...result });
   } catch (error) {
     console.error("[CALLBACK PROCESSOR ERROR]:", error.message);
-    return res.status(500).json({ ResultCode: 1, ResultDesc: error.message });
+    return res.json({ ResultCode: 0, ResultDesc: "Callback accepted" });
   }
 });
 
