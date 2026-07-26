@@ -293,17 +293,21 @@ export async function renderProfileView() {
         `;
 
         if (depStatusContainer) {
+          const isSimulated = response.simulated === true;
           depStatusContainer.innerHTML = `
-            <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.5); padding: 16px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: ${isSimulated ? 'rgba(59, 130, 246, 0.08)' : 'rgba(245, 158, 11, 0.08)'}; border: 1px dashed ${isSimulated ? '#3B82F6' : 'rgba(245, 158, 11, 0.5)'}; padding: 16px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 10px;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; color: #D97706; font-size: 0.9rem;">
-                  <span style="font-size: 1.2rem;">📲</span>
-                  <span>STK Push Sent to Phone!</span>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; color: ${isSimulated ? '#2563EB' : '#D97706'}; font-size: 0.9rem;">
+                  <span style="font-size: 1.2rem;">${isSimulated ? '🧪' : '📲'}</span>
+                  <span>${isSimulated ? 'Sandbox Test Mode Active' : 'Real STK Push Sent to Phone!'}</span>
                 </div>
-                <span style="font-size: 0.72rem; font-weight: 800; color: #D97706; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px;">KES ${amt.toLocaleString()}</span>
+                <span style="font-size: 0.72rem; font-weight: 800; color: ${isSimulated ? '#2563EB' : '#D97706'}; background: ${isSimulated ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; padding: 2px 8px; border-radius: 4px;">KES ${amt.toLocaleString()}</span>
               </div>
               <p style="font-size: 0.8rem; color: var(--text-primary); margin: 0; line-height: 1.4;">
-                Please check your mobile phone screen for the Safaricom M-Pesa pop-up and <b>enter your M-Pesa PIN</b> to confirm payment.
+                ${isSimulated
+                  ? `<b>Placeholder/Sandbox credentials detected in Vercel environment.</b> To receive a real physical M-Pesa PIN pop-up on your mobile phone handset (+${user?.phone || ''}), set <code>MPESA_ENV=live</code> and your valid Safaricom Daraja API credentials in Vercel or Admin Portal.`
+                  : `Please check your mobile phone screen (+${user?.phone || ''}) for the Safaricom M-Pesa pop-up and <b>enter your M-Pesa PIN</b> to confirm payment.`
+                }
               </p>
               <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted);">
                 <span class="skeleton-loader-spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
