@@ -374,21 +374,26 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
  * 2. PROCESS SAFARICOM DARAJA CALLBACK WITH IDEMPOTENCY GUARD
  */
 export async function processMpesaCallback(callbackData) {
-  await connectDb();
+  try {
+    const callbackBody = callbackData?.Body?.stkCallback;
+    if (!callbackBody) {
+      console.log("[CALLBACK HEALTH PING] Received non-STK webhook ping. Responding with 200 OK.");
+      return { success: true, ResultCode: 0, ResultDesc: "Callback URL health check accepted" };
+    }
 
-  const callbackBody = callbackData?.Body?.stkCallback;
-  if (!callbackBody) {
-    console.log("[CALLBACK HEALTH PING] Received non-STK webhook ping. Responding with 200 OK.");
-    return { success: true, ResultCode: 0, ResultDesc: "Callback URL health check accepted" };
-  }
+    try {
+      await connectDb();
+    } catch (dbErr) {
+      console.warn("[CALLBACK DB WARNING]: Failed to connect to DB during callback", dbErr.message);
+    }
 
-  const checkoutRequestID = callbackBody.CheckoutRequestID;
-  const merchantRequestID = callbackBody.MerchantRequestID;
-  const resultCode = callbackBody.ResultCode;
-  const resultDesc = callbackBody.ResultDesc || '';
+    const checkoutRequestID = callbackBody.CheckoutRequestID;
+    const merchantRequestID = callbackBody.MerchantRequestID;
+    const resultCode = callbackBody.ResultCode;
+    const resultDesc = callbackBody.ResultDesc || '';
 
-  // Atomic database lookup to prevent duplicate crediting & race conditions
-  const tx = await MpesaTransaction.findOne({ checkoutRequestID });
+    // Atomic database lookup to prevent duplicate crediting & race conditions
+    const tx = await MpesaTransaction.findOne({ checkoutRequestID });
 
   if (!tx) {
     console.warn(`[CALLBACK WARNING] Transaction with CheckoutRequestID ${checkoutRequestID} not found in database.`);
@@ -429,6 +434,10 @@ export async function processMpesaCallback(callbackData) {
     await tx.save();
 
     return { success: true, status: finalState, reason: resultDesc };
+  }
+  } catch (err) {
+    console.error("[MPESA CALLBACK EXCEPTION]:", err.message);
+    return { success: true, ResultCode: 0, ResultDesc: "Callback accepted" };
   }
 }
 
