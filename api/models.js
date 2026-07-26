@@ -84,6 +84,60 @@ const SettingSchema = new mongoose.Schema({
   value: { type: mongoose.Schema.Types.Mixed, required: true }
 });
 
+// Enterprise M-Pesa STK Push Payment Transaction Schema
+const MpesaTransactionSchema = new mongoose.Schema({
+  reference: { type: String, required: true, unique: true, index: true },
+  merchantRequestID: { type: String, index: true },
+  checkoutRequestID: { type: String, index: true, sparse: true },
+  userId: { type: String, required: true, index: true },
+  phone: { type: String, required: true },
+  amount: { type: Number, required: true },
+  
+  status: {
+    type: String,
+    enum: ['PENDING', 'INITIATED', 'STK_SENT', 'AWAITING_PIN', 'PROCESSING', 'SUCCESS', 'FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED', 'DUPLICATE', 'REVERSED'],
+    default: 'PENDING',
+    index: true
+  },
+  
+  statusMessage: { type: String, default: 'Payment request created' },
+  errorCode: { type: String, default: null },
+  errorMessage: { type: String, default: null },
+  humanError: {
+    title: { type: String, default: null },
+    explanation: { type: String, default: null },
+    suggestion: { type: String, default: null }
+  },
+  
+  receiptNumber: { type: String, default: null, index: true },
+  callbackPayload: { type: mongoose.Schema.Types.Mixed, default: null },
+  
+  attempts: { type: Number, default: 1 },
+  ipAddress: { type: String, default: '' },
+  deviceInfo: { type: String, default: '' },
+  network: { type: String, default: 'Safaricom M-Pesa' },
+  
+  walletBefore: { type: Number, default: 0 },
+  walletAfter: { type: Number, default: 0 },
+  
+  history: [{
+    status: String,
+    statusMessage: String,
+    timestamp: { type: Date, default: Date.now },
+    errorCode: String,
+    errorMessage: String
+  }],
+  
+  processingLogs: [{
+    stage: String,
+    log: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
+
+  createdAt: { type: Date, default: Date.now, index: true },
+  updatedAt: { type: Date, default: Date.now }
+});
+
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 export const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
@@ -91,3 +145,5 @@ export const Notification = mongoose.models.Notification || mongoose.model('Noti
 export const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
 export const Match = mongoose.models.Match || mongoose.model('Match', MatchSchema);
 export const Setting = mongoose.models.Setting || mongoose.model('Setting', SettingSchema);
+export const MpesaTransaction = mongoose.models.MpesaTransaction || mongoose.model('MpesaTransaction', MpesaTransactionSchema);
+

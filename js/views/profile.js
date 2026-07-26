@@ -245,7 +245,9 @@ export async function renderProfileView() {
 
     withValInput?.addEventListener('input', (e) => { withdrawAmount = parseInt(e.target.value) || 0; });
 
-    // Payment triggers
+    // -----------------------------------------------------------------
+    // ENTERPRISE M-PESA STK PUSH HANDLER & REAL-TIME TIMELINE
+    // -----------------------------------------------------------------
     const depBtn = document.getElementById('profile-dep-mpesa-btn');
     const depStatusContainer = document.getElementById('profile-dep-status-container');
 
@@ -260,146 +262,133 @@ export async function renderProfileView() {
         return;
       }
 
-      // Step 1: Requesting State
       depBtn.disabled = true;
       depBtn.style.opacity = '0.75';
       depBtn.innerHTML = `
         <span class="skeleton-loader-spinner" style="width: 18px; height: 18px; border-width: 2px;"></span>
-        <span>Requesting M-Pesa STK Push...</span>
+        <span>Initiating STK Push...</span>
       `;
 
       if (depStatusContainer) {
         depStatusContainer.style.display = 'block';
-        depStatusContainer.innerHTML = `
-          <div style="background: rgba(56, 102, 42, 0.08); border: 1px solid rgba(56, 102, 42, 0.3); padding: 14px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--color-primary); font-size: 0.88rem;">
-              <span class="skeleton-loader-spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
-              <span>Sending STK Push prompt to +${user?.phone || ''}...</span>
-            </div>
-            <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0;">Connecting to Safaricom Daraja API gateway...</p>
-          </div>
-        `;
+        depStatusContainer.innerHTML = renderPaymentTimeline('PENDING', 'Connecting to Safaricom Daraja API...', amt, user?.phone, 1);
       }
 
+      let startTime = Date.now();
+      let eventSource = null;
+
       try {
-        // Step 2: Trigger real backend M-Pesa STK Push API
         const response = await state.initiateMpesaDeposit(amt, user?.phone);
-        const checkoutId = response.CheckoutRequestID;
+        const checkoutId = response.checkoutRequestID || response.CheckoutRequestID;
+        const reference = response.reference || checkoutId;
 
-        // Step 3: STK Push initiated successfully! Prompt user to enter PIN
-        depBtn.innerHTML = `
-          <span class="pulse-dot" style="background: #F59E0B;"></span>
-          <span>Waiting for M-Pesa PIN...</span>
-        `;
+        // Start Real-Time Server-Sent Events (SSE) Stream
+        try {
+          eventSource = new EventSource(`/api/mpesa/stream/${reference}`);
+          
+          eventSource.onmessage = async (event) => {
+            const data = JSON.parse(event.data);
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
 
-        if (depStatusContainer) {
-          const isSimulated = response.simulated === true;
-          depStatusContainer.innerHTML = `
-            <div style="background: ${isSimulated ? 'rgba(59, 130, 246, 0.08)' : 'rgba(245, 158, 11, 0.08)'}; border: 1px dashed ${isSimulated ? '#3B82F6' : 'rgba(245, 158, 11, 0.5)'}; padding: 16px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 10px;">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; color: ${isSimulated ? '#2563EB' : '#D97706'}; font-size: 0.9rem;">
-                  <span style="font-size: 1.2rem;">${isSimulated ? '🧪' : '📲'}</span>
-                  <span>${isSimulated ? 'Sandbox Test Mode Active' : 'Real STK Push Sent to Phone!'}</span>
-                </div>
-                <span style="font-size: 0.72rem; font-weight: 800; color: ${isSimulated ? '#2563EB' : '#D97706'}; background: ${isSimulated ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; padding: 2px 8px; border-radius: 4px;">KES ${amt.toLocaleString()}</span>
-              </div>
-              <p style="font-size: 0.8rem; color: var(--text-primary); margin: 0; line-height: 1.4;">
-                ${isSimulated
-                  ? `<b>Placeholder/Sandbox credentials detected in Vercel environment.</b> To receive a real physical M-Pesa PIN pop-up on your mobile phone handset (+${user?.phone || ''}), set <code>MPESA_ENV=live</code> and your valid Safaricom Daraja API credentials in Vercel or Admin Portal.`
-                  : `Please check your mobile phone screen (+${user?.phone || ''}) for the Safaricom M-Pesa pop-up and <b>enter your M-Pesa PIN</b> to confirm payment.`
-                }
-              </p>
-              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted);">
-                <span class="skeleton-loader-spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
-                <span>Listening for M-Pesa PIN payment confirmation...</span>
-              </div>
-            </div>
-          `;
+            if (depStatusContainer) {
+              depStatusContainer.innerHTML = renderPaymentTimeline(
+                data.status,
+                data.statusMessage || response.message,
+                amt,
+                user?.phone,
+                elapsedSeconds,
+                response.simulated
+              );
+            }
+
+            if (data.status === 'AWAITING_PIN' || data.status === 'STK_SENT') {
+              depBtn.innerHTML = `
+                <span class="pulse-dot" style="background: #F59E0B;"></span>
+                <span>Waiting for M-Pesa PIN...</span>
+              `;
+            }
+
+            if (data.status === 'SUCCESS') {
+              if (eventSource) eventSource.close();
+              await state.fetchUserData();
+              showSuccessModal(data, amt, user);
+              depBtn.disabled = false;
+              depBtn.style.opacity = '1';
+              depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
+            }
+
+            if (['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(data.status)) {
+              if (eventSource) eventSource.close();
+              showFailureModal(data);
+              depBtn.disabled = false;
+              depBtn.style.opacity = '1';
+              depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
+            }
+          };
+        } catch (sseErr) {
+          console.warn("[SSE FALLBACK]: Using polling mode", sseErr);
         }
 
-        // Step 4: Poll payment status every 2 seconds
+        // Fallback polling loop in case SSE is blocked by client proxy
         let attempts = 0;
         const pollInterval = setInterval(async () => {
           attempts++;
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+
           try {
-            const statusData = await state.checkStkStatus(checkoutId);
+            const statusData = await state.checkStkStatus(reference);
 
-            if (statusData.status === 'success') {
+            if (depStatusContainer && statusData) {
+              depStatusContainer.innerHTML = renderPaymentTimeline(
+                statusData.status,
+                statusData.statusMessage || response.message,
+                amt,
+                user?.phone,
+                elapsedSeconds,
+                response.simulated
+              );
+            }
+
+            if (statusData && statusData.status === 'SUCCESS') {
               clearInterval(pollInterval);
-              
-              if (depStatusContainer) {
-                depStatusContainer.innerHTML = `
-                  <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #10B981; padding: 16px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; color: #10B981; font-size: 0.92rem;">
-                      <span>🎉</span>
-                      <span>Payment Confirmed & Credited!</span>
-                    </div>
-                    <p style="font-size: 0.8rem; color: var(--text-primary); margin: 0;">
-                      KES ${amt.toLocaleString()} has been successfully deposited into your wallet balance.
-                    </p>
-                  </div>
-                `;
-              }
-
-              // Refresh user data & re-render profile after 1.5s
+              if (eventSource) eventSource.close();
               await state.fetchUserData();
-              setTimeout(() => {
-                renderProfileView();
-              }, 1500);
-
-            } else if (statusData.status === 'failed') {
-              clearInterval(pollInterval);
+              showSuccessModal(statusData, amt, user);
               depBtn.disabled = false;
               depBtn.style.opacity = '1';
               depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
-
-              if (depStatusContainer) {
-                depStatusContainer.innerHTML = `
-                  <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-danger); padding: 14px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--color-danger); font-size: 0.88rem;">
-                      <span>❌</span>
-                      <span>M-Pesa Payment Failed / Cancelled</span>
-                    </div>
-                    <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0;">${statusData.reason || "Payment was cancelled or timed out on mobile phone."}</p>
-                  </div>
-                `;
-              }
-            } else if (attempts >= 30) { // 60 seconds timeout
+            } else if (statusData && ['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(statusData.status)) {
               clearInterval(pollInterval);
+              if (eventSource) eventSource.close();
+              showFailureModal(statusData);
               depBtn.disabled = false;
               depBtn.style.opacity = '1';
               depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
-
-              if (depStatusContainer) {
-                depStatusContainer.innerHTML = `
-                  <div style="background: var(--bg-surface-hover); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-lg); font-size: 0.78rem; color: var(--text-muted);">
-                    ⚠️ Payment confirmation timeout. If you completed the M-Pesa PIN prompt, your balance will update automatically in a few moments.
-                  </div>
-                `;
-              }
+            } else if (attempts >= 30) {
+              clearInterval(pollInterval);
+              if (eventSource) eventSource.close();
+              depBtn.disabled = false;
+              depBtn.style.opacity = '1';
+              depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
             }
           } catch (pollErr) {
-            console.warn("STK Polling error:", pollErr);
+            console.warn("[POLLING ERROR]:", pollErr);
           }
         }, 2000);
 
       } catch (err) {
+        if (eventSource) eventSource.close();
         depBtn.disabled = false;
         depBtn.style.opacity = '1';
         depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
 
-        if (depStatusContainer) {
-          depStatusContainer.style.display = 'block';
-          depStatusContainer.innerHTML = `
-            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-danger); padding: 14px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
-              <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--color-danger); font-size: 0.88rem;">
-                <span>❌</span>
-                <span>STK Push Request Failed</span>
-              </div>
-              <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0;">${err.message}</p>
-            </div>
-          `;
-        }
+        showFailureModal({
+          humanError: {
+            title: 'STK Push Initiation Failed',
+            explanation: err.message,
+            suggestion: 'Verify your phone number and Vercel/Admin Daraja credentials.'
+          }
+        });
       }
     });
 
@@ -430,4 +419,207 @@ export async function renderProfileView() {
   drawProfile();
 }
 
+// ---------------------------------------------------------------------
+// ENTERPRISE BANKING PAYMENT TIMELINE & RECEIPT MODALS
+// ---------------------------------------------------------------------
+
+function renderPaymentTimeline(status, statusMessage, amount, phone, elapsedSeconds = 0, isSimulated = false) {
+  const steps = [
+    { key: 'PENDING', label: 'Payment Request Created' },
+    { key: 'INITIATED', label: 'Contacting Safaricom Gateway' },
+    { key: 'STK_SENT', label: 'STK Push Prompt Dispatched' },
+    { key: 'AWAITING_PIN', label: 'Waiting for M-Pesa PIN' },
+    { key: 'PROCESSING', label: 'Validating Payment Receipt' },
+    { key: 'SUCCESS', label: 'Payment Completed' }
+  ];
+
+  const currentStepMap = {
+    'PENDING': 1,
+    'INITIATED': 2,
+    'STK_SENT': 3,
+    'AWAITING_PIN': 4,
+    'PROCESSING': 5,
+    'SUCCESS': 6
+  };
+
+  const currentStep = currentStepMap[status] || 1;
+  const isFailed = ['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(status);
+
+  return `
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 18px; border-radius: var(--radius-xl); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 14px;">
+      
+      <!-- Top Status Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.1rem;">${isFailed ? '❌' : status === 'SUCCESS' ? '🎉' : '📲'}</span>
+          <span style="font-weight: 800; font-size: 0.88rem; color: ${isFailed ? 'var(--color-danger)' : status === 'SUCCESS' ? '#10B981' : 'var(--color-primary)'};">
+            ${isFailed ? 'Payment Failed / Cancelled' : status === 'SUCCESS' ? 'Payment Completed & Credited' : 'Safaricom M-Pesa Payment Progress'}
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="background: var(--bg-surface-hover); color: var(--text-secondary); font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; font-family: var(--font-mono);">
+            ⏱ ${String(elapsedSeconds).padStart(2, '0')}s
+          </span>
+        </div>
+      </div>
+
+      <!-- Mode Badge (Simulated vs Real) -->
+      ${isSimulated ? `
+        <div style="background: rgba(59, 130, 246, 0.08); border: 1px dashed #3B82F6; padding: 8px 12px; border-radius: var(--radius-md); font-size: 0.75rem; color: #2563EB; display: flex; align-items: center; gap: 6px;">
+          <span>🧪</span>
+          <span><b>Sandbox Test Mode:</b> Simulated gateway test active.</span>
+        </div>
+      ` : ''}
+
+      <!-- Status Explanation message -->
+      <p style="font-size: 0.82rem; color: var(--text-primary); margin: 0; line-height: 1.4;">
+        ${statusMessage || 'Processing M-Pesa transaction request...'}
+      </p>
+
+      <!-- Visual Step-by-Step Payment Timeline -->
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+        ${steps.map((step, idx) => {
+          const stepNum = idx + 1;
+          const isDone = currentStep > stepNum || status === 'SUCCESS';
+          const isCurrent = currentStep === stepNum && !isFailed && status !== 'SUCCESS';
+
+          let iconHtml = `<span style="width: 18px; height: 18px; border-radius: 50%; background: var(--bg-surface-hover); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;">${stepNum}</span>`;
+          let color = 'var(--text-muted)';
+          let fontWeight = '500';
+
+          if (isDone) {
+            iconHtml = `<span style="width: 18px; height: 18px; border-radius: 50%; background: #10B981; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900;">✓</span>`;
+            color = 'var(--text-primary)';
+            fontWeight = '700';
+          } else if (isCurrent) {
+            iconHtml = `<span class="skeleton-loader-spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>`;
+            color = 'var(--color-primary)';
+            fontWeight = '800';
+          }
+
+          return `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${iconHtml}
+              <span style="font-size: 0.78rem; color: ${color}; font-weight: ${fontWeight};">${step.label}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+    </div>
+  `;
+}
+
+function showSuccessModal(data, amount, user) {
+  const receipt = data.receiptNumber || 'MP-' + Math.floor(Math.random() * 900000 + 100000);
+  const ref = data.reference || 'LLN-DEP-' + Math.floor(Math.random() * 900000 + 100000);
+
+  const modalHtml = `
+    <div id="mpesa-success-modal" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 20px; text-align: center;">
+        
+        <!-- Big Green Checkmark -->
+        <div style="width: 72px; height: 72px; background: rgba(16, 185, 129, 0.15); color: #10B981; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 2.2rem; font-weight: 900; border: 2px solid #10B981;">
+          ✓
+        </div>
+
+        <div>
+          <h2 style="font-size: 1.4rem; font-weight: 900; color: var(--text-primary); margin: 0;">Payment Successful!</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">KES ${amount.toLocaleString()} credited to your wallet balance.</p>
+        </div>
+
+        <!-- Receipt Card Details -->
+        <div style="background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; font-size: 0.82rem; text-align: left;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
+            <span style="color: var(--text-secondary);">M-Pesa Receipt No:</span>
+            <span style="font-family: var(--font-mono); font-weight: 900; color: #10B981;">${receipt}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
+            <span style="color: var(--text-secondary);">Transaction Reference:</span>
+            <span style="font-family: var(--font-mono); font-weight: 800; color: var(--text-primary);">${ref}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
+            <span style="color: var(--text-secondary);">Amount Deposited:</span>
+            <span style="font-family: var(--font-mono); font-weight: 800; color: var(--text-primary);">KES ${amount.toLocaleString()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
+            <span style="color: var(--text-secondary);">Mobile Line:</span>
+            <span style="font-weight: 700; color: var(--text-primary);">+${user?.phone || '254...'}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);">Updated Wallet Balance:</span>
+            <span style="font-family: var(--font-mono); font-weight: 900; color: var(--color-primary);">KES ${((user?.balance || 0) + amount).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <!-- Modal Action Buttons -->
+        <div style="display: flex; gap: 10px; margin-top: 4px;">
+          <button id="close-success-modal-btn" style="flex: 1; height: 44px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(56, 102, 42, 0.3);">
+            Done & Return to Dashboard
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  document.getElementById('close-success-modal-btn')?.addEventListener('click', () => {
+    document.getElementById('mpesa-success-modal')?.remove();
+    renderProfileView();
+  });
+}
+
+function showFailureModal(data) {
+  const err = data.humanError || {};
+  const title = err.title || 'M-Pesa Payment Failed';
+  const explanation = err.explanation || data.errorMessage || data.reason || 'The M-Pesa transaction was cancelled or timed out.';
+  const suggestion = err.suggestion || 'Please unlock your mobile phone screen and try again.';
+
+  const modalHtml = `
+    <div id="mpesa-failure-modal" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 18px; text-align: center;">
+        
+        <!-- Big Red Alert Icon -->
+        <div style="width: 72px; height: 72px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 2.2rem; font-weight: 900; border: 2px solid var(--color-danger);">
+          ✕
+        </div>
+
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 900; color: var(--color-danger); margin: 0;">${title}</h2>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">${explanation}</p>
+        </div>
+
+        <!-- Actionable Guidance Box -->
+        <div style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-lg); padding: 14px; text-align: left; font-size: 0.78rem; color: var(--text-primary); display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-weight: 800; color: var(--color-danger);">💡 Next Steps:</span>
+          <span>${suggestion}</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 10px; margin-top: 4px;">
+          <button id="retry-failure-modal-btn" style="flex: 1; height: 44px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.88rem; cursor: pointer;">
+            Try Deposit Again
+          </button>
+          <button id="close-failure-modal-btn" style="height: 44px; padding: 0 16px; background: var(--bg-surface-hover); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+            Dismiss
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  const closeModal = () => {
+    document.getElementById('mpesa-failure-modal')?.remove();
+  };
+
+  document.getElementById('retry-failure-modal-btn')?.addEventListener('click', closeModal);
+  document.getElementById('close-failure-modal-btn')?.addEventListener('click', closeModal);
+}
+
 export default renderProfileView;
+

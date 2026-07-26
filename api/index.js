@@ -7,9 +7,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import { connectDb, getSetting, setSetting } from './db.js';
-import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting } from './models.js';
+import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction } from './models.js';
 import { matchCache } from './cache.js';
 import { syncMatchesFromEspn } from './services/syncService.js';
+import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './services/mpesaGateway.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -389,243 +390,108 @@ function authenticateToken(req, res, next) {
 // M-PESA & WALLET FINANCIAL ENDPOINTS (MIN KES 200 DEPOSIT & WITHDRAWAL)
 // ---------------------------------------------------------------------
 
-// Endpoint: Trigger M-Pesa STK Push Express
+// ---------------------------------------------------------------------
+// ENTERPRISE M-PESA PAYMENT GATEWAY ENDPOINTS
+// ---------------------------------------------------------------------
+
+// 1. Endpoint: Trigger M-Pesa STK Push Express Deposit
 app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], async (req, res) => {
   try {
     const { phone, amount, userId } = req.body;
+    let targetUserId = userId || (req.user ? req.user.id : null);
 
-    if (!phone || !amount) {
-      return res.status(400).json({ error: "Phone number and amount are required." });
+    if (!targetUserId && phone) {
+      const user = await User.findOne({ phone: String(phone).replace(/\D/g, '') });
+      if (user) targetUserId = user._id.toString();
     }
 
-    const numericAmount = Number(amount);
-
-    // ENFORCE MINIMUM & MAXIMUM DEPOSIT LIMITS
-    const minDep = await getSetting('minDeposit', 200);
-    const maxDep = await getSetting('maxDeposit', 500000);
-    if (numericAmount < minDep) {
-      return res.status(400).json({ error: `Minimum deposit amount is KES ${minDep.toLocaleString()}.` });
-    }
-    if (numericAmount > maxDep) {
-      return res.status(400).json({ error: `Maximum deposit amount is KES ${maxDep.toLocaleString()}.` });
+    if (!targetUserId) {
+      return res.status(401).json({ error: "User session unauthenticated. Please log in." });
     }
 
-    const cleanedPhone = formatPhoneNumber(phone);
-    const roundedAmount = Math.round(numericAmount);
-
-    const mpesaEnv = process.env.MPESA_ENV || 'sandbox';
-    const baseUrl = mpesaEnv === 'live' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
-
-    const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
-    const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
-    const passkey = process.env.MPESA_PASSKEY || '';
-    const dbPartyB = await getSetting('mpesaPartyB', '');
-    const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || process.env.MPESA_TILL_NUMBER || '';
-    const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || shortcode;
-
-    const isPlaceholder = !consumerKey ||
-      consumerKey.includes('your_') ||
-      !consumerSecret ||
-      consumerSecret.includes('your_') ||
-      !passkey ||
-      passkey.includes('your_') ||
-      !shortcode;
-
-    // In Live Mode, if credentials are missing or placeholders, return explicit error
-    if (mpesaEnv === 'live' && isPlaceholder) {
-      return res.status(400).json({
-        error: "Live Safaricom Credentials Required",
-        details: "To receive STK Push prompts on your phone, please enter your valid Safaricom Daraja MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, and MPESA_PASSKEY in Vercel Environment Variables or Admin Portal."
-      });
-    }
-
-    // In Sandbox Mode, if keys are placeholders, run simulation
-    if (mpesaEnv === 'sandbox' && isPlaceholder) {
-      const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
-      memoryTransactions.set(mockCheckoutId, { status: 'pending', amount: roundedAmount, phone: cleanedPhone, userId });
-
-      setTimeout(async () => {
-        try {
-          const u = userId ? await User.findById(userId) : await User.findOne({ phone: cleanedPhone });
-          if (u) {
-            u.balance += roundedAmount;
-            await u.save();
-
-            const ref = `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
-            await Transaction.create({
-              userId: u._id.toString(),
-              type: 'DEPOSIT',
-              amount: roundedAmount,
-              status: 'COMPLETED',
-              reference: ref,
-              description: `M-Pesa Express Deposit (${cleanedPhone})`
-            });
-
-            await Notification.create({
-              userId: u._id.toString(),
-              title: "Deposit Confirmed",
-              message: `KES ${roundedAmount.toLocaleString()} credited successfully to your wallet. Ref: ${ref}`,
-              type: "deposit"
-            });
-          }
-          memoryTransactions.set(mockCheckoutId, { status: 'success', amount: roundedAmount, phone: cleanedPhone });
-        } catch (e) {
-          console.error("Auto-credit simulation error:", e);
-        }
-      }, 3500);
-
-      return res.json({ simulated: true, CheckoutRequestID: mockCheckoutId, message: "STK push prompt sent to phone. Enter M-Pesa PIN." });
-    }
-
-    // -----------------------------------------------------------------
-    // REAL SAFARICOM DARAJA STK PUSH REQUEST
-    // -----------------------------------------------------------------
-    console.log(`[DARAJA STK PUSH] Initiating ${mpesaEnv.toUpperCase()} request to ${baseUrl} for ${cleanedPhone}, Amount: KES ${roundedAmount}`);
-
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
-    const tokenResponse = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
-      method: 'GET',
-      headers: { 'Authorization': `Basic ${auth}` }
+    const result = await initiateMpesaDeposit({
+      userId: targetUserId,
+      phone,
+      amount,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+      deviceInfo: req.headers['user-agent'] || ''
     });
 
-    if (!tokenResponse.ok) {
-      const errText = await tokenResponse.text();
-      console.error("[DARAJA OAUTH ERROR]:", errText);
-      return res.status(502).json({ error: "Safaricom OAuth Token Generation Failed.", details: errText });
+    return res.json(result);
+  } catch (error) {
+    console.error("[STK PUSH INITIATION ERROR]:", error.message);
+    return res.status(400).json({ error: error.message || "Failed to initiate M-Pesa STK push." });
+  }
+});
+
+// 2. Endpoint: Safaricom Daraja Webhook Callback Listener
+app.post(['/api/mpesa-callback', '/mpesa-callback'], async (req, res) => {
+  try {
+    const result = await processMpesaCallback(req.body);
+    return res.json({ ResultCode: 0, ResultDesc: "Callback accepted", ...result });
+  } catch (error) {
+    console.error("[CALLBACK PROCESSOR ERROR]:", error.message);
+    return res.status(500).json({ ResultCode: 1, ResultDesc: error.message });
+  }
+});
+
+// 3. Real-Time Server-Sent Events (SSE) Payment Status Stream
+app.get(['/api/mpesa/stream/:identifier', '/mpesa/stream/:identifier'], async (req, res) => {
+  const identifier = req.params.identifier;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', identifier })}\n\n`);
+  registerSseClient(identifier, res);
+
+  const currentStatus = await getTransactionStatus(identifier);
+  if (currentStatus) {
+    res.write(`data: ${JSON.stringify(currentStatus)}\n\n`);
+  }
+});
+
+// 4. Endpoint: Poll STK Transaction Status & Timeline
+app.get(['/api/mpesa/status/:identifier', '/api/status/:identifier', '/status/:identifier'], async (req, res) => {
+  try {
+    const statusData = await getTransactionStatus(req.params.identifier);
+    if (!statusData) {
+      return res.json({ status: 'PENDING', statusMessage: 'Transaction initializing...' });
     }
+    return res.json(statusData);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch payment status." });
+  }
+});
 
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
+// 5. Endpoint: Admin M-Pesa Monitoring Dashboard Stats
+app.get(['/api/admin/mpesa/transactions', '/admin/mpesa/transactions'], authenticateAdmin, async (req, res) => {
+  try {
+    await connectDb();
+    const transactions = await MpesaTransaction.find({}).sort({ createdAt: -1 }).limit(100).lean();
 
-    const timestamp = getMpesaTimestamp();
-    const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
-    const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://lln-bet.vercel.app/api/mpesa-callback';
-
-    // Auto-detect Transaction Type: Default to CustomerPayBillOnline unless BuyGoods is explicitly configured
-    let transactionType = process.env.MPESA_TRANSACTION_TYPE || '';
-    if (!transactionType) {
-      if (process.env.MPESA_TILL_NUMBER && process.env.MPESA_TILL_NUMBER !== shortcode) {
-        transactionType = 'CustomerBuyGoodsOnline';
-      } else {
-        transactionType = 'CustomerPayBillOnline';
-      }
-    }
-
-    // Party B: For Buy Goods it is the Till Number. For Paybill it is the Paybill Shortcode.
-    const partyB = (transactionType === 'CustomerBuyGoodsOnline' || transactionType === 'CustomerBuyGoods')
-      ? (process.env.MPESA_TILL_NUMBER || tillNumber || shortcode)
-      : shortcode;
-
-    const payload = {
-      BusinessShortCode: shortcode,
-      Password: password,
-      Timestamp: timestamp,
-      TransactionType: transactionType === 'CustomerBuyGoods' ? 'CustomerBuyGoodsOnline' : transactionType,
-      Amount: roundedAmount,
-      PartyA: cleanedPhone,
-      PartyB: partyB,
-      PhoneNumber: cleanedPhone,
-      CallBackURL: callbackUrl,
-      AccountReference: process.env.MPESA_ACCOUNT_REF || "LlnBetWallet",
-      TransactionDesc: "Wallet Deposit"
+    const counts = {
+      total: transactions.length,
+      success: transactions.filter(t => t.status === 'SUCCESS').length,
+      failed: transactions.filter(t => t.status === 'FAILED').length,
+      cancelled: transactions.filter(t => t.status === 'CANCELLED').length,
+      timeout: transactions.filter(t => t.status === 'TIMEOUT').length,
+      pending: transactions.filter(t => ['PENDING', 'INITIATED', 'STK_SENT', 'AWAITING_PIN', 'PROCESSING'].includes(t.status)).length
     };
 
-    console.log("[DARAJA STK PAYLOAD]:", JSON.stringify({ ...payload, Password: '[REDACTED]' }));
+    const successRate = counts.total > 0 ? ((counts.success / counts.total) * 100).toFixed(1) : 100;
 
-    const stkResponse = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
+    return res.json({
+      success: true,
+      counts,
+      successRate: Number(successRate),
+      transactions
     });
-
-    const stkData = await stkResponse.json();
-    console.log("[DARAJA STK RESPONSE]:", stkResponse.status, JSON.stringify(stkData));
-
-    if (!stkResponse.ok || stkData.ResponseCode !== "0") {
-      const errorMessage = stkData.errorMessage || stkData.ResponseDescription || JSON.stringify(stkData);
-      return res.status(stkResponse.status || 400).json({ error: "Safaricom Daraja API Rejected Request", details: errorMessage });
-    }
-
-    const checkoutId = stkData.CheckoutRequestID;
-    memoryTransactions.set(checkoutId, { status: 'pending', amount: roundedAmount, phone: cleanedPhone, userId });
-
-    return res.json({ simulated: false, CheckoutRequestID: checkoutId, message: stkData.CustomerMessage || "STK push prompt sent to your mobile phone." });
-
   } catch (error) {
-    console.error("[MPESA SERVER ERROR]:", error);
-    return res.status(500).json({ error: "Internal Server Error during deposit processing.", details: error.message });
+    return res.status(500).json({ error: "Failed to fetch admin M-Pesa metrics." });
   }
-});
-
-// Endpoint: M-Pesa Callback Handler
-app.post('/api/mpesa-callback', async (req, res) => {
-  try {
-    const callbackData = req.body;
-    const callbackBody = callbackData.Body?.stkCallback;
-    if (!callbackBody) return res.status(400).json({ error: "Invalid callback payload" });
-
-    const checkoutId = callbackBody.CheckoutRequestID;
-    const resultCode = callbackBody.ResultCode;
-    const resultDesc = callbackBody.ResultDesc;
-
-    if (resultCode === 0) {
-      const metadata = callbackBody.CallbackMetadata?.Item || [];
-      const receiptItem = metadata.find(item => item.Name === 'MpesaReceiptNumber');
-      const amountItem = metadata.find(item => item.Name === 'Amount');
-      const phoneItem = metadata.find(item => item.Name === 'PhoneNumber');
-
-      const receipt = receiptItem ? receiptItem.Value : `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
-      const amount = amountItem ? Number(amountItem.Value) : 0;
-      const phone = phoneItem ? String(phoneItem.Value) : '';
-
-      const txRecord = memoryTransactions.get(checkoutId);
-      const targetPhone = phone || txRecord?.phone;
-
-      // Credit user in MongoDB
-      const user = txRecord?.userId ? await User.findById(txRecord.userId) : await User.findOne({ phone: formatPhoneNumber(targetPhone) });
-      if (user) {
-        user.balance += amount;
-        await user.save();
-
-        await Transaction.create({
-          userId: user._id.toString(),
-          type: 'DEPOSIT',
-          amount: amount,
-          status: 'COMPLETED',
-          reference: receipt,
-          description: `M-Pesa STK Deposit (${receipt})`
-        });
-
-        await Notification.create({
-          userId: user._id.toString(),
-          title: "Deposit Received",
-          message: `KES ${amount.toLocaleString()} credited successfully to your wallet. Ref: ${receipt}`,
-          type: "deposit"
-        });
-      }
-
-      memoryTransactions.set(checkoutId, { status: 'success', amount, receipt });
-    } else {
-      memoryTransactions.set(checkoutId, { status: 'failed', reason: resultDesc });
-    }
-
-    return res.json({ ResultCode: 0, ResultDesc: "Success" });
-
-  } catch (error) {
-    console.error("[MPESA CALLBACK ERROR]:", error);
-    return res.status(500).json({ error: "Internal Callback Error" });
-  }
-});
-
-// Endpoint: Poll STK Transaction Status
-app.get(['/api/status/:checkoutId', '/status/:checkoutId'], (req, res) => {
-  const checkoutId = req.params.checkoutId;
-  const tx = memoryTransactions.get(checkoutId);
-  if (!tx) return res.json({ status: 'pending' });
-  return res.json(tx);
 });
 
 // Endpoint: Withdraw Money (MIN KES 200)
