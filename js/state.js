@@ -508,8 +508,8 @@ class State {
     }
 
     const numericAmount = Number(amount);
-    if (!numericAmount || numericAmount < 10) {
-      throw new Error("Invalid deposit amount.");
+    if (!numericAmount || numericAmount <= 0) {
+      throw new Error("Please enter a valid deposit amount.");
     }
 
     const res = await fetch('/api/mpesa-deposit', {
