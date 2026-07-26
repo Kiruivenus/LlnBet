@@ -207,7 +207,9 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
   const passkey = process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
 
   const partyBSetting = await Setting.findOne({ key: 'mpesaPartyB' });
-  const dbPartyB = partyBSetting ? String(partyBSetting.value) : '';
+  const rawDbPartyB = partyBSetting ? String(partyBSetting.value).trim() : '';
+  const dbPartyB = rawDbPartyB && !rawDbPartyB.includes('your_') ? rawDbPartyB : '';
+
   const shortcode = dbPartyB || process.env.MPESA_SHORTCODE || process.env.MPESA_TILL_NUMBER || '174379';
   const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || shortcode;
 
