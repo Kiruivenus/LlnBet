@@ -480,6 +480,8 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
     // -----------------------------------------------------------------
     // REAL SAFARICOM DARAJA STK PUSH REQUEST
     // -----------------------------------------------------------------
+    console.log(`[DARAJA STK PUSH] Initiating ${mpesaEnv.toUpperCase()} request to ${baseUrl} for ${cleanedPhone}, Amount: KES ${roundedAmount}`);
+
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
     const tokenResponse = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       method: 'GET',
@@ -488,6 +490,7 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
 
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text();
+      console.error("[DARAJA OAUTH ERROR]:", errText);
       return res.status(502).json({ error: "Safaricom OAuth Token Generation Failed.", details: errText });
     }
 
@@ -497,21 +500,37 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
     const timestamp = getMpesaTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
     const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://lln-bet.vercel.app/api/mpesa-callback';
-    const transactionType = process.env.MPESA_TRANSACTION_TYPE || 'CustomerBuyGoodsOnline';
+
+    // Auto-detect Transaction Type: Default to CustomerPayBillOnline unless BuyGoods is explicitly configured
+    let transactionType = process.env.MPESA_TRANSACTION_TYPE || '';
+    if (!transactionType) {
+      if (process.env.MPESA_TILL_NUMBER && process.env.MPESA_TILL_NUMBER !== shortcode) {
+        transactionType = 'CustomerBuyGoodsOnline';
+      } else {
+        transactionType = 'CustomerPayBillOnline';
+      }
+    }
+
+    // Party B: For Buy Goods it is the Till Number. For Paybill it is the Paybill Shortcode.
+    const partyB = (transactionType === 'CustomerBuyGoodsOnline' || transactionType === 'CustomerBuyGoods')
+      ? (process.env.MPESA_TILL_NUMBER || tillNumber || shortcode)
+      : shortcode;
 
     const payload = {
       BusinessShortCode: shortcode,
       Password: password,
       Timestamp: timestamp,
-      TransactionType: transactionType,
+      TransactionType: transactionType === 'CustomerBuyGoods' ? 'CustomerBuyGoodsOnline' : transactionType,
       Amount: roundedAmount,
       PartyA: cleanedPhone,
-      PartyB: transactionType === 'CustomerBuyGoodsOnline' ? tillNumber : shortcode,
+      PartyB: partyB,
       PhoneNumber: cleanedPhone,
       CallBackURL: callbackUrl,
       AccountReference: process.env.MPESA_ACCOUNT_REF || "LlnBetWallet",
       TransactionDesc: "Wallet Deposit"
     };
+
+    console.log("[DARAJA STK PAYLOAD]:", JSON.stringify({ ...payload, Password: '[REDACTED]' }));
 
     const stkResponse = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
@@ -523,6 +542,7 @@ app.post(['/api/mpesa-deposit', '/api/stkpush', '/mpesa-deposit', '/stkpush'], a
     });
 
     const stkData = await stkResponse.json();
+    console.log("[DARAJA STK RESPONSE]:", stkResponse.status, JSON.stringify(stkData));
 
     if (!stkResponse.ok || stkData.ResponseCode !== "0") {
       const errorMessage = stkData.errorMessage || stkData.ResponseDescription || JSON.stringify(stkData);
