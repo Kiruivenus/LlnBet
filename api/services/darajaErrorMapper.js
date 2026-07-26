@@ -85,6 +85,15 @@ export function mapDarajaError(resultCode, rawMessage = '') {
 
   const messageLower = String(rawMessage).toLowerCase();
 
+  if (messageLower.includes('unresolved reason') || messageLower.includes('unresolved')) {
+    return {
+      status: 'CANCELLED',
+      title: 'M-Pesa Prompt Cancelled / Closed',
+      explanation: 'The M-Pesa PIN prompt was cancelled or closed on your mobile handset before PIN confirmation.',
+      suggestion: 'Ensure your phone screen is unlocked, keep your SIM active, and enter your M-Pesa PIN promptly.'
+    };
+  }
+
   if (messageLower.includes('cancel')) {
     return {
       status: 'CANCELLED',
