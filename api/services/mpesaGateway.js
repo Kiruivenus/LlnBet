@@ -210,9 +210,8 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
   const rawDbPartyB = partyBSetting ? String(partyBSetting.value).trim() : '';
   const dbPartyB = rawDbPartyB && !rawDbPartyB.includes('your_') ? rawDbPartyB : '';
 
-  // For individual Buy Goods Tills, shortcode and tillNumber are identical to MPESA_TILL_NUMBER
-  const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || process.env.MPESA_SHORTCODE || '8583204';
-  const shortcode = process.env.MPESA_STORE_SHORTCODE || tillNumber;
+  const shortcode = process.env.MPESA_SHORTCODE || '9962118';
+  const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || '8583204';
 
   const isPlaceholder = !consumerKey ||
     consumerKey.includes('your_') ||
