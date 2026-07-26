@@ -501,6 +501,46 @@ class State {
     return true;
   }
 
+  // Real M-Pesa STK Push Deposit Action against backend Daraja API
+  async initiateMpesaDeposit(amount, phone) {
+    if (!this.data.isLoggedIn || !this.data.token) {
+      throw new Error("Please login to deposit funds.");
+    }
+
+    const numericAmount = Number(amount);
+    if (!numericAmount || numericAmount < 10) {
+      throw new Error("Invalid deposit amount.");
+    }
+
+    const res = await fetch('/api/mpesa-deposit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.data.token}`
+      },
+      body: JSON.stringify({
+        amount: numericAmount,
+        phone: phone || this.data.user?.phone
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const detailMsg = typeof data.details === 'string' ? data.details : (data.details ? JSON.stringify(data.details) : '');
+      throw new Error(data.error || detailMsg || "M-Pesa STK Push initiation failed.");
+    }
+
+    return data; // { simulated, CheckoutRequestID, message }
+  }
+
+  // Poll real-time STK Push transaction payment status
+  async checkStkStatus(checkoutId) {
+    if (!checkoutId) return { status: 'pending' };
+    const res = await fetch(`/api/status/${checkoutId}`);
+    if (!res.ok) return { status: 'pending' };
+    return await res.json();
+  }
+
   async cashOutBet(betId, amount) {
     if (!this.data.isLoggedIn || !this.data.token) {
       throw new Error("Please login to cash out bets.");

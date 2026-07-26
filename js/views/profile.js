@@ -143,6 +143,9 @@ export async function renderProfileView() {
           <button class="btn-deposit" id="profile-dep-mpesa-btn" style="width: 100%; height: 46px; justify-content: center; font-size: 0.95rem;">
             ${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push
           </button>
+
+          <!-- Interactive M-Pesa Payment Live Status Container -->
+          <div id="profile-dep-status-container" style="display: none; margin-top: 10px;"></div>
         </div>
 
         <!-- WITHDRAWAL CASHIER CARD -->
@@ -243,11 +246,153 @@ export async function renderProfileView() {
     withValInput?.addEventListener('input', (e) => { withdrawAmount = parseInt(e.target.value) || 0; });
 
     // Payment triggers
-    document.getElementById('profile-dep-mpesa-btn')?.addEventListener('click', () => {
+    const depBtn = document.getElementById('profile-dep-mpesa-btn');
+    const depStatusContainer = document.getElementById('profile-dep-status-container');
+
+    depBtn?.addEventListener('click', async () => {
       const amt = parseInt(depValInput.value) || 0;
-      alert(`M-Pesa STK Push triggered for KES ${amt}.\nCheck your mobile phone to enter your M-Pesa PIN.`);
-      state.deposit(amt, 'M-Pesa Mobile');
-      renderProfileView();
+      if (!amt || amt < minDeposit) {
+        alert(`Minimum deposit amount is KES ${minDeposit}.`);
+        return;
+      }
+
+      // Step 1: Requesting State
+      depBtn.disabled = true;
+      depBtn.style.opacity = '0.75';
+      depBtn.innerHTML = `
+        <span class="skeleton-loader-spinner" style="width: 18px; height: 18px; border-width: 2px;"></span>
+        <span>Requesting M-Pesa STK Push...</span>
+      `;
+
+      if (depStatusContainer) {
+        depStatusContainer.style.display = 'block';
+        depStatusContainer.innerHTML = `
+          <div style="background: rgba(56, 102, 42, 0.08); border: 1px solid rgba(56, 102, 42, 0.3); padding: 14px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--color-primary); font-size: 0.88rem;">
+              <span class="skeleton-loader-spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
+              <span>Sending STK Push prompt to +${user?.phone || ''}...</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0;">Connecting to Safaricom Daraja API gateway...</p>
+          </div>
+        `;
+      }
+
+      try {
+        // Step 2: Trigger real backend M-Pesa STK Push API
+        const response = await state.initiateMpesaDeposit(amt, user?.phone);
+        const checkoutId = response.CheckoutRequestID;
+
+        // Step 3: STK Push initiated successfully! Prompt user to enter PIN
+        depBtn.innerHTML = `
+          <span class="pulse-dot" style="background: #F59E0B;"></span>
+          <span>Waiting for M-Pesa PIN...</span>
+        `;
+
+        if (depStatusContainer) {
+          depStatusContainer.innerHTML = `
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.5); padding: 16px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; color: #D97706; font-size: 0.9rem;">
+                  <span style="font-size: 1.2rem;">📲</span>
+                  <span>STK Push Sent to Phone!</span>
+                </div>
+                <span style="font-size: 0.72rem; font-weight: 800; color: #D97706; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px;">KES ${amt.toLocaleString()}</span>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-primary); margin: 0; line-height: 1.4;">
+                Please check your mobile phone screen for the Safaricom M-Pesa pop-up and <b>enter your M-Pesa PIN</b> to confirm payment.
+              </p>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted);">
+                <span class="skeleton-loader-spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+                <span>Listening for M-Pesa PIN payment confirmation...</span>
+              </div>
+            </div>
+          `;
+        }
+
+        // Step 4: Poll payment status every 2 seconds
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const statusData = await state.checkStkStatus(checkoutId);
+
+            if (statusData.status === 'success') {
+              clearInterval(pollInterval);
+              
+              if (depStatusContainer) {
+                depStatusContainer.innerHTML = `
+                  <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #10B981; padding: 16px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; color: #10B981; font-size: 0.92rem;">
+                      <span>🎉</span>
+                      <span>Payment Confirmed & Credited!</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-primary); margin: 0;">
+                      KES ${amt.toLocaleString()} has been successfully deposited into your wallet balance.
+                    </p>
+                  </div>
+                `;
+              }
+
+              // Refresh user data & re-render profile after 1.5s
+              await state.fetchUserData();
+              setTimeout(() => {
+                renderProfileView();
+              }, 1500);
+
+            } else if (statusData.status === 'failed') {
+              clearInterval(pollInterval);
+              depBtn.disabled = false;
+              depBtn.style.opacity = '1';
+              depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
+
+              if (depStatusContainer) {
+                depStatusContainer.innerHTML = `
+                  <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-danger); padding: 14px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--color-danger); font-size: 0.88rem;">
+                      <span>❌</span>
+                      <span>M-Pesa Payment Failed / Cancelled</span>
+                    </div>
+                    <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0;">${statusData.reason || "Payment was cancelled or timed out on mobile phone."}</p>
+                  </div>
+                `;
+              }
+            } else if (attempts >= 30) { // 60 seconds timeout
+              clearInterval(pollInterval);
+              depBtn.disabled = false;
+              depBtn.style.opacity = '1';
+              depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
+
+              if (depStatusContainer) {
+                depStatusContainer.innerHTML = `
+                  <div style="background: var(--bg-surface-hover); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-lg); font-size: 0.78rem; color: var(--text-muted);">
+                    ⚠️ Payment confirmation timeout. If you completed the M-Pesa PIN prompt, your balance will update automatically in a few moments.
+                  </div>
+                `;
+              }
+            }
+          } catch (pollErr) {
+            console.warn("STK Polling error:", pollErr);
+          }
+        }, 2000);
+
+      } catch (err) {
+        depBtn.disabled = false;
+        depBtn.style.opacity = '1';
+        depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
+
+        if (depStatusContainer) {
+          depStatusContainer.style.display = 'block';
+          depStatusContainer.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--color-danger); padding: 14px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--color-danger); font-size: 0.88rem;">
+                <span>❌</span>
+                <span>STK Push Request Failed</span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0;">${err.message}</p>
+            </div>
+          `;
+        }
+      }
     });
 
     document.getElementById('profile-with-mpesa-btn')?.addEventListener('click', async () => {
