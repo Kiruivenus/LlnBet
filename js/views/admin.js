@@ -263,7 +263,7 @@ export async function renderAdminView() {
 
           <div>
             <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">M-Pesa API Party B (Paybill / Till / Mobile)</label>
-            <input type="text" id="cfg-mpesa-partyb" class="auth-input" style="width: 100%;" value="${s.mpesaPartyB || '254700000000'}" required />
+            <input type="text" id="cfg-mpesa-partyb" class="auth-input" style="width: 100%;" value="${s.mpesaPartyB || '8583204'}" required />
             <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Sets the target billing account identifier for STK prompts and B2C settlements.</p>
           </div>
 

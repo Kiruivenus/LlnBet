@@ -980,7 +980,8 @@ app.get(['/api/settings', '/settings'], async (req, res) => {
     const maxDeposit = await getSetting('maxDeposit', 500000);
     const minWithdrawal = await getSetting('minWithdrawal', 200);
     const maxWithdrawal = await getSetting('maxWithdrawal', 100000);
-    const mpesaPartyB = await getSetting('mpesaPartyB', '254700000000');
+    const defaultTill = process.env.MPESA_TILL_NUMBER || '8583204';
+    const mpesaPartyB = await getSetting('mpesaPartyB', defaultTill);
 
     return res.json({
       success: true,
@@ -998,7 +999,8 @@ app.get(['/api/admin/settings', '/admin/settings'], authenticateAdmin, async (re
     const maxDeposit = await getSetting('maxDeposit', 500000);
     const minWithdrawal = await getSetting('minWithdrawal', 200);
     const maxWithdrawal = await getSetting('maxWithdrawal', 100000);
-    const mpesaPartyB = await getSetting('mpesaPartyB', '254700000000');
+    const defaultTill = process.env.MPESA_TILL_NUMBER || '8583204';
+    const mpesaPartyB = await getSetting('mpesaPartyB', defaultTill);
 
     return res.json({
       success: true,
