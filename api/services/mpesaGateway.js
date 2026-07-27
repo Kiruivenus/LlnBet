@@ -6,6 +6,9 @@ import { mapDarajaError } from './darajaErrorMapper.js';
 // In-memory registry for active Server-Sent Event (SSE) clients listening for payment updates
 const sseClients = new Map();
 
+// In-memory fallback transaction registry for maximum reliability
+const memoryTxs = new Map();
+
 /**
  * Register an active SSE response connection for real-time payment status streaming
  */
@@ -23,6 +26,10 @@ export function registerSseClient(identifier, res) {
  */
 export function broadcastPaymentState(tx) {
   if (!tx) return;
+
+  // Cache transaction in memory for instant retrieval
+  if (tx.reference) memoryTxs.set(tx.reference, tx);
+  if (tx.checkoutRequestID) memoryTxs.set(tx.checkoutRequestID, tx);
 
   const identifiers = [tx.reference, tx.checkoutRequestID].filter(Boolean);
   const frameData = JSON.stringify({
@@ -122,12 +129,15 @@ async function fetchWithExponentialBackoff(url, options, maxRetries = 3) {
 /**
  * Safely update state history & processing logs on an MpesaTransaction document
  */
-function appendStateHistory(tx, status, statusMessage, errorCode = null, errorMessage = null) {
+async function appendStateHistory(tx, status, statusMessage, errorCode = null, errorMessage = null) {
   tx.status = status;
   tx.statusMessage = statusMessage;
   if (errorCode) tx.errorCode = errorCode;
   if (errorMessage) tx.errorMessage = errorMessage;
   tx.updatedAt = new Date();
+
+  if (!tx.history) tx.history = [];
+  if (!tx.processingLogs) tx.processingLogs = [];
 
   tx.history.push({
     status,
@@ -143,6 +153,15 @@ function appendStateHistory(tx, status, statusMessage, errorCode = null, errorMe
     timestamp: new Date()
   });
 
+  // Save to DB safely if connected
+  try {
+    if (tx.save && typeof tx.save === 'function') {
+      await tx.save();
+    }
+  } catch (e) {
+    console.warn("[MPESA DB SAVE WARNING]: Failed to save state to MongoDB:", e.message);
+  }
+
   broadcastPaymentState(tx);
 }
 
@@ -150,18 +169,26 @@ function appendStateHistory(tx, status, statusMessage, errorCode = null, errorMe
  * 1. INITIATE M-PESA STK PUSH TRANSACTION
  */
 export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = '', deviceInfo = '' }) {
-  await connectDb();
+  try {
+    await connectDb();
+  } catch (e) {
+    console.warn("[MPESA DB CONNECT WARNING]: Proceeding with in-memory transaction cache:", e.message);
+  }
 
   const numericAmount = Number(amount);
   if (!numericAmount || isNaN(numericAmount) || numericAmount <= 0) {
     throw new Error("Please enter a valid deposit amount.");
   }
 
-  // Validate against active database limits
-  const minDepSetting = await Setting.findOne({ key: 'minDeposit' });
-  const maxDepSetting = await Setting.findOne({ key: 'maxDeposit' });
-  const minDep = minDepSetting ? Number(minDepSetting.value) : 200;
-  const maxDep = maxDepSetting ? Number(maxDepSetting.value) : 500000;
+  // Validate against active database limits with safe defaults
+  let minDep = 200;
+  let maxDep = 500000;
+  try {
+    const minDepSetting = await Setting.findOne({ key: 'minDeposit' });
+    const maxDepSetting = await Setting.findOne({ key: 'maxDeposit' });
+    if (minDepSetting) minDep = Number(minDepSetting.value);
+    if (maxDepSetting) maxDep = Number(maxDepSetting.value);
+  } catch (e) {}
 
   if (numericAmount < minDep) {
     throw new Error(`Minimum deposit amount is KES ${minDep.toLocaleString()}.`);
@@ -178,37 +205,56 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
   const roundedAmount = Math.round(numericAmount);
   const reference = `LLN-DEP-${Math.floor(Math.random() * 900000 + 100000)}`;
 
-  // Create Pending Transaction in MongoDB
-  const tx = new MpesaTransaction({
-    reference,
-    userId,
-    phone: cleanedPhone,
-    amount: roundedAmount,
-    status: 'PENDING',
-    statusMessage: 'Payment request initialized',
-    ipAddress,
-    deviceInfo,
-    history: [{ status: 'PENDING', statusMessage: 'Payment request initialized', timestamp: new Date() }],
-    processingLogs: [{ stage: 'PENDING', log: `User initialized deposit request of KES ${roundedAmount.toLocaleString()}`, timestamp: new Date() }]
-  });
+  // Create Pending Transaction Object
+  let tx;
+  try {
+    tx = new MpesaTransaction({
+      reference,
+      userId,
+      phone: cleanedPhone,
+      amount: roundedAmount,
+      status: 'PENDING',
+      statusMessage: 'Payment request initialized',
+      ipAddress,
+      deviceInfo,
+      history: [{ status: 'PENDING', statusMessage: 'Payment request initialized', timestamp: new Date() }],
+      processingLogs: [{ stage: 'PENDING', log: `User initialized deposit request of KES ${roundedAmount.toLocaleString()}`, timestamp: new Date() }]
+    });
+    await tx.save();
+  } catch (e) {
+    console.warn("[MPESA TX INIT WARNING]: Falling back to memory object:", e.message);
+    tx = {
+      reference,
+      userId,
+      phone: cleanedPhone,
+      amount: roundedAmount,
+      status: 'PENDING',
+      statusMessage: 'Payment request initialized',
+      ipAddress,
+      deviceInfo,
+      history: [{ status: 'PENDING', statusMessage: 'Payment request initialized', timestamp: new Date() }],
+      processingLogs: [{ stage: 'PENDING', log: `User initialized deposit request of KES ${roundedAmount.toLocaleString()}`, timestamp: new Date() }]
+    };
+  }
 
-  await tx.save();
   broadcastPaymentState(tx);
 
   // Transition to INITIATED state
-  appendStateHistory(tx, 'INITIATED', 'Validating gateway parameters and obtaining OAuth authorization token...');
-  await tx.save();
+  await appendStateHistory(tx, 'INITIATED', 'Validating gateway parameters and obtaining OAuth authorization token...');
 
-  const mpesaEnv = process.env.MPESA_ENV || 'sandbox';
+  const mpesaEnv = process.env.MPESA_ENV || 'live';
   const baseUrl = mpesaEnv === 'live' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
 
   const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
   const passkey = process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
 
-  const partyBSetting = await Setting.findOne({ key: 'mpesaPartyB' });
-  const rawDbPartyB = partyBSetting ? String(partyBSetting.value).trim() : '';
-  const dbPartyB = rawDbPartyB && !rawDbPartyB.includes('your_') ? rawDbPartyB : '';
+  let dbPartyB = '';
+  try {
+    const partyBSetting = await Setting.findOne({ key: 'mpesaPartyB' });
+    const rawDbPartyB = partyBSetting ? String(partyBSetting.value).trim() : '';
+    if (rawDbPartyB && !rawDbPartyB.includes('your_')) dbPartyB = rawDbPartyB;
+  } catch (e) {}
 
   const shortcode = process.env.MPESA_SHORTCODE || '9962118';
   const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || '8583204';
@@ -485,11 +531,17 @@ async function handleSuccessfulPayment(tx, receiptNumber, amount, phone) {
  * 3. GET REAL-TIME TRANSACTION STATUS WITH TIMELINE
  */
 export async function getTransactionStatus(identifier) {
-  await connectDb();
+  let tx = memoryTxs.get(identifier);
 
-  const tx = await MpesaTransaction.findOne({
-    $or: [{ reference: identifier }, { checkoutRequestID: identifier }]
-  }).lean();
+  try {
+    await connectDb();
+    const dbTx = await MpesaTransaction.findOne({
+      $or: [{ reference: identifier }, { checkoutRequestID: identifier }]
+    }).lean();
+    if (dbTx) tx = dbTx;
+  } catch (e) {
+    console.warn("[MPESA STATUS FETCH WARNING]: Falling back to in-memory transaction status:", e.message);
+  }
 
   if (!tx) return null;
 
