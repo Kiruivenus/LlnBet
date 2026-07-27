@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /?page=home
+Allow: /?page=live
+Allow: /?page=results
+Allow: /?page=promotions
+Allow: /?page=jackpot-streak
+Allow: /?page=support
+Allow: /?page=responsible-gaming
+
+Disallow: /api/admin/
+Disallow: /admin
+Disallow: /?page=admin
+
+Sitemap: https://www.llnebet.co.ke/sitemap.xml

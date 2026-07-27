@@ -185,6 +185,28 @@ export function renderHomeView() {
       </div>
     </div>
 
+    <!-- Rich SEO Content Section for Search Engines (Linebet Kenya & Leading Sportsbooks) -->
+    <section class="seo-keywords-section" style="margin-top: 32px; padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6;">
+      <h1 style="font-size: 1.1rem; font-weight: 900; color: var(--text-primary); margin-bottom: 10px;">LlnBet Kenya (Linebet) | #1 Online Sports Betting & Live Odds in Kenya</h1>
+      <p style="margin-bottom: 12px;">
+        Welcome to <strong>LlnBet Kenya</strong> (commonly searched as <em>Linebet.com</em> or <em>Linebet Kenya</em>), Kenya's top-rated sports betting and live online casino platform. 
+        Whether you are searching for high odds on the English Premier League, UEFA Champions League, La Liga, Serie A, NBA, or Tennis, <strong>LlnBet</strong> provides the highest payout margins and fastest betting markets in Kenya.
+      </p>
+      
+      <h2 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 14px 0 6px 0;">Instant M-Pesa STK Push Deposits & Fast Payouts</h2>
+      <p style="margin-bottom: 12px;">
+        Compared to other leading Kenyan betting companies like <em>SportPesa, Betika, Odibets, MozzartBet, 22Bet, and 1xBet Kenya</em>, LlnBet offers a seamless <strong>M-Pesa STK Push deposit system</strong>. Enter your phone number, specify your deposit amount, and approve the M-Pesa PIN prompt directly on your mobile handset for instant account balance top-ups.
+      </p>
+
+      <h2 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 14px 0 6px 0;">Why Choose LlnBet Kenya?</h2>
+      <ul style="padding-left: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+        <li><strong>Highest Odds:</strong> Competitive market odds on soccer, basketball, boxing, and virtual sports.</li>
+        <li><strong>Live In-Play Betting:</strong> Instant live match statistics, dynamic scoreboards, and cashout features.</li>
+        <li><strong>Aviator & Casino Games:</strong> Play Aviator, Gates of Olympus, Lightning Roulette, and Slots with instant winnings.</li>
+        <li><strong>24/7 Customer Service:</strong> Live agent support available around the clock via live chat and phone.</li>
+      </ul>
+    </section>
+
     <!-- Footer -->
     <footer style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.82rem; display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">

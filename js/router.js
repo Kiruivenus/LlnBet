@@ -19,8 +19,37 @@ import { renderNotificationsView } from './views/notifications.js';
 import { renderAdminView } from './views/admin.js';
 import { renderResultsView } from './views/results.js';
 
+function updateSeoMetadata(page) {
+  const metaTitles = {
+    home: 'LlnBet Kenya | Best Sports Betting, Live Odds & Casino | Linebet Kenya',
+    live: 'Live In-Play Sports Betting & Odds | LlnBet Kenya',
+    results: 'Latest Match Results & Scoreboards | LlnBet Kenya',
+    promotions: 'Sports Betting Bonuses & Deposit Promotions | LlnBet Kenya',
+    'jackpot-streak': 'Mega Jackpot Streak & Multi-Bet Bonuses | LlnBet Kenya',
+    profile: 'Deposit & Profile Cashier | LlnBet Kenya',
+    'my-bets': 'My Active Bets & History | LlnBet Kenya',
+    login: 'Account Login | LlnBet Kenya (Linebet)',
+    register: 'Register New Account | LlnBet Kenya',
+    support: '24/7 Live Customer Support | LlnBet Kenya',
+    'responsible-gaming': 'Play Safe & Responsible Gaming | LlnBet Kenya'
+  };
+
+  const metaDescriptions = {
+    home: "LlnBet (Linebet Kenya) is Kenya's top online sports betting & casino platform. Enjoy highest Premier League odds, instant M-Pesa deposits & fast withdrawals, Aviator, Jackpots & 24/7 support.",
+    live: "Bet live in-play on Premier League, Champions League, NBA & Tennis with real-time scoreboards, cashout, and instant M-Pesa payouts on LlnBet Kenya.",
+    promotions: "Get Kenya's best sports betting bonuses, weekly cashback, freebets, and deposit match promotions on LlnBet Kenya."
+  };
+
+  document.title = metaTitles[page] || 'LlnBet Kenya | Sports Betting & Live Casino';
+  const descEl = document.querySelector('meta[name="description"]');
+  if (descEl) {
+    descEl.setAttribute('content', metaDescriptions[page] || metaDescriptions.home);
+  }
+}
+
 export function route() {
   const page = state.data.currentPage;
+  updateSeoMetadata(page);
 
   const protectedPages = ['profile', 'my-bets', 'transactions', 'notifications', 'jackpot-streak'];
 

@@ -24,6 +24,15 @@ app.use(express.json());
 // Serve static frontend files from parent root directory
 app.use(express.static(path.resolve(__dirname, '..')));
 
+// SEO Webmaster Crawler Routes
+app.get(['/sitemap.xml', '/sitemap'], (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'sitemap.xml'));
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'robots.txt'));
+});
+
 const JWT_SECRET = process.env.JWT_SECRET || 'betpulse_super_secret_jwt_key_2026';
 
 // Middleware: Ensure Database Connection on incoming API requests
