@@ -602,6 +602,9 @@ function showSuccessModal(data, amount, user) {
 }
 
 function showFailureModal(data) {
+  // Remove any pre-existing failure modal instances to prevent ID collisions
+  document.querySelectorAll('#mpesa-failure-modal').forEach(el => el.remove());
+
   const err = data.humanError || {};
   const title = err.title || 'M-Pesa Payment Failed';
   const explanation = err.explanation || data.errorMessage || data.reason || 'The M-Pesa transaction was cancelled or timed out.';
@@ -629,7 +632,7 @@ function showFailureModal(data) {
 
         <!-- Action Buttons -->
         <div style="display: flex; gap: 10px; margin-top: 4px;">
-          <button id="retry-failure-modal-btn" style="flex: 1; height: 44px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.88rem; cursor: pointer;">
+          <button id="retry-failure-modal-btn" style="flex: 1; height: 44px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.88rem; cursor: pointer; box-shadow: 0 4px 12px rgba(56, 102, 42, 0.3);">
             Try Deposit Again
           </button>
           <button id="close-failure-modal-btn" style="height: 44px; padding: 0 16px; background: var(--bg-surface-hover); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); font-weight: 700; font-size: 0.85rem; cursor: pointer;">
@@ -643,12 +646,32 @@ function showFailureModal(data) {
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-  const closeModal = () => {
-    document.getElementById('mpesa-failure-modal')?.remove();
+  const handleDismiss = () => {
+    document.querySelectorAll('#mpesa-failure-modal').forEach(el => el.remove());
+    const depInput = document.getElementById('profile-deposit-amount');
+    if (depInput) {
+      depInput.focus();
+    }
   };
 
-  document.getElementById('retry-failure-modal-btn')?.addEventListener('click', closeModal);
-  document.getElementById('close-failure-modal-btn')?.addEventListener('click', closeModal);
+  const currentModal = document.getElementById('mpesa-failure-modal');
+  if (currentModal) {
+    const retryBtn = currentModal.querySelector('#retry-failure-modal-btn');
+    const dismissBtn = currentModal.querySelector('#close-failure-modal-btn');
+
+    if (retryBtn) {
+      retryBtn.onclick = handleDismiss;
+      retryBtn.addEventListener('click', handleDismiss);
+    }
+    if (dismissBtn) {
+      dismissBtn.onclick = handleDismiss;
+      dismissBtn.addEventListener('click', handleDismiss);
+    }
+
+    currentModal.addEventListener('click', (e) => {
+      if (e.target === currentModal) handleDismiss();
+    });
+  }
 }
 
 export default renderProfileView;
