@@ -91,6 +91,15 @@ export function renderSidebar() {
         </div>
       </a>
       ` : ''}
+
+      ${state.data.isLoggedIn ? `
+      <a href="#" class="sidebar-item" id="nav-sidebar-logout" style="margin-top: 10px; background: rgba(239, 68, 68, 0.08); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2);">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-icon" style="color: var(--color-danger);">${getMaterialIcon('logout')}</span>
+          <span style="font-weight: 800; color: var(--color-danger);">Logout</span>
+        </div>
+      </a>
+      ` : ''}
     </div>
 
     <!-- Security & Responsible Gaming Group -->
@@ -133,6 +142,11 @@ export function renderSidebar() {
   bindNav('nav-rg', 'responsible-gaming');
   bindNav('nav-chat', 'support');
   bindNav('nav-admin', 'admin');
+
+  document.getElementById('nav-sidebar-logout')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    state.logout();
+  });
 }
 
 export default renderSidebar;
