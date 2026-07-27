@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import { connectDb, getSetting, setSetting } from './db.js';
-import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction } from './models.js';
+import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction, BookingCode } from './models.js';
 import { matchCache } from './cache.js';
 import { syncMatchesFromEspn } from './services/syncService.js';
 import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './services/mpesaGateway.js';
@@ -49,6 +49,94 @@ if (!globalThis.__betpulse_memory_txs) globalThis.__betpulse_memory_txs = new Ma
 
 const memoryUsers = globalThis.__betpulse_memory_users;
 const memoryTransactions = globalThis.__betpulse_memory_txs;
+
+if (!globalThis.__betpulse_memory_booking_codes) globalThis.__betpulse_memory_booking_codes = new Map();
+const memoryBookingCodes = globalThis.__betpulse_memory_booking_codes;
+
+// Short Booking Code Generator Endpoint
+app.post('/api/booking-codes', async (req, res) => {
+  try {
+    const { selections } = req.body;
+    if (!Array.isArray(selections) || selections.length === 0) {
+      return res.status(400).json({ error: "Invalid or empty selections array." });
+    }
+
+    const cleanSelections = selections.map(s => ({
+      id: s.id,
+      matchId: s.matchId,
+      matchName: s.matchName,
+      team: s.team,
+      market: s.market,
+      odds: Number(s.odds)
+    }));
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let rawCode = '';
+    for (let i = 0; i < 5; i++) {
+      rawCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const code = rawCode;
+
+    // Cache in memory
+    memoryBookingCodes.set(code, cleanSelections);
+
+    // Save to DB if connected
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await BookingCode.create({ code, selections: cleanSelections });
+      } catch (e) {}
+    }
+
+    const host = req.headers.host || 'www.llnebet.co.ke';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const shareUrl = `${protocol}://${host}/?code=${code}`;
+
+    return res.json({
+      success: true,
+      code,
+      shareUrl,
+      selectionsCount: cleanSelections.length
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to generate booking code." });
+  }
+});
+
+// Short Booking Code Lookup Endpoint
+app.get(['/api/booking-codes/:code', '/booking-codes/:code'], async (req, res) => {
+  try {
+    const rawCode = String(req.params.code || '').trim().toUpperCase().replace('LLN-', '');
+    if (!rawCode) {
+      return res.status(400).json({ error: "Booking code is required." });
+    }
+
+    // Check memory first
+    if (memoryBookingCodes.has(rawCode)) {
+      return res.json({
+        success: true,
+        code: rawCode,
+        selections: memoryBookingCodes.get(rawCode)
+      });
+    }
+
+    // Check DB
+    if (mongoose.connection.readyState === 1) {
+      const doc = await BookingCode.findOne({ code: rawCode });
+      if (doc) {
+        memoryBookingCodes.set(rawCode, doc.selections);
+        return res.json({
+          success: true,
+          code: rawCode,
+          selections: doc.selections
+        });
+      }
+    }
+
+    return res.status(404).json({ error: "Booking code not found or expired." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to lookup booking code." });
+  }
+});
 
 // Resilience Helpers: Query MongoDB with In-Memory fallback and Retrying Connection checks
 async function findUserByPhone(phone) {

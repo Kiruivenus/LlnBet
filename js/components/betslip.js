@@ -241,15 +241,6 @@ export function renderBetslip() {
     state.notify('betslip');
   });
 
-  // Quick Stake Buttons Listener
-  container.querySelectorAll('.quick-stake-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const addVal = parseFloat(btn.getAttribute('data-val')) || 0;
-      const newStake = (currentStake || 0) + addVal;
-      state.setSelectionStake('global_multi', newStake);
-    });
-  });
-
   // Stake input change
   const stakeInput = document.getElementById('betslip-stake-input');
   stakeInput?.addEventListener('input', (e) => {
@@ -257,35 +248,56 @@ export function renderBetslip() {
     state.setSelectionStake('global_multi', val);
   });
 
-  // Share Auto-Loading Link Action Handler
+  // Share Auto-Loading Short Link Action Handler
   document.getElementById('betslip-share-code-btn')?.addEventListener('click', async () => {
-    const payload = selections.map(s => ({
-      id: s.id,
-      matchId: s.matchId,
-      matchName: s.matchName,
-      team: s.team,
-      market: s.market,
-      odds: s.odds
-    }));
+    const btn = document.getElementById('betslip-share-code-btn');
+    const origText = btn.innerHTML;
+    try {
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
 
-    const encodedData = btoa(encodeURIComponent(JSON.stringify(payload)));
-    const shareUrl = `${window.location.origin}/?share=${encodedData}`;
-    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const bookingCode = `LLN-${randomHex}`;
-    const shareText = `🔥 Check out my LlnBet accumulator ticket (${selections.length} picks, ${formatOdds(formattedOdds)} total odds)! Tap this link to load my exact selections into your betslip instantly: ${shareUrl}`;
+      const res = await fetch('/api/booking-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selections })
+      });
+      const data = await res.json();
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `LlnBet Accumulator Ticket (${bookingCode})`,
-          text: shareText,
-          url: shareUrl
-        });
-      } catch (err) {
+      let shareUrl = '';
+      let bookingCode = '';
+
+      if (res.ok && data.success) {
+        shareUrl = data.shareUrl;
+        bookingCode = `LLN-${data.code}`;
+      } else {
+        // Fallback compact base64 format if offline
+        const compact = selections.map(s => [s.id, s.matchId, s.matchName, s.team, s.market, s.odds]);
+        const encodedData = btoa(encodeURIComponent(JSON.stringify(compact)));
+        shareUrl = `${window.location.origin}/?b=${encodedData}`;
+        bookingCode = `LLN-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      }
+
+      const shareText = `🔥 Check out my LlnBet accumulator ticket (${selections.length} picks, ${formatOdds(formattedOdds)} total odds)! Tap link to load into your betslip instantly: ${shareUrl}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `LlnBet Accumulator Ticket (${bookingCode})`,
+            text: shareText,
+            url: shareUrl
+          });
+        } catch (err) {
+          await copyToClipboard(bookingCode, shareUrl);
+        }
+      } else {
         await copyToClipboard(bookingCode, shareUrl);
       }
-    } else {
-      await copyToClipboard(bookingCode, shareUrl);
+    } catch (err) {
+      alert("Failed to generate short share link.");
+    } finally {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.innerHTML = origText;
     }
   });
 

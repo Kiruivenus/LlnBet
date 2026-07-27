@@ -138,6 +138,13 @@ const MpesaTransactionSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// Booking Code Schema (Short Share Links)
+const BookingCodeSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true, index: true },
+  selections: { type: Array, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 export const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
@@ -146,4 +153,5 @@ export const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHi
 export const Match = mongoose.models.Match || mongoose.model('Match', MatchSchema);
 export const Setting = mongoose.models.Setting || mongoose.model('Setting', SettingSchema);
 export const MpesaTransaction = mongoose.models.MpesaTransaction || mongoose.model('MpesaTransaction', MpesaTransactionSchema);
+export const BookingCode = mongoose.models.BookingCode || mongoose.model('BookingCode', BookingCodeSchema);
 

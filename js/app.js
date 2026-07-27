@@ -121,20 +121,48 @@ async function initApp() {
     state.data.currentPage = 'admin';
   }
 
-  // Check for auto-loading shareable betslip link (?share=...)
+  // Check for auto-loading shareable betslip link (?code=... or ?b=... or ?share=...)
   const urlParams = new URLSearchParams(window.location.search);
+  const codeParam = urlParams.get('code');
+  const compactParam = urlParams.get('b');
   const shareData = urlParams.get('share');
-  if (shareData) {
+
+  let loadedSelections = null;
+
+  if (codeParam) {
+    try {
+      const res = await fetch(`/api/booking-codes/${encodeURIComponent(codeParam)}`);
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.selections)) {
+        loadedSelections = data.selections;
+      }
+    } catch (e) {}
+  } else if (compactParam) {
+    try {
+      const decodedJson = decodeURIComponent(atob(compactParam));
+      const rawArr = JSON.parse(decodedJson);
+      if (Array.isArray(rawArr)) {
+        loadedSelections = rawArr.map(item => ({
+          id: item[0],
+          matchId: item[1],
+          matchName: item[2],
+          team: item[3],
+          market: item[4],
+          odds: item[5]
+        }));
+      }
+    } catch (e) {}
+  } else if (shareData) {
     try {
       const decodedJson = decodeURIComponent(atob(shareData));
-      const loadedSelections = JSON.parse(decodedJson);
-      if (Array.isArray(loadedSelections) && loadedSelections.length > 0) {
-        state.data.betslip.selections = loadedSelections;
-        state.persistBetslip();
-      }
-    } catch (err) {
-      console.warn('Failed to parse shared betslip link:', err);
-    }
+      const rawArr = JSON.parse(decodedJson);
+      if (Array.isArray(rawArr)) loadedSelections = rawArr;
+    } catch (e) {}
+  }
+
+  if (loadedSelections && loadedSelections.length > 0) {
+    state.data.betslip.selections = loadedSelections;
+    state.persistBetslip();
   }
 
   // Wait for state session restoration to finish before initial routing
@@ -155,10 +183,10 @@ async function initApp() {
   hideSplashLoader();
 
   // Auto-open betslip drawer if selections were loaded from share link
-  if (shareData && state.data.betslip.selections.length > 0) {
+  if (loadedSelections && loadedSelections.length > 0) {
     setTimeout(() => {
       openBetslipDrawer();
-      alert(`🎉 ${state.data.betslip.selections.length} selection(s) automatically loaded into your betslip from the shared link!`);
+      alert(`🎉 ${loadedSelections.length} selection(s) automatically loaded into your betslip from the share link!`);
     }, 500);
   }
 
