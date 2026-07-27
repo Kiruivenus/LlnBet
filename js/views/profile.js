@@ -523,6 +523,14 @@ function showSuccessModal(data, amount, user) {
   const receipt = data.receiptNumber || 'MP-' + Math.floor(Math.random() * 900000 + 100000);
   const ref = data.reference || 'LLN-DEP-' + Math.floor(Math.random() * 900000 + 100000);
 
+  // Ensure window.state is accessible
+  if (typeof window !== 'undefined') {
+    window.state = state;
+  }
+
+  // Remove any pre-existing modal instances to prevent ID collision
+  document.querySelectorAll('#mpesa-success-modal').forEach(el => el.remove());
+
   const modalHtml = `
     <div id="mpesa-success-modal" style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
       <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 20px; text-align: center;">
@@ -563,7 +571,7 @@ function showSuccessModal(data, amount, user) {
 
         <!-- Modal Action Buttons -->
         <div style="display: flex; gap: 10px; margin-top: 4px;">
-          <button id="close-success-modal-btn" style="flex: 1; height: 44px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(56, 102, 42, 0.3);">
+          <button id="close-success-modal-btn" class="close-success-action-trigger" style="flex: 1; height: 44px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(56, 102, 42, 0.3);">
             Done & Return to Dashboard
           </button>
         </div>
@@ -574,10 +582,23 @@ function showSuccessModal(data, amount, user) {
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-  document.getElementById('close-success-modal-btn')?.addEventListener('click', () => {
-    document.getElementById('mpesa-success-modal')?.remove();
+  const handleDismiss = () => {
+    document.querySelectorAll('#mpesa-success-modal').forEach(el => el.remove());
     state.setPage('home');
-  });
+  };
+
+  const newBtn = document.querySelector('#mpesa-success-modal #close-success-modal-btn');
+  if (newBtn) {
+    newBtn.onclick = handleDismiss;
+    newBtn.addEventListener('click', handleDismiss);
+  }
+
+  const modalOverlay = document.getElementById('mpesa-success-modal');
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) handleDismiss();
+    });
+  }
 }
 
 function showFailureModal(data) {
