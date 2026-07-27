@@ -139,27 +139,50 @@ async function appendStateHistory(tx, status, statusMessage, errorCode = null, e
   if (!tx.history) tx.history = [];
   if (!tx.processingLogs) tx.processingLogs = [];
 
-  tx.history.push({
+  const historyItem = {
     status,
     statusMessage,
     timestamp: new Date(),
     errorCode,
     errorMessage
-  });
+  };
 
-  tx.processingLogs.push({
+  const logItem = {
     stage: status,
     log: statusMessage,
     timestamp: new Date()
-  });
+  };
 
-  // Save to DB safely if connected
+  tx.history.push(historyItem);
+  tx.processingLogs.push(logItem);
+
+  // Update in DB safely using atomic updateOne to eliminate ParallelSaveError
   try {
-    if (tx.save && typeof tx.save === 'function') {
+    if (tx._id) {
+      await MpesaTransaction.updateOne(
+        { _id: tx._id },
+        {
+          $set: {
+            status,
+            statusMessage,
+            errorCode,
+            errorMessage,
+            updatedAt: new Date(),
+            checkoutRequestID: tx.checkoutRequestID,
+            merchantRequestID: tx.merchantRequestID,
+            humanError: tx.humanError
+          },
+          $push: {
+            history: historyItem,
+            processingLogs: logItem
+          }
+        }
+      );
+    } else if (tx.save && typeof tx.save === 'function') {
       await tx.save();
     }
   } catch (e) {
-    console.warn("[MPESA DB SAVE WARNING]: Failed to save state to MongoDB:", e.message);
+    console.warn("[MPESA DB SAVE WARNING]:", e.message);
   }
 
   broadcastPaymentState(tx);
