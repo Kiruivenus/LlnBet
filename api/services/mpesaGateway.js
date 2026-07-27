@@ -307,38 +307,6 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
   const passkey = process.env.MPESA_PASSKEY || '';
 
-  // In Sandbox Mode, run smooth simulation flow
-  if (mpesaEnv === 'sandbox') {
-    console.log(`[SANDBOX SIMULATION] Running M-Pesa STK Sandbox Simulation for +${cleanedPhone}, KES ${roundedAmount}`);
-    const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
-    const mockMerchantId = `SIM-M-${Math.floor(Math.random() * 900000 + 100000)}`;
-
-    tx.checkoutRequestID = mockCheckoutId;
-    tx.merchantRequestID = mockMerchantId;
-
-    await appendStateHistory(tx, 'STK_SENT', `STK Push prompt initiated for +${cleanedPhone} (Sandbox Test Mode)`);
-
-    setTimeout(async () => {
-      try {
-        await appendStateHistory(tx, 'AWAITING_PIN', 'Simulating M-Pesa PIN confirmation prompt...');
-        setTimeout(async () => {
-          await handleSuccessfulPayment(tx, `MP-${Math.floor(Math.random() * 900000 + 100000)}`, roundedAmount, cleanedPhone);
-        }, 3000);
-      } catch (e) {
-        console.error("[SANDBOX SIMULATION ERROR]:", e.message);
-      }
-    }, 1500);
-
-    return {
-      success: true,
-      simulated: true,
-      reference,
-      checkoutRequestID: mockCheckoutId,
-      merchantRequestID: mockMerchantId,
-      message: "Sandbox STK push simulated."
-    };
-  }
-
   let dbPartyB = '';
   try {
     const partyBSetting = await Setting.findOne({ key: 'mpesaPartyB' });
