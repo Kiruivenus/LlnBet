@@ -123,7 +123,7 @@ function getMpesaTimestamp() {
  * STEP 1: VALIDATE REQUIRED ENVIRONMENT CONFIGURATION
  */
 export function validateEnvironmentConfig() {
-  const mpesaEnv = process.env.MPESA_ENV || 'live';
+  const mpesaEnv = process.env.MPESA_ENV || 'sandbox';
   const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
   const passkey = process.env.MPESA_PASSKEY || '';
@@ -138,6 +138,7 @@ export function validateEnvironmentConfig() {
   if (!shortcode || shortcode.includes('your_')) missing.push('MPESA_SHORTCODE');
   if (!callbackUrl || callbackUrl.includes('your_')) missing.push('MPESA_CALLBACK_URL');
 
+  // In Live mode, fail fast if credentials are missing
   if (mpesaEnv === 'live' && missing.length > 0) {
     return {
       valid: false,
@@ -299,12 +300,44 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
 
   await appendStateHistory(tx, 'INITIATED', 'Generating secure payment request...');
 
-  const mpesaEnv = process.env.MPESA_ENV || 'live';
+  const mpesaEnv = process.env.MPESA_ENV || 'sandbox';
   const baseUrl = mpesaEnv === 'live' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
 
   const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
   const passkey = process.env.MPESA_PASSKEY || '';
+
+  // In Sandbox Mode, run smooth simulation flow
+  if (mpesaEnv === 'sandbox') {
+    console.log(`[SANDBOX SIMULATION] Running M-Pesa STK Sandbox Simulation for +${cleanedPhone}, KES ${roundedAmount}`);
+    const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
+    const mockMerchantId = `SIM-M-${Math.floor(Math.random() * 900000 + 100000)}`;
+
+    tx.checkoutRequestID = mockCheckoutId;
+    tx.merchantRequestID = mockMerchantId;
+
+    await appendStateHistory(tx, 'STK_SENT', `STK Push prompt initiated for +${cleanedPhone} (Sandbox Test Mode)`);
+
+    setTimeout(async () => {
+      try {
+        await appendStateHistory(tx, 'AWAITING_PIN', 'Simulating M-Pesa PIN confirmation prompt...');
+        setTimeout(async () => {
+          await handleSuccessfulPayment(tx, `MP-${Math.floor(Math.random() * 900000 + 100000)}`, roundedAmount, cleanedPhone);
+        }, 3000);
+      } catch (e) {
+        console.error("[SANDBOX SIMULATION ERROR]:", e.message);
+      }
+    }, 1500);
+
+    return {
+      success: true,
+      simulated: true,
+      reference,
+      checkoutRequestID: mockCheckoutId,
+      merchantRequestID: mockMerchantId,
+      message: "Sandbox STK push simulated."
+    };
+  }
 
   let dbPartyB = '';
   try {
