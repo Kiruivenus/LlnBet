@@ -576,7 +576,7 @@ function showSuccessModal(data, amount, user) {
 
   document.getElementById('close-success-modal-btn')?.addEventListener('click', () => {
     document.getElementById('mpesa-success-modal')?.remove();
-    renderProfileView();
+    state.setPage('home');
   });
 }
 
