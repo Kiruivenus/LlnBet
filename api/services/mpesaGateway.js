@@ -3,31 +3,28 @@ import { User, Transaction, Notification, MpesaTransaction, Setting } from '../m
 import { connectDb } from '../db.js';
 import { mapDarajaError } from './darajaErrorMapper.js';
 
-// In-memory registry for active Server-Sent Event (SSE) clients listening for payment updates
+// In-memory registry for active Server-Sent Event (SSE) clients
 const sseClients = new Map();
 
-// In-memory fallback transaction registry for maximum reliability
+// In-memory transaction registry for instant zero-latency retrieval
 const memoryTxs = new Map();
 
 /**
- * Register an active SSE response connection for real-time payment status streaming
+ * Register an active SSE response connection for real-time status streaming
  */
 export function registerSseClient(identifier, res) {
   sseClients.set(identifier, res);
-  
-  // Clean up on disconnect
   res.on('close', () => {
     sseClients.delete(identifier);
   });
 }
 
 /**
- * Broadcast real-time SSE payment frame to subscribed frontends
+ * Broadcast real-time SSE payment frame to connected frontends
  */
 export function broadcastPaymentState(tx) {
   if (!tx) return;
 
-  // Cache transaction in memory for instant retrieval
   if (tx.reference) memoryTxs.set(tx.reference, tx);
   if (tx.checkoutRequestID) memoryTxs.set(tx.checkoutRequestID, tx);
 
@@ -47,7 +44,8 @@ export function broadcastPaymentState(tx) {
     timestamp: tx.updatedAt || tx.createdAt,
     walletBefore: tx.walletBefore,
     walletAfter: tx.walletAfter,
-    timelineStep: getTimelineStep(tx.status)
+    timelineStep: getTimelineStep(tx.status),
+    debug: tx.debugInfo || null
   });
 
   identifiers.forEach(id => {
@@ -82,21 +80,38 @@ function getTimelineStep(status) {
 }
 
 /**
- * Format phone number to Safaricom standard 12-digit format (2547XXXXXXXX)
+ * STEP 5: STRICT PHONE NUMBER NORMALIZATION ENGINE
+ * Converts:
+ * 0712345678   -> 254712345678
+ * 712345678    -> 254712345678
+ * +254712345678-> 254712345678
+ * 0112345678   -> 254112345678
+ * 112345678    -> 254112345678
+ * +254112345678-> 254112345678
  */
 export function formatPhoneNumber(phone) {
   if (!phone) return '';
   let cleaned = String(phone).replace(/\D/g, '');
+
   if (cleaned.startsWith('0')) {
     cleaned = '254' + cleaned.slice(1);
   } else if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
     cleaned = '254' + cleaned;
   }
+
   return cleaned;
 }
 
 /**
- * Format current timestamp in Safaricom format YYYYMMDDHHmmss
+ * Validate phone number format strictly for Kenyan M-Pesa lines
+ */
+export function validateKenyanPhone(cleanedPhone) {
+  if (!cleanedPhone || cleanedPhone.length !== 12) return false;
+  return cleanedPhone.startsWith('2547') || cleanedPhone.startsWith('2541');
+}
+
+/**
+ * Format current timestamp in Safaricom Daraja format YYYYMMDDHHmmss
  */
 function getMpesaTimestamp() {
   const now = new Date();
@@ -105,29 +120,37 @@ function getMpesaTimestamp() {
 }
 
 /**
- * Retry helper with exponential backoff for transient network & gateway failures
+ * STEP 1: VALIDATE REQUIRED ENVIRONMENT CONFIGURATION
  */
-async function fetchWithExponentialBackoff(url, options, maxRetries = 3) {
-  let attempt = 0;
-  let delay = 1000;
+export function validateEnvironmentConfig() {
+  const mpesaEnv = process.env.MPESA_ENV || 'live';
+  const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
+  const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
+  const passkey = process.env.MPESA_PASSKEY || '';
+  const shortcode = process.env.MPESA_SHORTCODE || '';
+  const callbackUrl = process.env.MPESA_CALLBACK_URL || '';
 
-  while (attempt < maxRetries) {
-    try {
-      attempt++;
-      const response = await fetch(url, options);
-      if (response.ok || response.status === 400 || response.status === 401) {
-        return response; // Return HTTP response (don't retry client-level errors)
-      }
-    } catch (err) {
-      if (attempt >= maxRetries) throw err;
-    }
-    await new Promise(res => setTimeout(res, delay));
-    delay *= 2; // 1s, 2s, 4s
+  const missing = [];
+
+  if (!consumerKey || consumerKey.includes('your_')) missing.push('MPESA_CONSUMER_KEY');
+  if (!consumerSecret || consumerSecret.includes('your_')) missing.push('MPESA_CONSUMER_SECRET');
+  if (!passkey || passkey.includes('your_')) missing.push('MPESA_PASSKEY');
+  if (!shortcode || shortcode.includes('your_')) missing.push('MPESA_SHORTCODE');
+  if (!callbackUrl || callbackUrl.includes('your_')) missing.push('MPESA_CALLBACK_URL');
+
+  if (mpesaEnv === 'live' && missing.length > 0) {
+    return {
+      valid: false,
+      missingVariables: missing,
+      error: `Missing or placeholder environment variables: ${missing.join(', ')}.`
+    };
   }
+
+  return { valid: true, mpesaEnv };
 }
 
 /**
- * Safely update state history & processing logs on an MpesaTransaction document
+ * Safely append state history and processing logs using atomic updateOne
  */
 async function appendStateHistory(tx, status, statusMessage, errorCode = null, errorMessage = null) {
   tx.status = status;
@@ -156,7 +179,6 @@ async function appendStateHistory(tx, status, statusMessage, errorCode = null, e
   tx.history.push(historyItem);
   tx.processingLogs.push(logItem);
 
-  // Update in DB safely using atomic updateOne to eliminate ParallelSaveError
   try {
     if (tx._id) {
       await MpesaTransaction.updateOne(
@@ -170,7 +192,8 @@ async function appendStateHistory(tx, status, statusMessage, errorCode = null, e
             updatedAt: new Date(),
             checkoutRequestID: tx.checkoutRequestID,
             merchantRequestID: tx.merchantRequestID,
-            humanError: tx.humanError
+            humanError: tx.humanError,
+            debugInfo: tx.debugInfo
           },
           $push: {
             history: historyItem,
@@ -178,8 +201,6 @@ async function appendStateHistory(tx, status, statusMessage, errorCode = null, e
           }
         }
       );
-    } else if (tx.save && typeof tx.save === 'function') {
-      await tx.save();
     }
   } catch (e) {
     console.warn("[MPESA DB SAVE WARNING]:", e.message);
@@ -189,21 +210,26 @@ async function appendStateHistory(tx, status, statusMessage, errorCode = null, e
 }
 
 /**
- * 1. INITIATE M-PESA STK PUSH TRANSACTION
+ * END-TO-END PRODUCTION STK PUSH INITIATION PIPELINE
  */
-export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = '', deviceInfo = '' }) {
+export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = '', deviceInfo = '', isDebug = false }) {
+  const startTime = Date.now();
+  console.log(`\n======================================================`);
+  console.log(`[STAGE 1] INCOMING DEPOSIT REQUEST: Amount KES ${amount}, Phone: ${phone}, User: ${userId}`);
+  console.log(`======================================================`);
+
   try {
     await connectDb();
   } catch (e) {
-    console.warn("[MPESA DB CONNECT WARNING]: Proceeding with in-memory transaction cache:", e.message);
+    console.warn("[STAGE 1 WARNING] MongoDB connection pool check fallback:", e.message);
   }
 
+  // 1. Amount Validation
   const numericAmount = Number(amount);
   if (!numericAmount || isNaN(numericAmount) || numericAmount <= 0) {
     throw new Error("Please enter a valid deposit amount.");
   }
 
-  // Validate against active database limits with safe defaults
   let minDep = 200;
   let maxDep = 500000;
   try {
@@ -220,15 +246,25 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
     throw new Error(`Maximum deposit amount is KES ${maxDep.toLocaleString()}.`);
   }
 
+  // 2. Step 5: Phone Number Normalization & Validation
   const cleanedPhone = formatPhoneNumber(phone);
-  if (cleanedPhone.length !== 12 || !cleanedPhone.startsWith('254')) {
-    throw new Error("Please enter a valid 10-digit M-Pesa mobile phone number.");
+  console.log(`[STAGE 2] PHONE NORMALIZED: '${phone}' -> '${cleanedPhone}'`);
+
+  if (!validateKenyanPhone(cleanedPhone)) {
+    throw new Error("Please enter a valid Kenyan M-Pesa line (e.g. 0712345678 or 0112345678).");
+  }
+
+  // 3. Step 1: Validate Environment Variables
+  const envValidation = validateEnvironmentConfig();
+  if (!envValidation.valid) {
+    console.error(`[STAGE 3 FAILED] Environment variables missing:`, envValidation.missingVariables);
+    throw new Error(`Live Safaricom Credentials Required: ${envValidation.error}`);
   }
 
   const roundedAmount = Math.round(numericAmount);
   const reference = `LLN-DEP-${Math.floor(Math.random() * 900000 + 100000)}`;
 
-  // Create Pending Transaction Object
+  // Create Transaction Record
   let tx;
   try {
     tx = new MpesaTransaction({
@@ -237,40 +273,38 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
       phone: cleanedPhone,
       amount: roundedAmount,
       status: 'PENDING',
-      statusMessage: 'Payment request initialized',
+      statusMessage: 'Connecting to Safaricom...',
       ipAddress,
       deviceInfo,
-      history: [{ status: 'PENDING', statusMessage: 'Payment request initialized', timestamp: new Date() }],
-      processingLogs: [{ stage: 'PENDING', log: `User initialized deposit request of KES ${roundedAmount.toLocaleString()}`, timestamp: new Date() }]
+      history: [{ status: 'PENDING', statusMessage: 'Connecting to Safaricom...', timestamp: new Date() }],
+      processingLogs: [{ stage: 'PENDING', log: `Initiated KES ${roundedAmount.toLocaleString()} for +${cleanedPhone}`, timestamp: new Date() }]
     });
     await tx.save();
   } catch (e) {
-    console.warn("[MPESA TX INIT WARNING]: Falling back to memory object:", e.message);
     tx = {
       reference,
       userId,
       phone: cleanedPhone,
       amount: roundedAmount,
       status: 'PENDING',
-      statusMessage: 'Payment request initialized',
+      statusMessage: 'Connecting to Safaricom...',
       ipAddress,
       deviceInfo,
-      history: [{ status: 'PENDING', statusMessage: 'Payment request initialized', timestamp: new Date() }],
-      processingLogs: [{ stage: 'PENDING', log: `User initialized deposit request of KES ${roundedAmount.toLocaleString()}`, timestamp: new Date() }]
+      history: [{ status: 'PENDING', statusMessage: 'Connecting to Safaricom...', timestamp: new Date() }],
+      processingLogs: [{ stage: 'PENDING', log: `Initiated KES ${roundedAmount.toLocaleString()} for +${cleanedPhone}`, timestamp: new Date() }]
     };
   }
 
   broadcastPaymentState(tx);
 
-  // Transition to INITIATED state
-  await appendStateHistory(tx, 'INITIATED', 'Validating gateway parameters and obtaining OAuth authorization token...');
+  await appendStateHistory(tx, 'INITIATED', 'Generating secure payment request...');
 
   const mpesaEnv = process.env.MPESA_ENV || 'live';
   const baseUrl = mpesaEnv === 'live' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
 
   const consumerKey = process.env.MPESA_CONSUMER_KEY || '';
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET || '';
-  const passkey = process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
+  const passkey = process.env.MPESA_PASSKEY || '';
 
   let dbPartyB = '';
   try {
@@ -282,276 +316,271 @@ export async function initiateMpesaDeposit({ userId, phone, amount, ipAddress = 
   const shortcode = process.env.MPESA_SHORTCODE || '9962118';
   const tillNumber = dbPartyB || process.env.MPESA_TILL_NUMBER || '8583204';
 
-  const isPlaceholder = !consumerKey ||
-    consumerKey.includes('your_') ||
-    !consumerSecret ||
-    consumerSecret.includes('your_');
+  // 4. Step 2: Request OAuth Token with Logging & Retry
+  console.log(`[STAGE 4] REQUESTING OAUTH TOKEN FROM: ${baseUrl}/oauth/v1/generate?grant_type=client_credentials`);
+  const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
 
-  // In Live Mode, if keys are missing/placeholders, abort with clear actionable guidance
-  if (mpesaEnv === 'live' && isPlaceholder) {
-    const errorDetails = mapDarajaError('LIVE_CREDENTIALS_MISSING', 'Live Safaricom credentials required. Please configure MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in Vercel Environment Variables.');
-    tx.humanError = {
-      title: 'Live Safaricom Credentials Required',
-      explanation: 'Your Vercel deployment is set to Live Mode (MPESA_ENV=live), but MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET are set to placeholder values.',
-      suggestion: 'Add your live Safaricom Daraja API credentials in Vercel Environment Variables (or set MPESA_ENV=sandbox for testing).'
-    };
-    appendStateHistory(tx, 'FAILED', 'Live Safaricom Credentials Required', 'LIVE_CREDENTIALS_MISSING', errorDetails.explanation);
-    await tx.save();
-    throw new Error("Live Safaricom Credentials Required: Please configure valid MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in Vercel Environment Variables.");
-  }
-
-  // In Sandbox Mode with placeholder keys, run sandbox simulation cleanly
-  if (mpesaEnv === 'sandbox' && isPlaceholder) {
-    const mockCheckoutId = `SIM-WS-${Math.floor(Math.random() * 900000 + 100000)}`;
-    const mockMerchantId = `SIM-M-${Math.floor(Math.random() * 900000 + 100000)}`;
-
-    tx.checkoutRequestID = mockCheckoutId;
-    tx.merchantRequestID = mockMerchantId;
-
-    appendStateHistory(tx, 'STK_SENT', `STK Push prompt initiated for +${cleanedPhone} (Sandbox Test Mode)`);
-    await tx.save();
-
-    setTimeout(async () => {
-      try {
-        const freshTx = await MpesaTransaction.findOne({ reference });
-        if (freshTx && freshTx.status === 'STK_SENT') {
-          appendStateHistory(freshTx, 'AWAITING_PIN', 'Simulating M-Pesa PIN confirmation prompt...');
-          await freshTx.save();
-
-          // Auto-credit sandbox simulated deposit after 3.5 seconds
-          setTimeout(async () => {
-            await handleSuccessfulPayment(freshTx, `MP-${Math.floor(Math.random() * 900000 + 100000)}`, roundedAmount, cleanedPhone);
-          }, 3000);
-        }
-      } catch (e) {
-        console.error("[SANDBOX SIMULATION ERROR]:", e.message);
-      }
-    }, 1500);
-
-    return {
-      success: true,
-      simulated: true,
-      reference,
-      checkoutRequestID: mockCheckoutId,
-      message: "Sandbox STK push simulated."
-    };
-  }
-
-  // -------------------------------------------------------------------
-  // REAL SAFARICOM DARAJA API EXECUTION WITH RETRY LOGIC
-  // -------------------------------------------------------------------
+  let tokenResponse;
   try {
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
-    const tokenResponse = await fetchWithExponentialBackoff(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
+    tokenResponse = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       method: 'GET',
       headers: { 'Authorization': `Basic ${auth}` }
-    }, 3);
+    });
+  } catch (netErr) {
+    console.error(`[STAGE 4 NET ERROR] OAuth fetch failed:`, netErr.message);
+    const errObj = mapDarajaError('OAUTH_NETWORK_ERROR', netErr.message);
+    tx.humanError = errObj;
+    await appendStateHistory(tx, 'FAILED', 'OAuth Network Failure', 'OAUTH_NETWORK_ERROR', netErr.message);
+    throw new Error(`Safaricom OAuth Network Failure: ${netErr.message}`);
+  }
 
-    if (!tokenResponse.ok) {
-      const errText = await tokenResponse.text();
-      const errObj = mapDarajaError('OAUTH_FAILURE', errText);
-      tx.humanError = errObj;
-      appendStateHistory(tx, 'FAILED', 'Safaricom OAuth Authorization Failed', 'OAUTH_FAILURE', errText);
-      await tx.save();
-      throw new Error(`Safaricom Authorization Failed: ${errText}`);
+  const tokenText = await tokenResponse.text();
+  console.log(`[STAGE 4 OAUTH RESPONSE] Status ${tokenResponse.status}: ${tokenText}`);
+
+  if (!tokenResponse.ok) {
+    const errObj = mapDarajaError('OAUTH_FAILURE', tokenText);
+    tx.humanError = errObj;
+    await appendStateHistory(tx, 'FAILED', 'Safaricom OAuth Authorization Rejected', 'OAUTH_FAILURE', tokenText);
+    throw new Error(`Safaricom OAuth Authorization Rejected (${tokenResponse.status}): ${tokenText}`);
+  }
+
+  let tokenData;
+  try {
+    tokenData = JSON.parse(tokenText);
+  } catch (e) {
+    throw new Error("Invalid OAuth response JSON from Safaricom.");
+  }
+
+  const accessToken = tokenData.access_token;
+  if (!accessToken) {
+    throw new Error("No access_token field returned in Safaricom OAuth payload.");
+  }
+
+  console.log(`[STAGE 5] OAUTH TOKEN VALIDATED: ${accessToken.slice(0, 8)}... (Expires in ${tokenData.expires_in}s)`);
+
+  // 5. Step 3: Construct STK Push Payload
+  const timestamp = getMpesaTimestamp();
+  const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
+  const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://www.llnebet.co.ke/api/mpesa-callback';
+
+  let transactionType = process.env.MPESA_TRANSACTION_TYPE || '';
+  if (!transactionType) {
+    if (process.env.MPESA_TILL_NUMBER && process.env.MPESA_TILL_NUMBER !== shortcode) {
+      transactionType = 'CustomerBuyGoodsOnline';
+    } else {
+      transactionType = 'CustomerPayBillOnline';
     }
+  }
 
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
+  const partyB = (transactionType === 'CustomerBuyGoodsOnline' || transactionType === 'CustomerBuyGoods')
+    ? (process.env.MPESA_TILL_NUMBER || tillNumber || shortcode)
+    : shortcode;
 
-    const timestamp = getMpesaTimestamp();
-    const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
-    const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://lln-bet.vercel.app/api/mpesa-callback';
+  const payload = {
+    BusinessShortCode: shortcode,
+    Password: password,
+    Timestamp: timestamp,
+    TransactionType: transactionType === 'CustomerBuyGoods' ? 'CustomerBuyGoodsOnline' : transactionType,
+    Amount: roundedAmount,
+    PartyA: cleanedPhone,
+    PartyB: partyB,
+    PhoneNumber: cleanedPhone,
+    CallBackURL: callbackUrl,
+    AccountReference: process.env.MPESA_ACCOUNT_REF || "LlnBetWallet",
+    TransactionDesc: "Wallet Deposit"
+  };
 
-    let transactionType = process.env.MPESA_TRANSACTION_TYPE || '';
-    if (!transactionType) {
-      if (process.env.MPESA_TILL_NUMBER && process.env.MPESA_TILL_NUMBER !== shortcode) {
-        transactionType = 'CustomerBuyGoodsOnline';
-      } else {
-        transactionType = 'CustomerPayBillOnline';
-      }
-    }
+  console.log(`[STAGE 6] STK PAYLOAD ASSEMBLED:`, JSON.stringify({ ...payload, Password: '[MASKED]' }, null, 2));
 
-    const partyB = (transactionType === 'CustomerBuyGoodsOnline' || transactionType === 'CustomerBuyGoods')
-      ? (process.env.MPESA_TILL_NUMBER || tillNumber || shortcode)
-      : shortcode;
+  await appendStateHistory(tx, 'STK_SENT', 'Sending STK Push to Safaricom...');
 
-    const payload = {
-      BusinessShortCode: shortcode,
-      Password: password,
-      Timestamp: timestamp,
-      TransactionType: transactionType === 'CustomerBuyGoods' ? 'CustomerBuyGoodsOnline' : transactionType,
-      Amount: roundedAmount,
-      PartyA: cleanedPhone,
-      PartyB: partyB,
-      PhoneNumber: cleanedPhone,
-      CallBackURL: callbackUrl,
-      AccountReference: process.env.MPESA_ACCOUNT_REF || "LlnBetWallet",
-      TransactionDesc: "Wallet Deposit"
-    };
+  // 6. Step 4: Send STK Push & Log Safaricom Response
+  console.log(`[STAGE 7] DISPATCHING STK PUSH TO: ${baseUrl}/mpesa/stkpush/v1/processrequest`);
 
-    appendStateHistory(tx, 'STK_SENT', `Dispatching STK Push payload to Safaricom Daraja gateway (${baseUrl})...`);
-    await tx.save();
-
-    const stkResponse = await fetchWithExponentialBackoff(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
+  let stkResponse;
+  try {
+    stkResponse = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
-    }, 3);
-
-    const stkData = await stkResponse.json();
-
-    if (!stkResponse.ok || stkData.ResponseCode !== "0") {
-      const errorMsg = stkData.errorMessage || stkData.ResponseDescription || JSON.stringify(stkData);
-      const errObj = mapDarajaError(stkData.ResponseCode || 'STK_REJECTED', errorMsg);
-      tx.humanError = errObj;
-      appendStateHistory(tx, 'FAILED', 'Safaricom Gateway Rejected STK Push Request', stkData.ResponseCode || 'STK_REJECTED', errorMsg);
-      await tx.save();
-      throw new Error(`Safaricom Gateway Rejected Request: ${errorMsg}`);
-    }
-
-    tx.checkoutRequestID = stkData.CheckoutRequestID;
-    tx.merchantRequestID = stkData.MerchantRequestID;
-
-    appendStateHistory(tx, 'AWAITING_PIN', `STK Push delivered to +${cleanedPhone}. Awaiting user PIN confirmation on mobile handset.`);
-    await tx.save();
-
-    return {
-      success: true,
-      simulated: false,
-      reference,
-      checkoutRequestID: stkData.CheckoutRequestID,
-      merchantRequestID: stkData.MerchantRequestID,
-      message: stkData.CustomerMessage || "STK push prompt sent to your mobile phone."
-    };
-
-  } catch (err) {
-    if (tx.status !== 'FAILED') {
-      const errObj = mapDarajaError('GATEWAY_ERROR', err.message);
-      tx.humanError = errObj;
-      appendStateHistory(tx, 'FAILED', 'STK Push Initiation Error', 'GATEWAY_ERROR', err.message);
-      await tx.save();
-    }
-    throw err;
+    });
+  } catch (stkErr) {
+    console.error(`[STAGE 7 NET ERROR] STK fetch failed:`, stkErr.message);
+    const errObj = mapDarajaError('STK_NETWORK_ERROR', stkErr.message);
+    tx.humanError = errObj;
+    await appendStateHistory(tx, 'FAILED', 'Safaricom STK Gateway Network Error', 'STK_NETWORK_ERROR', stkErr.message);
+    throw new Error(`Safaricom STK Gateway Network Error: ${stkErr.message}`);
   }
+
+  const stkText = await stkResponse.text();
+  console.log(`[STAGE 8] SAFARICOM RAW RESPONSE (Status ${stkResponse.status}):`, stkText);
+
+  let stkData;
+  try {
+    stkData = JSON.parse(stkText);
+  } catch (e) {
+    throw new Error("Invalid JSON response from Safaricom STK Push endpoint.");
+  }
+
+  // Step 11: Step Debug Mode Payload Attachment
+  tx.debugInfo = {
+    durationMs: Date.now() - startTime,
+    timestamp,
+    maskedPassword: password.slice(0, 6) + '...' + password.slice(-4),
+    oauthStatus: tokenResponse.status,
+    stkHttpStatus: stkResponse.status,
+    payload: { ...payload, Password: '[MASKED]' },
+    safaricomResponse: stkData
+  };
+
+  // Step 4 Verification: Check ResponseCode == "0"
+  if (!stkResponse.ok || String(stkData.ResponseCode) !== "0") {
+    const errorMsg = stkData.errorMessage || stkData.ResponseDescription || stkText;
+    console.error(`[STAGE 8 FAILED] Safaricom rejected STK Push. ResponseCode: ${stkData.ResponseCode}, Desc: ${errorMsg}`);
+
+    const errObj = mapDarajaError(stkData.ResponseCode || 'STK_REJECTED', errorMsg);
+    tx.humanError = errObj;
+    await appendStateHistory(tx, 'FAILED', `Safaricom Rejected Request (${stkData.ResponseCode || 'ERR'}): ${errorMsg}`, String(stkData.ResponseCode || 'STK_REJECTED'), errorMsg);
+    throw new Error(`Safaricom Rejected Request: ${errorMsg}`);
+  }
+
+  // Step 4 Success: Store IDs
+  tx.checkoutRequestID = stkData.CheckoutRequestID;
+  tx.merchantRequestID = stkData.MerchantRequestID;
+
+  console.log(`[STAGE 8 SUCCESS] CheckoutRequestID: ${stkData.CheckoutRequestID}, MerchantRequestID: ${stkData.MerchantRequestID}`);
+
+  // Transition to AWAITING_PIN (Do NOT cancel based on timer!)
+  await appendStateHistory(tx, 'AWAITING_PIN', `STK Push delivered to +${cleanedPhone}. Awaiting M-Pesa PIN confirmation...`);
+
+  return {
+    success: true,
+    reference,
+    checkoutRequestID: stkData.CheckoutRequestID,
+    merchantRequestID: stkData.MerchantRequestID,
+    message: stkData.CustomerMessage || "STK push prompt sent to your mobile phone."
+  };
 }
 
 /**
- * 2. PROCESS SAFARICOM DARAJA CALLBACK WITH IDEMPOTENCY GUARD
+ * STEP 6: PROCESS SAFARICOM WEBHOOK CALLBACK (HTTP 200 OK)
  */
 export async function processMpesaCallback(callbackData) {
+  console.log(`\n------------------------------------------------------`);
+  console.log(`[STAGE 9] SAFARICOM WEBHOOK CALLBACK RECEIVED:`, JSON.stringify(callbackData, null, 2));
+  console.log(`------------------------------------------------------`);
+
   try {
     const callbackBody = callbackData?.Body?.stkCallback;
     if (!callbackBody) {
-      console.log("[CALLBACK HEALTH PING] Received non-STK webhook ping. Responding with 200 OK.");
+      console.log("[STAGE 9] Non-STK Webhook ping received. Returning 200 OK.");
       return { success: true, ResultCode: 0, ResultDesc: "Callback URL health check accepted" };
     }
 
     try {
       await connectDb();
-    } catch (dbErr) {
-      console.warn("[CALLBACK DB WARNING]: Failed to connect to DB during callback", dbErr.message);
-    }
+    } catch (e) {}
 
     const checkoutRequestID = callbackBody.CheckoutRequestID;
     const merchantRequestID = callbackBody.MerchantRequestID;
     const resultCode = callbackBody.ResultCode;
     const resultDesc = callbackBody.ResultDesc || '';
 
-    // Atomic database lookup to prevent duplicate crediting & race conditions
-    const tx = await MpesaTransaction.findOne({ checkoutRequestID });
+    const tx = memoryTxs.get(checkoutRequestID) || await MpesaTransaction.findOne({ checkoutRequestID });
 
-  if (!tx) {
-    console.warn(`[CALLBACK WARNING] Transaction with CheckoutRequestID ${checkoutRequestID} not found in database.`);
-    return { success: false, reason: "Transaction record not found" };
-  }
+    if (!tx) {
+      console.warn(`[STAGE 9 WARNING] Transaction with CheckoutID ${checkoutRequestID} not found in store.`);
+      return { success: true, ResultCode: 0, ResultDesc: "Transaction not found" };
+    }
 
-  // Idempotency Guard: Ignore duplicate callbacks for already finalized transactions
-  if (['SUCCESS', 'FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(tx.status)) {
-    console.log(`[CALLBACK IDEMPOTENCY GUARD] Transaction ${tx.reference} already in terminal state (${tx.status}). Ignoring duplicate callback.`);
-    return { success: true, duplicate: true, status: tx.status };
-  }
+    // Idempotency Guard
+    if (['SUCCESS', 'FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(tx.status)) {
+      console.log(`[STAGE 9 IDEMPOTENCY] Transaction ${tx.reference} already in state ${tx.status}. Ignoring duplicate callback.`);
+      return { success: true, ResultCode: 0, ResultDesc: "Duplicate callback ignored" };
+    }
 
-  tx.callbackPayload = callbackData;
-  tx.merchantRequestID = merchantRequestID || tx.merchantRequestID;
+    tx.callbackPayload = callbackData;
+    tx.merchantRequestID = merchantRequestID || tx.merchantRequestID;
 
-  if (resultCode === 0) {
-    // Extract metadata
-    const metadata = callbackBody.CallbackMetadata?.Item || [];
-    const receiptItem = metadata.find(item => item.Name === 'MpesaReceiptNumber');
-    const amountItem = metadata.find(item => item.Name === 'Amount');
-    const phoneItem = metadata.find(item => item.Name === 'PhoneNumber');
+    // STEP 7: Only update state based on official Safaricom ResultCode!
+    if (resultCode === 0) {
+      console.log(`[STAGE 10] CALLBACK RESULT 0 (SUCCESS) for CheckoutID ${checkoutRequestID}`);
+      const metadata = callbackBody.CallbackMetadata?.Item || [];
+      const receiptItem = metadata.find(item => item.Name === 'MpesaReceiptNumber');
+      const amountItem = metadata.find(item => item.Name === 'Amount');
+      const phoneItem = metadata.find(item => item.Name === 'PhoneNumber');
 
-    const receiptNumber = receiptItem ? String(receiptItem.Value) : `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
-    const amount = amountItem ? Number(amountItem.Value) : tx.amount;
-    const phone = phoneItem ? String(phoneItem.Value) : tx.phone;
+      const receiptNumber = receiptItem ? String(receiptItem.Value) : `MP-${Math.floor(Math.random() * 900000 + 100000)}`;
+      const amount = amountItem ? Number(amountItem.Value) : tx.amount;
+      const phone = phoneItem ? String(phoneItem.Value) : tx.phone;
 
-    await handleSuccessfulPayment(tx, receiptNumber, amount, phone);
-    return { success: true, status: 'SUCCESS', receiptNumber };
-  } else {
-    // Handle failed / cancelled / timeout result code
-    const errObj = mapDarajaError(resultCode, resultDesc);
-    tx.errorCode = String(resultCode);
-    tx.errorMessage = resultDesc;
-    tx.humanError = errObj;
+      await handleSuccessfulPayment(tx, receiptNumber, amount, phone);
+      return { success: true, ResultCode: 0, ResultDesc: "Payment processed successfully" };
 
-    const finalState = errObj.status || 'FAILED';
-    appendStateHistory(tx, finalState, errObj.title + ': ' + resultDesc, String(resultCode), resultDesc);
-    await tx.save();
+    } else {
+      console.log(`[STAGE 10] CALLBACK RESULT ${resultCode} (FAILURE) for CheckoutID ${checkoutRequestID}: ${resultDesc}`);
+      const errObj = mapDarajaError(resultCode, resultDesc);
+      tx.errorCode = String(resultCode);
+      tx.errorMessage = resultDesc;
+      tx.humanError = errObj;
 
-    return { success: true, status: finalState, reason: resultDesc };
-  }
+      const finalState = (resultCode === 1032 || resultCode === 1037) ? 'CANCELLED' : (resultCode === 1031 ? 'TIMEOUT' : 'FAILED');
+      await appendStateHistory(tx, finalState, errObj.title + ': ' + resultDesc, String(resultCode), resultDesc);
+
+      return { success: true, ResultCode: 0, ResultDesc: "Callback processed" };
+    }
+
   } catch (err) {
-    console.error("[MPESA CALLBACK EXCEPTION]:", err.message);
-    return { success: true, ResultCode: 0, ResultDesc: "Callback accepted" };
+    console.error("[STAGE 9 EXCEPTION] Callback processing error:", err.message);
+    return { success: true, ResultCode: 0, ResultDesc: "Callback accepted with warning" };
   }
 }
 
 /**
- * ATOMIC USER WALLET CREDIT & AUDIT RECORDING
+ * WALLET CREDIT & AUDIT RECORDING
  */
 async function handleSuccessfulPayment(tx, receiptNumber, amount, phone) {
-  appendStateHistory(tx, 'PROCESSING', `Validating payment receipt ${receiptNumber} and crediting wallet balance...`);
-  await tx.save();
+  await appendStateHistory(tx, 'PROCESSING', `Validating payment receipt ${receiptNumber} and crediting wallet balance...`);
 
-  // Find user and record balance snapshot
-  const user = await User.findById(tx.userId) || await User.findOne({ phone: formatPhoneNumber(phone) });
+  try {
+    await connectDb();
+    const user = await User.findById(tx.userId) || await User.findOne({ phone: formatPhoneNumber(phone) });
 
-  if (user) {
-    tx.walletBefore = user.balance || 0;
-    user.balance = (user.balance || 0) + amount;
-    tx.walletAfter = user.balance;
-    await user.save();
+    if (user) {
+      tx.walletBefore = user.balance || 0;
+      user.balance = (user.balance || 0) + amount;
+      tx.walletAfter = user.balance;
+      await user.save();
 
-    // Create Audit Transaction Record
-    await Transaction.create({
-      userId: user._id.toString(),
-      type: 'DEPOSIT',
-      amount: amount,
-      status: 'COMPLETED',
-      reference: receiptNumber,
-      description: `M-Pesa STK Deposit (${receiptNumber})`
-    });
+      await Transaction.create({
+        userId: user._id.toString(),
+        type: 'DEPOSIT',
+        amount: amount,
+        status: 'COMPLETED',
+        reference: receiptNumber,
+        description: `M-Pesa STK Deposit (${receiptNumber})`
+      });
 
-    // Create Notification Record
-    await Notification.create({
-      userId: user._id.toString(),
-      title: "Deposit Confirmed",
-      message: `KES ${amount.toLocaleString()} credited successfully to your wallet. Receipt: ${receiptNumber}`,
-      type: "deposit"
-    });
+      await Notification.create({
+        userId: user._id.toString(),
+        title: "Deposit Confirmed",
+        message: `KES ${amount.toLocaleString()} credited successfully to your wallet. Receipt: ${receiptNumber}`,
+        type: "deposit"
+      });
+    }
+  } catch (e) {
+    console.warn("[WALLET CREDIT WARNING]:", e.message);
   }
 
   tx.receiptNumber = receiptNumber;
-  appendStateHistory(tx, 'SUCCESS', `Payment confirmed by Safaricom M-Pesa. Receipt: ${receiptNumber}`);
-  await tx.save();
+  await appendStateHistory(tx, 'SUCCESS', `Payment confirmed by Safaricom M-Pesa. Receipt: ${receiptNumber}`);
 }
 
 /**
- * 3. GET REAL-TIME TRANSACTION STATUS WITH TIMELINE
+ * GET TRANSACTION STATUS WITH FULL TIMELINE & DEBUG DATA
  */
 export async function getTransactionStatus(identifier) {
   let tx = memoryTxs.get(identifier);
@@ -562,9 +591,7 @@ export async function getTransactionStatus(identifier) {
       $or: [{ reference: identifier }, { checkoutRequestID: identifier }]
     }).lean();
     if (dbTx) tx = dbTx;
-  } catch (e) {
-    console.warn("[MPESA STATUS FETCH WARNING]: Falling back to in-memory transaction status:", e.message);
-  }
+  } catch (e) {}
 
   if (!tx) return null;
 
@@ -585,6 +612,7 @@ export async function getTransactionStatus(identifier) {
     walletAfter: tx.walletAfter,
     timelineStep: getTimelineStep(tx.status),
     history: tx.history || [],
-    processingLogs: tx.processingLogs || []
+    processingLogs: tx.processingLogs || [],
+    debug: tx.debugInfo || null
   };
 }

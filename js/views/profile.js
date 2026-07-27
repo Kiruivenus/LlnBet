@@ -364,12 +364,21 @@ export async function renderProfileView() {
               depBtn.disabled = false;
               depBtn.style.opacity = '1';
               depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
-            } else if (attempts >= 30) {
+            } else if (attempts >= 45) { // 90 seconds timeout
               clearInterval(pollInterval);
               if (eventSource) eventSource.close();
               depBtn.disabled = false;
               depBtn.style.opacity = '1';
               depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
+
+              if (depStatusContainer) {
+                depStatusContainer.innerHTML = `
+                  <div style="background: var(--bg-surface-hover); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-lg); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                    ⏳ <b>Awaiting Safaricom M-Pesa PIN Confirmation...</b><br>
+                    If you entered your M-Pesa PIN on your phone, your wallet balance will update automatically as soon as Safaricom sends confirmation.
+                  </div>
+                `;
+              }
             }
           } catch (pollErr) {
             console.warn("[POLLING ERROR]:", pollErr);
@@ -384,9 +393,9 @@ export async function renderProfileView() {
 
         showFailureModal({
           humanError: {
-            title: 'STK Push Initiation Failed',
+            title: 'Safaricom Gateway Error',
             explanation: err.message,
-            suggestion: 'Verify your phone number and Vercel/Admin Daraja credentials.'
+            suggestion: 'Verify your phone number, network connection, and Safaricom Daraja API credentials.'
           }
         });
       }
