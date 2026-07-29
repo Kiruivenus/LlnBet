@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
-import { connectDb, getSetting } from './db.js';
-import { User, Transaction, MpesaTransaction, Notification } from './models.js';
+const mongoose = require('mongoose');
+const { connectDb, getSetting } = require('./db.js');
+const { User, Transaction, MpesaTransaction, Notification } = require('./models.js');
 
 const memoryTransactions = globalThis.__betpulse_memory_txs || (globalThis.__betpulse_memory_txs = new Map());
 const sseClients = globalThis.__betpulse_sse_clients || (globalThis.__betpulse_sse_clients = new Map());
 
-export function registerSseClient(reference, res) {
+function registerSseClient(reference, res) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -27,7 +27,7 @@ function notifySseClient(reference, data) {
   }
 }
 
-export async function initiateMpesaDeposit({ phone, amount, userId }) {
+async function initiateMpesaDeposit({ phone, amount, userId }) {
   const ref = `STK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   const txData = {
@@ -81,7 +81,7 @@ export async function initiateMpesaDeposit({ phone, amount, userId }) {
   };
 }
 
-export async function processMpesaCallback(callbackBody) {
+async function processMpesaCallback(callbackBody) {
   try {
     const callbackData = callbackBody?.Body?.stkCallback;
     if (!callbackData) return { success: false, error: "Invalid callback payload format." };
@@ -181,7 +181,7 @@ export async function processMpesaCallback(callbackBody) {
   }
 }
 
-export async function getTransactionStatus(reference) {
+async function getTransactionStatus(reference) {
   let tx = null;
   if (mongoose.connection.readyState === 1) {
     tx = await MpesaTransaction.findOne({ reference }).lean();
@@ -194,3 +194,10 @@ export async function getTransactionStatus(reference) {
   if (!tx) return { success: false, error: "Transaction not found." };
   return { success: true, transaction: tx };
 }
+
+module.exports = {
+  registerSseClient,
+  initiateMpesaDeposit,
+  processMpesaCallback,
+  getTransactionStatus
+};

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 // User Schema
 const UserSchema = new mongoose.Schema({
@@ -116,16 +116,17 @@ const MpesaTransactionSchema = new mongoose.Schema({
 const BookingCodeSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, index: true },
   selections: [mongoose.Schema.Types.Mixed],
-  createdAt: { type: Date, default: Date.now, expires: 604800 } // Auto expires after 7 days
+  createdAt: { type: Date, default: Date.now, expires: 604800 }
 });
 
-// Exports with Mongoose singleton model reuse
-export const User = mongoose.models.User || mongoose.model('User', UserSchema);
-export const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
-export const Bet = mongoose.models.Bet || mongoose.model('Bet', BetSchema);
-export const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
-export const OddsHistory = mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema);
-export const Match = mongoose.models.Match || mongoose.model('Match', MatchSchema);
-export const Setting = mongoose.models.Setting || mongoose.model('Setting', SettingSchema);
-export const MpesaTransaction = mongoose.models.MpesaTransaction || mongoose.model('MpesaTransaction', MpesaTransactionSchema);
-export const BookingCode = mongoose.models.BookingCode || mongoose.model('BookingCode', BookingCodeSchema);
+module.exports = {
+  User: mongoose.models.User || mongoose.model('User', UserSchema),
+  Transaction: mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema),
+  Bet: mongoose.models.Bet || mongoose.model('Bet', BetSchema),
+  Notification: mongoose.models.Notification || mongoose.model('Notification', NotificationSchema),
+  OddsHistory: mongoose.models.OddsHistory || mongoose.model('OddsHistory', OddsHistorySchema),
+  Match: mongoose.models.Match || mongoose.model('Match', MatchSchema),
+  Setting: mongoose.models.Setting || mongoose.model('Setting', SettingSchema),
+  MpesaTransaction: mongoose.models.MpesaTransaction || mongoose.model('MpesaTransaction', MpesaTransactionSchema),
+  BookingCode: mongoose.models.BookingCode || mongoose.model('BookingCode', BookingCodeSchema)
+};

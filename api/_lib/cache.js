@@ -6,4 +6,6 @@ if (!globalThis.__llnbet_match_cache) {
   };
 }
 
-export const matchCache = globalThis.__llnbet_match_cache;
+module.exports = {
+  matchCache: globalThis.__llnbet_match_cache
+};

@@ -1,8 +1,5 @@
 // AI Market Analyzer Engine
-// Automatically generates full suites of betting markets (1X2, GG/NG, Double Chance, Over/Under, Correct Score, 1st Half, Exact Goals)
-// based on 1X2 probabilities (r1, rx, r2).
-
-export function generateAiMarketsForMatch({ matchId, homeName, awayName, r1, rx, r2, sport = 'football' }) {
+function generateAiMarketsForMatch({ matchId, homeName, awayName, r1, rx, r2, sport = 'football' }) {
   r1 = parseFloat(Number(r1).toFixed(2)) || 2.10;
   rx = parseFloat(Number(rx).toFixed(2)) || 3.20;
   r2 = parseFloat(Number(r2).toFixed(2)) || 3.50;
@@ -154,3 +151,7 @@ export function generateAiMarketsForMatch({ matchId, homeName, awayName, r1, rx,
 
   return [mainMarket, bttsMarket, dcMarket, totalsMarket, dnbMarket, firstHalfMarket, correctScoreMarket, homeGoalsMarket, awayGoalsMarket];
 }
+
+module.exports = {
+  generateAiMarketsForMatch
+};

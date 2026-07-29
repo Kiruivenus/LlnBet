@@ -1,21 +1,17 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const express = require('express');
+const dotenv = require('dotenv');
+const path = require('path');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-import { connectDb, getSetting, setSetting } from './_lib/db.js';
-import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction, BookingCode } from './_lib/models.js';
-import { matchCache } from './_lib/cache.js';
-import { syncMatchesFromEspn } from './_lib/syncService.js';
-import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './_lib/mpesaGateway.js';
-import { generateAiMarketsForMatch } from './_lib/aiAnalyzer.js';
-import { getDefaultPremierMatches } from './_lib/defaultMatches.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { connectDb, getSetting, setSetting } = require('./_lib/db.js');
+const { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction, BookingCode } = require('./_lib/models.js');
+const { matchCache } = require('./_lib/cache.js');
+const { syncMatchesFromEspn } = require('./_lib/syncService.js');
+const { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } = require('./_lib/mpesaGateway.js');
+const { generateAiMarketsForMatch } = require('./_lib/aiAnalyzer.js');
+const { getDefaultPremierMatches } = require('./_lib/defaultMatches.js');
 
 // Read .env from parent root directory
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
@@ -1411,4 +1407,4 @@ if (process.env.VERCEL !== '1') {
   });
 }
 
-export default app;
+module.exports = app;
