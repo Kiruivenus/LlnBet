@@ -11,6 +11,7 @@ import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, Mpes
 import { matchCache } from './cache.js';
 import { syncMatchesFromEspn } from './services/syncService.js';
 import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './services/mpesaGateway.js';
+import { generateAiMarketsForMatch } from './services/aiAnalyzer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1150,6 +1151,119 @@ app.get('/api/admin/telemetry', authenticateAdmin, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: "Failed to fetch telemetry data." });
+  // ---------------------------------------------------------------------
+// ADMIN CUSTOM MATCH FIXTURES & AUTOMATED AI ANALYZER MARKET ENGINE
+// ---------------------------------------------------------------------
+
+// 1. Create a custom match fixture with AI Analyzer market generation
+app.post(['/api/admin/matches', '/admin/matches'], authenticateAdmin, async (req, res) => {
+  try {
+    const { homeName, awayName, sport = 'football', league, country, kickoffTime, r1, rx, r2 } = req.body;
+
+    if (!homeName || !awayName) {
+      return res.status(400).json({ error: "Home team and away team names are required." });
+    }
+
+    const numR1 = Number(r1) || 2.10;
+    const numRx = Number(rx) || 3.20;
+    const numR2 = Number(r2) || 3.50;
+
+    const matchId = `custom_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const koDate = kickoffTime ? new Date(kickoffTime) : new Date(Date.now() + 2 * 60 * 60 * 1000);
+
+    // AI Analyzer: Generate full suite of odds & markets
+    const generatedMarkets = generateAiMarketsForMatch({
+      matchId,
+      homeName: homeName.trim(),
+      awayName: awayName.trim(),
+      r1: numR1,
+      rx: numRx,
+      r2: numR2,
+      sport: sport.toLowerCase()
+    });
+
+    const customMatchObj = {
+      id: matchId,
+      sport: sport.toLowerCase(),
+      league: (league || 'Custom League').trim(),
+      country: (country || 'International').trim(),
+      isLive: false,
+      isCustom: true,
+      timer: '0\'',
+      scores: { home: 0, away: 0 },
+      kickoffTime: koDate.toISOString(),
+      teams: {
+        home: { name: homeName.trim() },
+        away: { name: awayName.trim() }
+      },
+      venue: `${homeName.trim()} Stadium`,
+      stats: { possession: { home: 50, away: 50 }, shots: { home: 0, away: 0 } },
+      markets: generatedMarkets,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Save to DB
+    if (mongoose.connection.readyState === 1) {
+      await Match.updateOne(
+        { id: matchId },
+        { $set: customMatchObj },
+        { upsert: true }
+      );
+    }
+
+    // Prepend to active memory cache
+    if (!Array.isArray(matchCache.matches)) matchCache.matches = [];
+    matchCache.matches.unshift(customMatchObj);
+    matchCache.lastFetched = Date.now();
+
+    return res.json({
+      success: true,
+      message: "Custom match fixture generated and published successfully!",
+      match: customMatchObj
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to create custom match: " + error.message });
+  }
+});
+
+// 2. Remove specified match
+app.delete(['/api/admin/matches/:id', '/admin/matches/:id'], authenticateAdmin, async (req, res) => {
+  try {
+    const matchId = req.params.id;
+    if (mongoose.connection.readyState === 1) {
+      await Match.deleteOne({ id: matchId });
+    }
+    matchCache.matches = matchCache.matches.filter(m => m.id !== matchId);
+    return res.json({ success: true, message: "Match fixture removed." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to remove match fixture." });
+  }
+});
+
+// 3. Purge finished / expired matches
+app.post(['/api/admin/matches/cleanup', '/admin/matches/cleanup'], authenticateAdmin, async (req, res) => {
+  try {
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+
+    if (mongoose.connection.readyState === 1) {
+      await Match.deleteMany({
+        $or: [
+          { timer: 'FT' },
+          { timer: '90+' },
+          { kickoffTime: { $lt: fourHoursAgo.toISOString() }, isLive: false }
+        ]
+      });
+    }
+
+    matchCache.matches = matchCache.matches.filter(m => {
+      const ko = new Date(m.kickoffTime || 0);
+      return m.timer !== 'FT' && m.timer !== '90+' && (m.isLive || ko > fourHoursAgo);
+    });
+
+    return res.json({ success: true, remainingMatches: matchCache.matches.length });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to cleanup expired matches." });
   }
 });
 

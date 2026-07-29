@@ -19,6 +19,9 @@ export async function renderAdminView() {
       <button class="admin-tab-btn" data-tab="users" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'users' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'users' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
         PLAYERS
       </button>
+      <button class="admin-tab-btn" data-tab="fixtures" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'fixtures' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'fixtures' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
+        CUSTOM FIXTURES
+      </button>
       <button class="admin-tab-btn" data-tab="withdrawals" style="flex: 1; min-width: 100px; padding: 12px; background: ${activeTab === 'withdrawals' ? 'var(--accent-emerald)' : 'transparent'}; color: ${activeTab === 'withdrawals' ? 'var(--bg-obsidian)' : 'var(--text-secondary)'}; border: none; font-weight: 800; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer; outline: none; transition: all 0.2s;">
         WITHDRAWALS
       </button>
@@ -222,6 +225,231 @@ export async function renderAdminView() {
             alert("Operation failed: " + err.message);
           });
         });
+      });
+
+    } catch (err) {
+      contentEl.innerHTML = `<div style="color:var(--accent-live); text-align:center; padding:40px;">Error: ${err.message}</div>`;
+    }
+  }
+
+  else if (activeTab === 'fixtures') {
+    try {
+      const res = await fetch('/api/matches');
+      const matches = await res.json();
+
+      contentEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- Custom Match Fixture Form -->
+          <form id="admin-create-match-form" style="display: flex; flex-direction: column; gap: 16px; background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+              <div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">Add Custom Game Fixture</h3>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Enter basic match details & 1X2 odds. The AI Analyzer will automatically generate all other markets (Correct Score, GG/NG, Over/Under, Double Chance, etc.).</p>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Sport Category</label>
+                <select id="cfg-match-sport" class="auth-input" style="width: 100%;">
+                  <option value="football">Football (Soccer)</option>
+                  <option value="basketball">Basketball</option>
+                  <option value="tennis">Tennis</option>
+                  <option value="rugby">Rugby</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Country / League</label>
+                <input type="text" id="cfg-match-league" class="auth-input" placeholder="e.g. Kenya, FKF Premier League" value="Kenya, Premier League" required />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Home Team Name</label>
+                <input type="text" id="cfg-match-home" class="auth-input" placeholder="e.g. Gor Mahia" required />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Away Team Name</label>
+                <input type="text" id="cfg-match-away" class="auth-input" placeholder="e.g. AFC Leopards" required />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Kickoff Date & Time</label>
+                <input type="datetime-local" id="cfg-match-kickoff" class="auth-input" required />
+              </div>
+            </div>
+
+            <!-- Odds Inputs -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-lg);">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #10B981; margin-bottom: 4px;">1 (Home Win Odds)</label>
+                <input type="number" step="0.01" min="1.01" id="cfg-match-r1" class="auth-input" value="2.10" required />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #F59E0B; margin-bottom: 4px;">X (Draw Odds)</label>
+                <input type="number" step="0.01" min="1.01" id="cfg-match-rx" class="auth-input" value="3.20" required />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #EF4444; margin-bottom: 4px;">2 (Away Win Odds)</label>
+                <input type="number" step="0.01" min="1.01" id="cfg-match-r2" class="auth-input" value="3.50" required />
+              </div>
+            </div>
+
+            <button type="submit" id="create-match-submit-btn" style="height: 46px; background: var(--color-primary); color: #FFFFFF; border: none; border-radius: var(--radius-lg); font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(56, 102, 42, 0.3);">
+              ✨ Generate & Publish Game Fixture via AI Analyzer
+            </button>
+          </form>
+
+          <!-- Active Match List Header & Cleanup Trigger -->
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">Active Match Fixtures (${matches.length})</h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Matches that have finished (FT) or expired are automatically removed.</p>
+            </div>
+            <button id="admin-purge-expired-btn" style="padding: 8px 16px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); font-weight: 800; font-size: 0.78rem; cursor: pointer;">
+              Purge Expired Games
+            </button>
+          </div>
+
+          <!-- Active Matches Table -->
+          <div style="overflow-x: auto; background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
+              <thead>
+                <tr style="background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem;">
+                  <th style="padding: 12px 16px;">Fixture</th>
+                  <th style="padding: 12px 16px;">Category</th>
+                  <th style="padding: 12px 16px;">Kickoff</th>
+                  <th style="padding: 12px 16px;">Status</th>
+                  <th style="padding: 12px 16px;">1X2 Odds</th>
+                  <th style="padding: 12px 16px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${matches.map(m => {
+                  const m1 = m.markets && m.markets[0]?.odds[0]?.value ? m.markets[0].odds[0].value : '-';
+                  const mx = m.markets && m.markets[0]?.odds[1]?.value ? m.markets[0].odds[1].value : '-';
+                  const m2 = m.markets && m.markets[0]?.odds[2]?.value ? m.markets[0].odds[2].value : '-';
+                  const isCustom = (m.id && m.id.startsWith('custom_')) || m.isCustom;
+
+                  return `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                      <td style="padding: 12px 16px; font-weight: 800; color: var(--text-primary);">
+                        ${m.teams?.home?.name || 'Home'} vs ${m.teams?.away?.name || 'Away'}
+                        ${isCustom ? '<span style="font-size: 0.65rem; background: var(--color-primary); color: #FFF; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">CUSTOM</span>' : ''}
+                      </td>
+                      <td style="padding: 12px 16px; color: var(--text-secondary);">${m.country || 'Global'}, ${m.league || 'League'}</td>
+                      <td style="padding: 12px 16px; font-family: var(--font-mono); color: var(--text-secondary);">${new Date(m.kickoffTime).toLocaleString()}</td>
+                      <td style="padding: 12px 16px;">
+                        <span style="font-weight: 800; color: ${m.isLive ? '#10B981' : 'var(--text-secondary)'};">${m.isLive ? `LIVE ${m.timer}'` : 'Upcoming'}</span>
+                      </td>
+                      <td style="padding: 12px 16px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">
+                        ${m1} | ${mx} | ${m2}
+                      </td>
+                      <td style="padding: 12px 16px; text-align: right;">
+                        <button class="delete-match-action-btn" data-id="${m.id}" style="padding: 6px 12px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.75rem; cursor: pointer;">
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      `;
+
+      // Set default datetime-local value to 2 hours from now
+      const koInput = document.getElementById('cfg-match-kickoff');
+      if (koInput) {
+        const d = new Date(Date.now() + 2 * 60 * 60 * 1000);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        koInput.value = d.toISOString().slice(0, 16);
+      }
+
+      // Form submission
+      document.getElementById('admin-create-match-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('create-match-submit-btn');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "AI Analyzer Generating Markets...";
+        }
+
+        try {
+          const payload = {
+            sport: document.getElementById('cfg-match-sport').value,
+            league: document.getElementById('cfg-match-league').value,
+            country: 'Kenya',
+            homeName: document.getElementById('cfg-match-home').value,
+            awayName: document.getElementById('cfg-match-away').value,
+            kickoffTime: document.getElementById('cfg-match-kickoff').value,
+            r1: Number(document.getElementById('cfg-match-r1').value),
+            rx: Number(document.getElementById('cfg-match-rx').value),
+            r2: Number(document.getElementById('cfg-match-r2').value)
+          };
+
+          const r = await fetch('/api/admin/matches', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.data.token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          const resData = await r.json();
+          if (!r.ok) throw new Error(resData.error);
+
+          alert("🎉 Custom game fixture and all AI markets generated & published successfully!");
+          renderAdminView();
+        } catch (err) {
+          alert("Failed to create custom match: " + err.message);
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "✨ Generate & Publish Game Fixture via AI Analyzer";
+          }
+        }
+      });
+
+      // Delete match action listeners
+      contentEl.querySelectorAll('.delete-match-action-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const mId = btn.getAttribute('data-id');
+          if (!window.confirm("Are you sure you want to remove this match fixture?")) return;
+
+          try {
+            const r = await fetch(`/api/admin/matches/${mId}`, {
+              method: 'DELETE',
+              headers
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error);
+            alert("Match fixture removed successfully.");
+            renderAdminView();
+          } catch (err) {
+            alert("Failed to remove match: " + err.message);
+          }
+        });
+      });
+
+      // Purge expired games button
+      document.getElementById('admin-purge-expired-btn')?.addEventListener('click', async () => {
+        try {
+          const r = await fetch('/api/admin/matches/cleanup', {
+            method: 'POST',
+            headers
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error);
+          alert(`Cleanup completed! ${d.remainingMatches} active matches remaining.`);
+          renderAdminView();
+        } catch (err) {
+          alert("Cleanup failed: " + err.message);
+        }
       });
 
     } catch (err) {
