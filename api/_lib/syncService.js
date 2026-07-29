@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const { connectDb } = require('./db.js');
-const { Match } = require('./models.js');
-const { matchCache } = require('./cache.js');
+import mongoose from 'mongoose';
+import { connectDb } from './db.js';
+import { Match } from './models.js';
+import { matchCache } from './cache.js';
 
 function getEspnDateRange() {
   const dates = [];
@@ -42,7 +42,7 @@ function matchesAreEqual(m1, m2) {
   return true;
 }
 
-async function syncMatchesFromEspn() {
+export async function syncMatchesFromEspn() {
   const feeds = [
     { url: 'soccer/all', sport: 'football', name: 'Soccer Match', country: 'International' },
     { url: 'basketball/nba', sport: 'basketball', name: 'NBA', country: 'USA' },
@@ -193,7 +193,3 @@ async function syncMatchesFromEspn() {
     }
   }
 }
-
-module.exports = {
-  syncMatchesFromEspn
-};

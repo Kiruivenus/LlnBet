@@ -1,6 +1,10 @@
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const path = require('path');
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
@@ -11,7 +15,7 @@ if (!cached) {
   cached = globalThis.__mongoose_cached = { conn: null, promise: null };
 }
 
-async function connectDb() {
+export async function connectDb() {
   if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
@@ -74,7 +78,7 @@ async function connectDb() {
   return cached.conn;
 }
 
-async function getSetting(key, defaultValue) {
+export async function getSetting(key, defaultValue) {
   try {
     await connectDb();
     if (mongoose.connection.readyState === 1 && mongoose.models.Setting) {
@@ -85,7 +89,7 @@ async function getSetting(key, defaultValue) {
   return defaultValue;
 }
 
-async function setSetting(key, value) {
+export async function setSetting(key, value) {
   try {
     await connectDb();
     if (mongoose.connection.readyState === 1 && mongoose.models.Setting) {
@@ -97,9 +101,3 @@ async function setSetting(key, value) {
     }
   } catch (e) {}
 }
-
-module.exports = {
-  connectDb,
-  getSetting,
-  setSetting
-};

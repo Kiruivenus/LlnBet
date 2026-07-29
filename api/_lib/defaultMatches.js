@@ -1,6 +1,6 @@
-const { generateAiMarketsForMatch } = require('./aiAnalyzer.js');
+import { generateAiMarketsForMatch } from './aiAnalyzer.js';
 
-function getDefaultPremierMatches() {
+export function getDefaultPremierMatches() {
   const now = Date.now();
   const h2 = 2 * 60 * 60 * 1000;
   const h5 = 5 * 60 * 60 * 1000;
@@ -113,7 +113,3 @@ function getDefaultPremierMatches() {
     };
   });
 }
-
-module.exports = {
-  getDefaultPremierMatches
-};
