@@ -12,6 +12,7 @@ import { matchCache } from './cache.js';
 import { syncMatchesFromEspn } from './services/syncService.js';
 import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './services/mpesaGateway.js';
 import { generateAiMarketsForMatch } from './services/aiAnalyzer.js';
+import { getDefaultPremierMatches } from './defaultMatches.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -860,6 +861,12 @@ app.post('/api/odds', async (req, res) => {
 // ---------------------------------------------------------------------
 let lastSyncTime = 0;
 
+// Pre-warm memory cache with default premier fixtures on startup
+if (!Array.isArray(matchCache.matches) || matchCache.matches.length === 0) {
+  matchCache.matches = getDefaultPremierMatches();
+  matchCache.lastFetched = Date.now();
+}
+
 app.get('/api/matches', async (req, res) => {
   try {
     const now = Date.now();
@@ -900,22 +907,26 @@ app.get('/api/matches', async (req, res) => {
       }
     }
 
-    // Fallback: If DB is empty or connecting, return matchCache.matches if available
-    if (Array.isArray(matchCache.matches) && matchCache.matches.length > 0) {
-      return res.json(matchCache.matches);
+    // Fallback: If DB is empty or connecting, return matchCache.matches if available or premier defaults
+    if (!Array.isArray(matchCache.matches) || matchCache.matches.length === 0) {
+      matchCache.matches = getDefaultPremierMatches();
+      matchCache.lastFetched = now;
     }
 
-    // Trigger non-blocking ESPN sync if cache is empty
+    // Trigger non-blocking ESPN sync if cache needs fresh feeds
     if (now - lastSyncTime > 30000 && !matchCache.syncInProgress) {
       lastSyncTime = now;
       matchCache.syncInProgress = true;
       syncMatchesFromEspn().catch(() => {}).finally(() => { matchCache.syncInProgress = false; });
     }
 
-    return res.json(Array.isArray(matchCache.matches) ? matchCache.matches : []);
+    return res.json(matchCache.matches);
   } catch (err) {
     console.warn("[GET /api/matches ERROR]:", err.message);
-    return res.json(Array.isArray(matchCache.matches) ? matchCache.matches : []);
+    if (!Array.isArray(matchCache.matches) || matchCache.matches.length === 0) {
+      matchCache.matches = getDefaultPremierMatches();
+    }
+    return res.json(matchCache.matches);
   }
 });
 
