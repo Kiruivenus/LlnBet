@@ -118,12 +118,34 @@ class SimulationEngine {
     }
   }
 
+  sortChronologically(list) {
+    if (!Array.isArray(list)) return [];
+    
+    // Deduplicate matches by ID
+    const uniqueMap = new Map();
+    list.forEach(m => { if (m && m.id && !uniqueMap.has(m.id)) uniqueMap.set(m.id, m); });
+    const deduplicated = Array.from(uniqueMap.values());
+
+    return deduplicated.sort((a, b) => {
+      // 1. Live matches always come at the top
+      if (a.isLive && !b.isLive) return -1;
+      if (!a.isLive && b.isLive) return 1;
+
+      // 2. Sort by Kickoff Time ascending (soonest playing games today first, followed by tomorrow)
+      const timeA = a.kickoffTime ? new Date(a.kickoffTime).getTime() : Number.MAX_SAFE_INTEGER;
+      const timeB = b.kickoffTime ? new Date(b.kickoffTime).getTime() : Number.MAX_SAFE_INTEGER;
+
+      return timeA - timeB;
+    });
+  }
+
   getMatches() {
-    return this.matches;
+    return this.sortChronologically(this.matches || []);
   }
 
   getMatchById(id) {
-    return this.matches.find(m => m.id === id);
+    const sorted = this.getMatches();
+    return sorted.find(m => m.id === id);
   }
 
   // Live real-world scores fetcher (from backend cached MongoDB matches in <100ms)

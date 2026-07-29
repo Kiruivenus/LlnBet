@@ -905,7 +905,7 @@ app.get('/api/matches', async (req, res) => {
         const cachedMatches = await Match.find({
           kickoffTime: { $gte: sixHoursAgo.toISOString() },
           timer: { $nin: ['FT', 'FINISHED', 'FINAL', 'ENDED'] }
-        }).maxTimeMS(4000).lean();
+        }).sort({ kickoffTime: 1 }).maxTimeMS(4000).lean();
 
         if (Array.isArray(cachedMatches) && cachedMatches.length > 0) {
           matchCache.matches = cachedMatches;
