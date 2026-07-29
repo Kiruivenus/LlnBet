@@ -927,6 +927,102 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Endpoint: Get total user deposits and full deposits audit log
+app.get(['/api/admin/deposits', '/admin/deposits'], authenticateAdmin, async (req, res) => {
+  try {
+    let rawMpesaTxs = [];
+    let rawGenericTxs = [];
+    let usersMap = new Map();
+
+    if (mongoose.connection.readyState === 1) {
+      rawMpesaTxs = await MpesaTransaction.find({}).sort({ createdAt: -1 }).lean();
+      rawGenericTxs = await Transaction.find({ type: 'DEPOSIT' }).sort({ createdAt: -1 }).lean();
+
+      const users = await User.find({}, { _id: 1, phone: 1, name: 1 }).lean();
+      users.forEach(u => usersMap.set(u._id.toString(), u));
+    } else {
+      rawMpesaTxs = Array.from(globalThis.__betpulse_memory_txs ? globalThis.__betpulse_memory_txs.values() : []);
+      Array.from(memoryUsers.values()).forEach(u => usersMap.set(String(u._id || u.id), u));
+    }
+
+    const depositsList = [];
+    const seenRefs = new Set();
+
+    // 1. Process MpesaTransactions
+    rawMpesaTxs.forEach(tx => {
+      const ref = tx.reference || tx.merchantRequestID;
+      if (ref && !seenRefs.has(ref)) {
+        seenRefs.add(ref);
+        const userObj = usersMap.get(String(tx.userId)) || {};
+        depositsList.push({
+          id: tx._id ? tx._id.toString() : ref,
+          reference: ref,
+          receiptNumber: tx.receiptNumber || 'N/A',
+          userId: tx.userId,
+          phone: tx.phone || userObj.phone || 'N/A',
+          userName: userObj.name || 'LlnBet Player',
+          amount: Number(tx.amount || 0),
+          status: tx.status || 'PENDING',
+          statusMessage: tx.statusMessage || '',
+          network: 'Safaricom M-Pesa',
+          createdAt: tx.createdAt || new Date()
+        });
+      }
+    });
+
+    // 2. Process Generic DEPOSIT Transactions
+    rawGenericTxs.forEach(tx => {
+      const ref = tx.reference;
+      if (ref && !seenRefs.has(ref)) {
+        seenRefs.add(ref);
+        const userObj = usersMap.get(String(tx.userId)) || {};
+        depositsList.push({
+          id: tx._id ? tx._id.toString() : ref,
+          reference: ref,
+          receiptNumber: 'N/A',
+          userId: tx.userId,
+          phone: userObj.phone || 'N/A',
+          userName: userObj.name || 'LlnBet Player',
+          amount: Number(tx.amount || 0),
+          status: tx.status || 'COMPLETED',
+          statusMessage: tx.description || 'Deposit',
+          network: 'M-Pesa Cashier',
+          createdAt: tx.createdAt || new Date()
+        });
+      }
+    });
+
+    // Sort by createdAt descending
+    depositsList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Calculate aggregated stats
+    const successfulDeposits = depositsList.filter(d => d.status === 'COMPLETED');
+    const totalAmount = successfulDeposits.reduce((sum, d) => sum + d.amount, 0);
+    const totalCount = successfulDeposits.length;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayAmount = successfulDeposits
+      .filter(d => new Date(d.createdAt) >= startOfToday)
+      .reduce((sum, d) => sum + d.amount, 0);
+
+    const avgAmount = totalCount > 0 ? totalAmount / totalCount : 0;
+
+    return res.json({
+      success: true,
+      metrics: {
+        totalAmount,
+        totalCount,
+        todayAmount,
+        avgAmount
+      },
+      deposits: depositsList
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch total user deposits: " + error.message });
+  }
+});
+
 // 2. Adjust user balance
 app.post('/api/admin/users/:id/balance', authenticateAdmin, async (req, res) => {
   try {

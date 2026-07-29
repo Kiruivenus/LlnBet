@@ -17,6 +17,7 @@ import { renderTermsView } from './views/terms.js';
 import { renderReferralView } from './views/referral.js';
 import { renderNotificationsView } from './views/notifications.js';
 import { renderAdminView } from './views/admin.js';
+import { renderAdminDepositsView } from './views/adminDeposits.js';
 import { renderResultsView } from './views/results.js';
 
 function updateSeoMetadata(page) {
@@ -31,7 +32,8 @@ function updateSeoMetadata(page) {
     login: 'Account Login | LlnBet Kenya (Linebet)',
     register: 'Register New Account | LlnBet Kenya',
     support: '24/7 Live Customer Support | LlnBet Kenya',
-    'responsible-gaming': 'Play Safe & Responsible Gaming | LlnBet Kenya'
+    'responsible-gaming': 'Play Safe & Responsible Gaming | LlnBet Kenya',
+    'admin-deposits': 'Total User Deposits Audit | LlnBet Admin'
   };
 
   const metaDescriptions = {
@@ -52,8 +54,9 @@ export function route() {
   updateSeoMetadata(page);
 
   const protectedPages = ['profile', 'my-bets', 'transactions', 'notifications', 'jackpot-streak'];
+  const protectedAdminPages = ['admin', 'admin-deposits', 'deposits'];
 
-  if (page === 'admin') {
+  if (protectedAdminPages.includes(page)) {
     if (!state.data.isLoggedIn) {
       alert("Authentication Required: Please login.");
       state.setPage('login');
@@ -73,6 +76,10 @@ export function route() {
   switch (page) {
     case 'admin':
       renderAdminView();
+      break;
+    case 'admin-deposits':
+    case 'deposits':
+      renderAdminDepositsView();
       break;
     case 'home':
     case 'virtuals':

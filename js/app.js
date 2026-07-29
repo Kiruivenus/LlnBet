@@ -117,6 +117,8 @@ async function initApp() {
     state.data.currentPage = 'register';
   } else if (initialPath === '/promotions') {
     state.data.currentPage = 'promotions';
+  } else if (initialPath === '/admin/deposits' || initialPath === '/deposits') {
+    state.data.currentPage = 'admin-deposits';
   } else if (initialPath === '/admin') {
     state.data.currentPage = 'admin';
   }
@@ -248,6 +250,10 @@ async function initApp() {
         state.data.currentPage = 'my-bets';
       } else if (path === '/profile') {
         state.data.currentPage = 'profile';
+      } else if (path === '/admin/deposits' || path === '/deposits') {
+        state.data.currentPage = 'admin-deposits';
+      } else if (path === '/admin') {
+        state.data.currentPage = 'admin';
       } else {
         state.data.currentPage = 'home';
       }
