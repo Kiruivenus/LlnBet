@@ -1279,7 +1279,8 @@ app.get('/api/admin/telemetry', authenticateAdmin, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: "Failed to fetch telemetry data." });
-  // ---------------------------------------------------------------------
+  }
+});
 // ADMIN CUSTOM MATCH FIXTURES & AUTOMATED AI ANALYZER MARKET ENGINE
 // ---------------------------------------------------------------------
 
