@@ -38,6 +38,10 @@ export async function connectDb() {
     cached.promise = mongoose.connect(mongoUri, opts).then((m) => {
       console.log("[MONGODB] Connected successfully to MongoDB Database!");
       return m;
+    }).catch((err) => {
+      cached.promise = null;
+      console.error("[MONGODB] Connection promise failed:", err.message);
+      return null;
     });
   } else {
     console.log("[MONGODB] Reusing warm database connection pool...");

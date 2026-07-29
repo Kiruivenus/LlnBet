@@ -822,13 +822,18 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
 // ---------------------------------------------------------------------
 app.get('/api/odds', async (req, res) => {
   try {
+    try {
+      await connectDb();
+    } catch (e) {}
+
     if (mongoose.connection.readyState === 1) {
-      const records = await OddsHistory.find({}).lean();
-      return res.json(records);
+      const records = await OddsHistory.find({}).maxTimeMS(4000).lean();
+      return res.json(records || []);
     }
     return res.json([]);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.warn("[GET /api/odds ERROR]:", err.message);
+    return res.json([]);
   }
 });
 
@@ -846,7 +851,7 @@ app.post('/api/odds', async (req, res) => {
     }
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.json({ success: false, error: err.message });
   }
 });
 
@@ -860,12 +865,14 @@ app.get('/api/matches', async (req, res) => {
     const now = Date.now();
 
     // 1. Serve from global in-memory cache if fresh (< 10 seconds old)
-    if (matchCache.matches.length > 0 && (now - matchCache.lastFetched < 10000)) {
+    if (Array.isArray(matchCache.matches) && matchCache.matches.length > 0 && (now - matchCache.lastFetched < 10000)) {
       return res.json(matchCache.matches);
     }
 
     // 2. Refresh/Fetch from MongoDB if memory cache is stale
-    await connectDb();
+    try {
+      await connectDb();
+    } catch (e) {}
 
     if (mongoose.connection.readyState === 1) {
       // Trigger non-blocking sync in background if last ESPN fetch was > 30 seconds ago
@@ -881,16 +888,34 @@ app.get('/api/matches', async (req, res) => {
           });
       }
 
-      const cachedMatches = await Match.find({}).lean();
-      matchCache.matches = cachedMatches;
-      matchCache.lastFetched = now;
-      return res.json(cachedMatches);
+      try {
+        const cachedMatches = await Match.find({}).maxTimeMS(4000).lean();
+        if (Array.isArray(cachedMatches) && cachedMatches.length > 0) {
+          matchCache.matches = cachedMatches;
+          matchCache.lastFetched = now;
+          return res.json(cachedMatches);
+        }
+      } catch (dbErr) {
+        console.warn("[MATCH DB QUERY ERROR]:", dbErr.message);
+      }
     }
 
-    // Return stale cache if DB is offline
-    return res.json(matchCache.matches);
+    // Fallback: If DB is empty or connecting, return matchCache.matches if available
+    if (Array.isArray(matchCache.matches) && matchCache.matches.length > 0) {
+      return res.json(matchCache.matches);
+    }
+
+    // Trigger non-blocking ESPN sync if cache is empty
+    if (now - lastSyncTime > 30000 && !matchCache.syncInProgress) {
+      lastSyncTime = now;
+      matchCache.syncInProgress = true;
+      syncMatchesFromEspn().catch(() => {}).finally(() => { matchCache.syncInProgress = false; });
+    }
+
+    return res.json(Array.isArray(matchCache.matches) ? matchCache.matches : []);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.warn("[GET /api/matches ERROR]:", err.message);
+    return res.json(Array.isArray(matchCache.matches) ? matchCache.matches : []);
   }
 });
 
