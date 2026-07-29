@@ -1,4 +1,4 @@
-import { generateAiMarketsForMatch } from './services/aiAnalyzer.js';
+import { generateAiMarketsForMatch } from './aiAnalyzer.js';
 
 export function getDefaultPremierMatches() {
   const now = Date.now();

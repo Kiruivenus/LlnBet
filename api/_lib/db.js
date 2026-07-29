@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
@@ -35,14 +35,16 @@ export async function connectDb() {
     };
 
     console.log("[MONGODB] Initializing new MongoDB connection pool...");
-    cached.promise = mongoose.connect(mongoUri, opts).then((m) => {
-      console.log("[MONGODB] Connected successfully to MongoDB Database!");
-      return m;
-    }).catch((err) => {
-      cached.promise = null;
-      console.error("[MONGODB] Connection promise failed:", err.message);
-      return null;
-    });
+    cached.promise = mongoose.connect(mongoUri, opts)
+      .then((m) => {
+        console.log("[MONGODB] Connected successfully to MongoDB Database!");
+        return m;
+      })
+      .catch((err) => {
+        cached.promise = null;
+        console.error("[MONGODB] Connection failed:", err.message);
+        return null;
+      });
   } else {
     console.log("[MONGODB] Reusing warm database connection pool...");
   }

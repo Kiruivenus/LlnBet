@@ -6,13 +6,13 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-import { connectDb, getSetting, setSetting } from './db.js';
-import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction, BookingCode } from './models.js';
-import { matchCache } from './cache.js';
-import { syncMatchesFromEspn } from './services/syncService.js';
-import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './services/mpesaGateway.js';
-import { generateAiMarketsForMatch } from './services/aiAnalyzer.js';
-import { getDefaultPremierMatches } from './defaultMatches.js';
+import { connectDb, getSetting, setSetting } from './_lib/db.js';
+import { User, Transaction, Bet, Notification, OddsHistory, Match, Setting, MpesaTransaction, BookingCode } from './_lib/models.js';
+import { matchCache } from './_lib/cache.js';
+import { syncMatchesFromEspn } from './_lib/syncService.js';
+import { initiateMpesaDeposit, processMpesaCallback, getTransactionStatus, registerSseClient } from './_lib/mpesaGateway.js';
+import { generateAiMarketsForMatch } from './_lib/aiAnalyzer.js';
+import { getDefaultPremierMatches } from './_lib/defaultMatches.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
-import { connectDb } from '../db.js';
-import { Match } from '../models.js';
-import { matchCache } from '../cache.js';
+import { connectDb } from './db.js';
+import { Match } from './models.js';
+import { matchCache } from './cache.js';
 
 function getEspnDateRange() {
   const dates = [];
@@ -110,46 +110,47 @@ export async function syncMatchesFromEspn() {
           sport: feed.sport,
           league: leagueInfo.name,
           country: leagueInfo.country,
-          isLive: isLive,
-          timer: timer,
+          isLive,
+          timer,
           scores: { home: homeScore, away: awayScore },
           kickoffTime: kickoffDate.toISOString(),
           teams: {
             home: { name: homeName },
             away: { name: awayName }
           },
-          venue: comp.venue?.fullName || leagueInfo.name,
+          venue: comp.venue?.fullName || `${homeName} Stadium`,
           stats: {
             possession: { home: 50, away: 50 },
-            shots: { home: 10, away: 8 },
-            shotsOnTarget: { home: 4, away: 3 },
-            corners: { home: 5, away: 4 },
-            yellowCards: { home: 1, away: 1 },
-            redCards: { home: 0, away: 0 }
+            shots: { home: Math.floor(Math.random() * 10), away: Math.floor(Math.random() * 10) }
           }
         });
       });
     } catch (e) {}
+
     return feedMatches;
   });
 
-  const results = await Promise.all(promises);
-  const parsedMatches = results.flat();
+  const results = await Promise.allSettled(promises);
+  let allIncomingMatches = [];
+  results.forEach(res => {
+    if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+      allIncomingMatches = allIncomingMatches.concat(res.value);
+    }
+  });
 
-  if (parsedMatches.length > 0) {
+  if (allIncomingMatches.length > 0) {
     await connectDb();
     if (mongoose.connection.readyState === 1) {
-      // 1. Fetch current matches from DB to avoid unnecessary rewrites
-      const existingMatches = await Match.find({ id: { $in: parsedMatches.map(m => m.id) } }).lean();
-      const existingMap = new Map(existingMatches.map(m => [m.id, m]));
+      const existingMatches = await Match.find({}).lean();
+      const existingMap = new Map();
+      existingMatches.forEach(m => existingMap.set(m.id, m));
 
       const ops = [];
       let skippedCount = 0;
 
-      parsedMatches.forEach(m => {
+      allIncomingMatches.forEach(m => {
         const existing = existingMap.get(m.id);
         
-        // Stabilize / reuse existing odds if they exist, or generate new ones for fresh matches
         if (existing && existing.markets) {
           m.markets = existing.markets;
         } else {
@@ -158,7 +159,7 @@ export async function syncMatchesFromEspn() {
           const r2 = parseFloat((Math.random() * 3 + 1.8).toFixed(2));
           m.markets = [
             {
-              name: m.sport === 'football' || m.sport === 'rugby' || m.sport === 'ice_hockey' ? 'Match Outcome (1X2)' : 'Money Line (Winner)',
+              name: m.sport === 'football' || m.sport === 'rugby' || m.sport === 'ice_hockey' ? '1X2 Match Winner' : 'Money Line (Winner)',
               odds: [
                 { selectionId: `${m.id}_1`, label: `1 (${m.teams.home.name})`, value: r1 },
                 ...(m.sport === 'football' || m.sport === 'rugby' || m.sport === 'ice_hockey' ? [
@@ -170,7 +171,6 @@ export async function syncMatchesFromEspn() {
           ];
         }
 
-        // Compare delta!
         if (existing && matchesAreEqual(existing, m)) {
           skippedCount++;
         } else {
@@ -186,14 +186,9 @@ export async function syncMatchesFromEspn() {
 
       if (ops.length > 0) {
         await Match.bulkWrite(ops);
-        console.log(`[BACKEND SYNC] bulkWrite executed: ${ops.length} matches updated. Skipped ${skippedCount} unchanged matches.`);
-        
-        // Refresh local cache after updates
         const updatedMatches = await Match.find({}).lean();
         matchCache.matches = updatedMatches;
         matchCache.lastFetched = Date.now();
-      } else {
-        console.log(`[BACKEND SYNC] 0 writes executed. All ${skippedCount} incoming matches match cache and DB state.`);
       }
     }
   }
