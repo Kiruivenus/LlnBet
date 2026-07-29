@@ -121,12 +121,17 @@ export function isMatchAvailableForBetting(match) {
     return false;
   }
 
-  // 4. Kickoff date check - if kickoff was over 3.5 hours ago, it has ended
+  const timerStr = String(match.timer || '').toUpperCase().trim();
+  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === 'ENDED') {
+    return false;
+  }
+
+  // 4. Kickoff date check - if kickoff was over 6 hours ago, it has ended
   if (match.kickoffTime) {
     const kickoff = new Date(match.kickoffTime);
     const now = new Date();
     const diffHours = (now.getTime() - kickoff.getTime()) / (1000 * 60 * 60);
-    if (diffHours > 3.5) {
+    if (diffHours > 6) {
       return false;
     }
   }
@@ -137,10 +142,10 @@ export function isMatchAvailableForBetting(match) {
 // Strict checker specifically for currently ongoing Live matches
 export function isLiveMatch(match) {
   if (!match || !match.isLive) return false;
-  if (!isMatchAvailableForBetting(match)) return false;
+  if (match.isFinished || match.isExpired) return false;
 
-  const timerStr = String(match.timer || '').toUpperCase();
-  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === '90+' || timerStr === "90'" || timerStr === '90') {
+  const timerStr = String(match.timer || '').toUpperCase().trim();
+  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === 'ENDED') {
     return false;
   }
 
@@ -148,7 +153,7 @@ export function isLiveMatch(match) {
     const kickoff = new Date(match.kickoffTime);
     const now = new Date();
     const diffHours = (now.getTime() - kickoff.getTime()) / (1000 * 60 * 60);
-    if (diffHours > 3) return false;
+    if (diffHours > 6) return false;
   }
 
   return true;

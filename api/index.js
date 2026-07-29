@@ -870,18 +870,24 @@ if (!Array.isArray(matchCache.matches) || matchCache.matches.length === 0) {
 app.get('/api/matches', async (req, res) => {
   try {
     const now = Date.now();
+    const sixHoursAgo = new Date(now - 6 * 60 * 60 * 1000);
 
-    // 1. Serve from global in-memory cache if fresh (< 10 seconds old)
-    if (Array.isArray(matchCache.matches) && matchCache.matches.length > 0 && (now - matchCache.lastFetched < 10000)) {
-      return res.json(matchCache.matches);
-    }
-
-    // 2. Refresh/Fetch from MongoDB if memory cache is stale
+    // 1. Refresh/Fetch from MongoDB if memory cache is stale
     try {
       await connectDb();
     } catch (e) {}
 
     if (mongoose.connection.readyState === 1) {
+      // Auto-purge matches older than 6 hours or marked finished
+      try {
+        await Match.deleteMany({
+          $or: [
+            { timer: { $in: ['FT', 'FINISHED', 'FINAL', 'ENDED'] } },
+            { kickoffTime: { $lt: sixHoursAgo.toISOString() } }
+          ]
+        });
+      } catch (e) {}
+
       // Trigger non-blocking sync in background if last ESPN fetch was > 30 seconds ago
       if (now - lastSyncTime > 30000 && !matchCache.syncInProgress) {
         lastSyncTime = now;
@@ -896,7 +902,11 @@ app.get('/api/matches', async (req, res) => {
       }
 
       try {
-        const cachedMatches = await Match.find({}).maxTimeMS(4000).lean();
+        const cachedMatches = await Match.find({
+          kickoffTime: { $gte: sixHoursAgo.toISOString() },
+          timer: { $nin: ['FT', 'FINISHED', 'FINAL', 'ENDED'] }
+        }).maxTimeMS(4000).lean();
+
         if (Array.isArray(cachedMatches) && cachedMatches.length > 0) {
           matchCache.matches = cachedMatches;
           matchCache.lastFetched = now;
@@ -907,11 +917,25 @@ app.get('/api/matches', async (req, res) => {
       }
     }
 
-    // Fallback: If DB is empty or connecting, return matchCache.matches if available or premier defaults
-    if (!Array.isArray(matchCache.matches) || matchCache.matches.length === 0) {
-      matchCache.matches = getDefaultPremierMatches();
-      matchCache.lastFetched = now;
+    // Filter memory cache for non-expired matches
+    if (Array.isArray(matchCache.matches) && matchCache.matches.length > 0) {
+      const validMatches = matchCache.matches.filter(m => {
+        const ko = new Date(m.kickoffTime || 0);
+        const timerStr = String(m.timer || '').toUpperCase().trim();
+        return !['FT', 'FINISHED', 'FINAL', 'ENDED'].includes(timerStr) && ko >= sixHoursAgo;
+      });
+
+      if (validMatches.length > 0) {
+        matchCache.matches = validMatches;
+        return res.json(validMatches);
+      }
     }
+
+    // Fallback: Default premier matches
+    const defaults = getDefaultPremierMatches();
+    matchCache.matches = defaults;
+    matchCache.lastFetched = now;
+    return res.json(defaults);
 
     // Trigger non-blocking ESPN sync if cache needs fresh feeds
     if (now - lastSyncTime > 30000 && !matchCache.syncInProgress) {
@@ -1377,21 +1401,22 @@ app.delete(['/api/admin/matches/:id', '/admin/matches/:id'], authenticateAdmin, 
 // 3. Purge finished / expired matches
 app.post(['/api/admin/matches/cleanup', '/admin/matches/cleanup'], authenticateAdmin, async (req, res) => {
   try {
-    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
 
     if (mongoose.connection.readyState === 1) {
       await Match.deleteMany({
         $or: [
-          { timer: 'FT' },
-          { timer: '90+' },
-          { kickoffTime: { $lt: fourHoursAgo.toISOString() }, isLive: false }
+          { timer: { $in: ['FT', 'FINISHED', 'FINAL', 'ENDED'] } },
+          { kickoffTime: { $lt: sixHoursAgo.toISOString() } }
         ]
       });
     }
 
     matchCache.matches = matchCache.matches.filter(m => {
       const ko = new Date(m.kickoffTime || 0);
-      return m.timer !== 'FT' && m.timer !== '90+' && (m.isLive || ko > fourHoursAgo);
+      const timerStr = String(m.timer || '').toUpperCase().trim();
+      const isEnded = ['FT', 'FINISHED', 'FINAL', 'ENDED'].includes(timerStr);
+      return !isEnded && ko >= sixHoursAgo;
     });
 
     return res.json({ success: true, remainingMatches: matchCache.matches.length });
