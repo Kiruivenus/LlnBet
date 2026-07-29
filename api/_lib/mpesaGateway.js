@@ -27,6 +27,62 @@ function notifySseClient(reference, data) {
   }
 }
 
+// Safaricom Daraja ResultCode & Failure Explanation Mapper
+export function mapDarajaResultCode(resultCode, rawDesc = '') {
+  const code = Number(resultCode);
+
+  switch (code) {
+    case 1032:
+      return {
+        title: 'Transaction Cancelled',
+        explanation: 'You cancelled the M-Pesa STK Push prompt on your phone.',
+        suggestion: 'Please initiate a new deposit and enter your 4-digit M-Pesa PIN when prompted on your phone screen.'
+      };
+    case 1:
+      return {
+        title: 'Insufficient M-Pesa Balance',
+        explanation: 'Your M-Pesa wallet does not have enough funds to complete this deposit.',
+        suggestion: 'Top up your M-Pesa account balance or try depositing a smaller amount.'
+      };
+    case 2001:
+      return {
+        title: 'Wrong M-Pesa PIN Entered',
+        explanation: 'The M-Pesa PIN entered on your phone was incorrect.',
+        suggestion: 'Please double-check your 4-digit M-Pesa PIN and initiate a new deposit request.'
+      };
+    case 1037:
+      return {
+        title: 'Phone Unreachable / Handset Timeout',
+        explanation: 'The M-Pesa prompt timed out because your phone was locked, busy, or out of network coverage.',
+        suggestion: 'Unlock your mobile screen, ensure your line is connected to Safaricom, and try again.'
+      };
+    case 1025:
+      return {
+        title: 'Handset Connection Error',
+        explanation: 'Safaricom was unable to send the STK prompt to your phone handset.',
+        suggestion: 'Restart your phone or check if your SIM card is active, then try again.'
+      };
+    case 1019:
+      return {
+        title: 'Transaction Expired',
+        explanation: 'The STK push prompt expired before PIN entry was completed.',
+        suggestion: 'Please enter your M-Pesa PIN immediately when the pop-up prompt appears.'
+      };
+    case 17:
+      return {
+        title: 'User M-Pesa Limit Exceeded',
+        explanation: 'You have reached your daily or per-transaction M-Pesa transaction limit.',
+        suggestion: 'Check your daily M-Pesa transaction limits with Safaricom (*334#).'
+      };
+    default:
+      return {
+        title: 'M-Pesa Payment Failed',
+        explanation: rawDesc || 'The transaction was declined or timed out on the Safaricom network.',
+        suggestion: 'Please verify your phone number, ensure your line is active, and try again.'
+      };
+  }
+}
+
 // Helper: Format Kenyan Phone Number to 254XXXXXXXXX
 function formatPhone(phone) {
   let cleaned = String(phone).replace(/\D/g, '');
@@ -313,9 +369,11 @@ export async function processMpesaCallback(callbackBody) {
 
       return { success: true, status: 'COMPLETED' };
     } else {
+      const humanError = mapDarajaResultCode(resultCode, resultDesc);
       tx.status = 'FAILED';
       tx.resultCode = resultCode;
-      tx.resultDesc = resultDesc;
+      tx.resultDesc = humanError.explanation || resultDesc;
+      tx.humanError = humanError;
       tx.updatedAt = new Date();
 
       if (mongoose.connection.readyState === 1 && typeof tx.save === 'function') {
@@ -325,10 +383,14 @@ export async function processMpesaCallback(callbackBody) {
 
       notifySseClient(tx.reference, {
         status: 'FAILED',
-        message: resultDesc || "M-Pesa payment failed or cancelled by user."
+        isFailed: true,
+        resultCode,
+        resultDesc: humanError.explanation || resultDesc,
+        humanError,
+        message: humanError.explanation || resultDesc || "M-Pesa payment failed or cancelled by user."
       });
 
-      return { success: false, status: 'FAILED', error: resultDesc };
+      return { success: false, status: 'FAILED', error: humanError.explanation || resultDesc };
     }
   } catch (err) {
     return { success: false, error: err.message };
@@ -366,6 +428,7 @@ export async function getTransactionStatus(identifier) {
 
   const isCompleted = tx.status === 'COMPLETED' || tx.status === 'SUCCESS';
   const isFailed = tx.status === 'FAILED' || tx.status === 'DECLINED' || tx.status === 'CANCELLED';
+  const humanError = isFailed ? (tx.humanError || mapDarajaResultCode(tx.resultCode, tx.resultDesc)) : null;
 
   return {
     success: true,
@@ -374,10 +437,13 @@ export async function getTransactionStatus(identifier) {
     isCompleted,
     isPending: tx.status === 'PENDING',
     isFailed,
+    resultCode: tx.resultCode,
+    resultDesc: tx.resultDesc,
+    humanError: humanError || { title: 'M-Pesa Payment Failed', explanation: tx.resultDesc || 'Payment failed or cancelled.', suggestion: 'Please try again.' },
     amount: tx.amount,
     phone: tx.phone,
     mpesaReceiptNumber: tx.mpesaReceiptNumber || 'N/A',
-    statusMessage: isCompleted ? "Payment processed successfully!" : (tx.resultDesc || "Transaction processing..."),
+    statusMessage: isCompleted ? "Payment processed successfully!" : (humanError ? humanError.explanation : tx.resultDesc || "Transaction processing..."),
     transaction: tx
   };
 }
