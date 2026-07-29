@@ -271,6 +271,47 @@ export function renderMatchDetailsView() {
         { selectionId: `${match.id}_atot_o15`, label: 'Over 1.5', value: 2.40 },
         { selectionId: `${match.id}_atot_u15`, label: 'Under 1.5', value: 1.55 }
       ]
+    },
+    {
+      name: 'Correct Score',
+      category: 'Correct Score',
+      columns: 3,
+      odds: [
+        { selectionId: `${match.id}_cs_00`, label: '0:0', value: rx ? parseFloat((rx * 2.8).toFixed(2)) : 8.50 },
+        { selectionId: `${match.id}_cs_01`, label: '0:1', value: r2 ? parseFloat((r2 * 3.2).toFixed(2)) : 9.50 },
+        { selectionId: `${match.id}_cs_02`, label: '0:2', value: r2 ? parseFloat((r2 * 4.5).toFixed(2)) : 14.00 },
+
+        { selectionId: `${match.id}_cs_03`, label: '0:3', value: r2 ? parseFloat((r2 * 8.0).toFixed(2)) : 28.00 },
+        { selectionId: `${match.id}_cs_04`, label: '0:4', value: r2 ? parseFloat((r2 * 16.0).toFixed(2)) : 65.00 },
+        { selectionId: `${match.id}_cs_10`, label: '1:0', value: r1 ? parseFloat((r1 * 3.2).toFixed(2)) : 7.50 },
+
+        { selectionId: `${match.id}_cs_11`, label: '1:1', value: rx ? parseFloat((rx * 1.9).toFixed(2)) : 6.20 },
+        { selectionId: `${match.id}_cs_12`, label: '1:2', value: r2 ? parseFloat((r2 * 3.8).toFixed(2)) : 11.00 },
+        { selectionId: `${match.id}_cs_13`, label: '1:3', value: r2 ? parseFloat((r2 * 7.0).toFixed(2)) : 22.00 },
+
+        { selectionId: `${match.id}_cs_14`, label: '1:4', value: r2 ? parseFloat((r2 * 14.0).toFixed(2)) : 55.00 },
+        { selectionId: `${match.id}_cs_20`, label: '2:0', value: r1 ? parseFloat((r1 * 4.5).toFixed(2)) : 9.50 },
+        { selectionId: `${match.id}_cs_21`, label: '2:1', value: r1 ? parseFloat((r1 * 3.8).toFixed(2)) : 8.00 },
+
+        { selectionId: `${match.id}_cs_22`, label: '2:2', value: rx ? parseFloat((rx * 3.8).toFixed(2)) : 12.00 },
+        { selectionId: `${match.id}_cs_23`, label: '2:3', value: r2 ? parseFloat((r2 * 11.0).toFixed(2)) : 35.00 },
+        { selectionId: `${match.id}_cs_24`, label: '2:4', value: r2 ? parseFloat((r2 * 22.0).toFixed(2)) : 85.00 },
+
+        { selectionId: `${match.id}_cs_30`, label: '3:0', value: r1 ? parseFloat((r1 * 8.0).toFixed(2)) : 15.00 },
+        { selectionId: `${match.id}_cs_31`, label: '3:1', value: r1 ? parseFloat((r1 * 7.0).toFixed(2)) : 14.00 },
+        { selectionId: `${match.id}_cs_32`, label: '3:2', value: r1 ? parseFloat((r1 * 11.0).toFixed(2)) : 25.00 },
+
+        { selectionId: `${match.id}_cs_33`, label: '3:3', value: rx ? parseFloat((rx * 10.0).toFixed(2)) : 35.00 },
+        { selectionId: `${match.id}_cs_34`, label: '3:4', value: r2 ? parseFloat((r2 * 45.0).toFixed(2)) : 101.00 },
+        { selectionId: `${match.id}_cs_40`, label: '4:0', value: r1 ? parseFloat((r1 * 16.0).toFixed(2)) : 45.00 },
+
+        { selectionId: `${match.id}_cs_41`, label: '4:1', value: r1 ? parseFloat((r1 * 14.0).toFixed(2)) : 38.00 },
+        { selectionId: `${match.id}_cs_42`, label: '4:2', value: r1 ? parseFloat((r1 * 22.0).toFixed(2)) : 65.00 },
+        { selectionId: `${match.id}_cs_43`, label: '4:3', value: r1 ? parseFloat((r1 * 45.0).toFixed(2)) : 101.00 },
+
+        { selectionId: `${match.id}_cs_44`, label: '4:4', value: rx ? parseFloat((rx * 30.0).toFixed(2)) : 101.00 },
+        { selectionId: `${match.id}_cs_other`, label: 'Other', value: Math.min(r1 || 2, r2 || 2) * 4.2 > 1.5 ? parseFloat((Math.min(r1 || 2, r2 || 2) * 4.2).toFixed(2)) : 8.40 }
+      ]
     }
   ];
 
@@ -278,7 +319,7 @@ export function renderMatchDetailsView() {
   html += `
     <div>
       <div style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding: 4px 0; scrollbar-width: none;">
-        ${['All Markets', 'Main', 'First Half', 'Goals'].map(tab => {
+        ${['All Markets', 'Main', 'Correct Score', 'Goals', 'First Half'].map(tab => {
           const isActive = activeFilter === tab;
           return `
             <button class="sport-chip ${isActive ? 'active' : ''} filter-chip-tab" data-tab="${tab}">
