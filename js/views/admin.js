@@ -235,7 +235,8 @@ export async function renderAdminView() {
   else if (activeTab === 'fixtures') {
     try {
       const res = await fetch('/api/matches');
-      const matches = await res.json();
+      const allMatches = await res.json();
+      const customMatches = allMatches.filter(m => (m.id && String(m.id).startsWith('custom_')) || m.isCustom);
 
       contentEl.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 24px;">
@@ -262,7 +263,7 @@ export async function renderAdminView() {
 
               <div>
                 <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Country / League</label>
-                <input type="text" id="cfg-match-league" class="auth-input" placeholder="e.g. Kenya, FKF Premier League" value="Kenya, Premier League" required />
+                <input type="text" id="cfg-match-league" class="auth-input" placeholder="e.g. Kenya Premier League" value="Kenya, FKF Premier League" required />
               </div>
 
               <div>
@@ -305,8 +306,8 @@ export async function renderAdminView() {
           <!-- Active Match List Header & Cleanup Trigger -->
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div>
-              <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">Active Match Fixtures (${matches.length})</h3>
-              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Matches that have finished (FT) or expired are automatically removed.</p>
+              <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">Admin Custom Fixtures (${customMatches.length})</h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Only custom matches created by Admin are displayed in this panel.</p>
             </div>
             <button id="admin-purge-expired-btn" style="padding: 8px 16px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); font-weight: 800; font-size: 0.78rem; cursor: pointer;">
               Purge Expired Games
@@ -315,48 +316,53 @@ export async function renderAdminView() {
 
           <!-- Active Matches Table -->
           <div style="overflow-x: auto; background: var(--bg-charcoal); border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
-              <thead>
-                <tr style="background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem;">
-                  <th style="padding: 12px 16px;">Fixture</th>
-                  <th style="padding: 12px 16px;">Category</th>
-                  <th style="padding: 12px 16px;">Kickoff</th>
-                  <th style="padding: 12px 16px;">Status</th>
-                  <th style="padding: 12px 16px;">1X2 Odds</th>
-                  <th style="padding: 12px 16px; text-align: right;">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${matches.map(m => {
-                  const m1 = m.markets && m.markets[0]?.odds[0]?.value ? m.markets[0].odds[0].value : '-';
-                  const mx = m.markets && m.markets[0]?.odds[1]?.value ? m.markets[0].odds[1].value : '-';
-                  const m2 = m.markets && m.markets[0]?.odds[2]?.value ? m.markets[0].odds[2].value : '-';
-                  const isCustom = (m.id && m.id.startsWith('custom_')) || m.isCustom;
+            ${customMatches.length === 0 ? `
+              <div style="text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 0.9rem;">
+                No custom fixtures created yet. Fill in the form above to publish your first custom game fixture!
+              </div>
+            ` : `
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
+                <thead>
+                  <tr style="background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem;">
+                    <th style="padding: 12px 16px;">Fixture</th>
+                    <th style="padding: 12px 16px;">Category</th>
+                    <th style="padding: 12px 16px;">Kickoff</th>
+                    <th style="padding: 12px 16px;">Status</th>
+                    <th style="padding: 12px 16px;">1X2 Odds</th>
+                    <th style="padding: 12px 16px; text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${customMatches.map(m => {
+                    const m1 = m.markets && m.markets[0]?.odds[0]?.value ? m.markets[0].odds[0].value : '-';
+                    const mx = m.markets && m.markets[0]?.odds[1]?.value ? m.markets[0].odds[1].value : '-';
+                    const m2 = m.markets && m.markets[0]?.odds[2]?.value ? m.markets[0].odds[2].value : '-';
 
-                  return `
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                      <td style="padding: 12px 16px; font-weight: 800; color: var(--text-primary);">
-                        ${m.teams?.home?.name || 'Home'} vs ${m.teams?.away?.name || 'Away'}
-                        ${isCustom ? '<span style="font-size: 0.65rem; background: var(--color-primary); color: #FFF; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">CUSTOM</span>' : ''}
-                      </td>
-                      <td style="padding: 12px 16px; color: var(--text-secondary);">${m.country || 'Global'}, ${m.league || 'League'}</td>
-                      <td style="padding: 12px 16px; font-family: var(--font-mono); color: var(--text-secondary);">${new Date(m.kickoffTime).toLocaleString()}</td>
-                      <td style="padding: 12px 16px;">
-                        <span style="font-weight: 800; color: ${m.isLive ? '#10B981' : 'var(--text-secondary)'};">${m.isLive ? `LIVE ${m.timer}'` : 'Upcoming'}</span>
-                      </td>
-                      <td style="padding: 12px 16px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">
-                        ${m1} | ${mx} | ${m2}
-                      </td>
-                      <td style="padding: 12px 16px; text-align: right;">
-                        <button class="delete-match-action-btn" data-id="${m.id}" style="padding: 6px 12px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.75rem; cursor: pointer;">
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+                    return `
+                      <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 16px; font-weight: 800; color: var(--text-primary);">
+                          ${m.teams?.home?.name || 'Home'} vs ${m.teams?.away?.name || 'Away'}
+                          <span style="font-size: 0.65rem; background: var(--color-primary); color: #FFF; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">CUSTOM</span>
+                        </td>
+                        <td style="padding: 12px 16px; color: var(--text-secondary);">${m.country || 'Global'}, ${m.league || 'League'}</td>
+                        <td style="padding: 12px 16px; font-family: var(--font-mono); color: var(--text-secondary);">${new Date(m.kickoffTime).toLocaleString()}</td>
+                        <td style="padding: 12px 16px;">
+                          <span style="font-weight: 800; color: ${m.isLive ? '#10B981' : 'var(--text-secondary)'};">${m.isLive ? `LIVE ${m.timer}'` : 'Upcoming'}</span>
+                        </td>
+                        <td style="padding: 12px 16px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">
+                          ${m1} | ${mx} | ${m2}
+                        </td>
+                        <td style="padding: 12px 16px; text-align: right;">
+                          <button class="delete-match-action-btn" data-id="${m.id}" style="padding: 6px 12px; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.75rem; cursor: pointer;">
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            `}
           </div>
 
         </div>
