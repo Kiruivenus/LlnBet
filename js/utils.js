@@ -111,18 +111,13 @@ export function isMatchAvailableForBetting(match) {
   }
   
   // 2. Timer string check
-  const timerStr = String(match.timer || '').toUpperCase();
-  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === '90+' || timerStr === "90'+" || timerStr === '90' || timerStr.includes('ENDED')) {
+  const timerStr = String(match.timer || '').toUpperCase().trim();
+  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === 'ENDED') {
     return false;
   }
   
   // 3. Flags check
   if (match.isFinished || match.isExpired) {
-    return false;
-  }
-
-  const timerStr = String(match.timer || '').toUpperCase().trim();
-  if (timerStr === 'FT' || timerStr === 'FINISHED' || timerStr === 'FINAL' || timerStr === 'ENDED') {
     return false;
   }
 
