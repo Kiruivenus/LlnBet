@@ -335,17 +335,49 @@ export async function processMpesaCallback(callbackBody) {
   }
 }
 
-export async function getTransactionStatus(reference) {
+export async function getTransactionStatus(identifier) {
+  if (!identifier) return null;
   await connectDb();
   let tx = null;
+
   if (mongoose.connection.readyState === 1) {
-    tx = await MpesaTransaction.findOne({ reference }).lean();
+    tx = await MpesaTransaction.findOne({
+      $or: [
+        { reference: identifier },
+        { checkoutRequestID: identifier },
+        { merchantRequestID: identifier }
+      ]
+    }).lean();
   }
 
   if (!tx) {
-    tx = memoryTransactions.get(reference);
+    tx = memoryTransactions.get(identifier);
+    if (!tx) {
+      for (const t of memoryTransactions.values()) {
+        if (t.checkoutRequestID === identifier || t.merchantRequestID === identifier || t.reference === identifier) {
+          tx = t;
+          break;
+        }
+      }
+    }
   }
 
-  if (!tx) return { success: false, error: "Transaction not found." };
-  return { success: true, transaction: tx };
+  if (!tx) return { success: false, status: 'PENDING', statusMessage: 'Transaction initializing...' };
+
+  const isCompleted = tx.status === 'COMPLETED' || tx.status === 'SUCCESS';
+  const isFailed = tx.status === 'FAILED' || tx.status === 'DECLINED' || tx.status === 'CANCELLED';
+
+  return {
+    success: true,
+    status: isCompleted ? 'SUCCESS' : tx.status,
+    rawStatus: tx.status,
+    isCompleted,
+    isPending: tx.status === 'PENDING',
+    isFailed,
+    amount: tx.amount,
+    phone: tx.phone,
+    mpesaReceiptNumber: tx.mpesaReceiptNumber || 'N/A',
+    statusMessage: isCompleted ? "Payment processed successfully!" : (tx.resultDesc || "Transaction processing..."),
+    transaction: tx
+  };
 }

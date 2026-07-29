@@ -301,14 +301,17 @@ export async function renderProfileView() {
               );
             }
 
-            if (data.status === 'AWAITING_PIN' || data.status === 'STK_SENT') {
+            const isSuccess = data && (data.status === 'SUCCESS' || data.status === 'COMPLETED' || data.rawStatus === 'COMPLETED' || data.isCompleted);
+            const isFailed = data && (['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED', 'DECLINED'].includes(data.status) || data.isFailed);
+
+            if (data.status === 'AWAITING_PIN' || data.status === 'STK_SENT' || data.status === 'PENDING') {
               depBtn.innerHTML = `
                 <span class="pulse-dot" style="background: #F59E0B;"></span>
                 <span>Waiting for M-Pesa PIN...</span>
               `;
             }
 
-            if (data.status === 'SUCCESS') {
+            if (isSuccess) {
               if (eventSource) eventSource.close();
               await state.fetchUserData();
               showSuccessModal(data, amt, user);
@@ -317,7 +320,7 @@ export async function renderProfileView() {
               depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
             }
 
-            if (['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(data.status)) {
+            if (isFailed) {
               if (eventSource) eventSource.close();
               showFailureModal(data);
               depBtn.disabled = false;
@@ -337,6 +340,8 @@ export async function renderProfileView() {
 
           try {
             const statusData = await state.checkStkStatus(reference);
+            const isPollSuccess = statusData && (statusData.status === 'SUCCESS' || statusData.status === 'COMPLETED' || statusData.rawStatus === 'COMPLETED' || statusData.isCompleted);
+            const isPollFailed = statusData && (['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED', 'DECLINED'].includes(statusData.status) || statusData.isFailed);
 
             if (depStatusContainer && statusData) {
               depStatusContainer.innerHTML = renderPaymentTimeline(
@@ -349,7 +354,7 @@ export async function renderProfileView() {
               );
             }
 
-            if (statusData && statusData.status === 'SUCCESS') {
+            if (isPollSuccess) {
               clearInterval(pollInterval);
               if (eventSource) eventSource.close();
               await state.fetchUserData();
@@ -357,7 +362,7 @@ export async function renderProfileView() {
               depBtn.disabled = false;
               depBtn.style.opacity = '1';
               depBtn.innerHTML = `${getMaterialIcon('smartphone')} Trigger M-Pesa STK Push`;
-            } else if (statusData && ['FAILED', 'CANCELLED', 'TIMEOUT', 'EXPIRED'].includes(statusData.status)) {
+            } else if (isPollFailed) {
               clearInterval(pollInterval);
               if (eventSource) eventSource.close();
               showFailureModal(statusData);
