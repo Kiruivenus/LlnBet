@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
 import { sportsList, promotionsList } from '../data.js';
-import { getMaterialIcon, formatOdds, formatCurrency, formatDate, isMatchAvailableForBetting } from '../utils.js';
+import { getMaterialIcon, formatOdds, formatCurrency, formatDate, isMatchAvailableForBetting, getMatchCategoryLabel } from '../utils.js';
 
 export function renderHomeView() {
   const container = document.getElementById('app-main');
@@ -371,7 +371,7 @@ export function renderMatchCard(match, selections) {
           </div>
         </div>
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
-          2nd qualifying round. Main path. First match
+          ${getMatchCategoryLabel(match)}
         </div>
       </div>
 

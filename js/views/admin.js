@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { getMaterialIcon, formatCurrency } from '../utils.js';
+import { getMaterialIcon, formatCurrency, formatDate, getMatchCategoryLabel } from '../utils.js';
 
 let activeTab = 'users'; // 'users' | 'withdrawals' | 'settings'
 
@@ -262,8 +262,13 @@ export async function renderAdminView() {
               </div>
 
               <div>
-                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Country / League</label>
-                <input type="text" id="cfg-match-league" class="auth-input" placeholder="e.g. Kenya Premier League" value="Kenya, FKF Premier League" required />
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Country / Region</label>
+                <input type="text" id="cfg-match-country" class="auth-input" placeholder="e.g. Kenya" value="Kenya" required />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">League Name</label>
+                <input type="text" id="cfg-match-league" class="auth-input" placeholder="e.g. FKF Premier League" value="FKF Premier League" required />
               </div>
 
               <div>
@@ -344,8 +349,8 @@ export async function renderAdminView() {
                           ${m.teams?.home?.name || 'Home'} vs ${m.teams?.away?.name || 'Away'}
                           <span style="font-size: 0.65rem; background: var(--color-primary); color: #FFF; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">CUSTOM</span>
                         </td>
-                        <td style="padding: 12px 16px; color: var(--text-secondary);">${m.country || 'Global'}, ${m.league || 'League'}</td>
-                        <td style="padding: 12px 16px; font-family: var(--font-mono); color: var(--text-secondary);">${new Date(m.kickoffTime).toLocaleString()}</td>
+                        <td style="padding: 12px 16px; color: var(--text-secondary);">${getMatchCategoryLabel(m)}</td>
+                        <td style="padding: 12px 16px; font-family: var(--font-mono); color: var(--text-secondary);">${formatDate(m.kickoffTime)}</td>
                         <td style="padding: 12px 16px;">
                           <span style="font-weight: 800; color: ${m.isLive ? '#10B981' : 'var(--text-secondary)'};">${m.isLive ? `LIVE ${m.timer}'` : 'Upcoming'}</span>
                         </td>
@@ -386,13 +391,16 @@ export async function renderAdminView() {
         }
 
         try {
+          const rawKickoff = document.getElementById('cfg-match-kickoff').value;
+          const koIso = rawKickoff ? new Date(rawKickoff).toISOString() : new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+
           const payload = {
             sport: document.getElementById('cfg-match-sport').value,
-            league: document.getElementById('cfg-match-league').value,
-            country: 'Kenya',
-            homeName: document.getElementById('cfg-match-home').value,
-            awayName: document.getElementById('cfg-match-away').value,
-            kickoffTime: document.getElementById('cfg-match-kickoff').value,
+            country: document.getElementById('cfg-match-country').value.trim(),
+            league: document.getElementById('cfg-match-league').value.trim(),
+            homeName: document.getElementById('cfg-match-home').value.trim(),
+            awayName: document.getElementById('cfg-match-away').value.trim(),
+            kickoffTime: koIso,
             r1: Number(document.getElementById('cfg-match-r1').value),
             rx: Number(document.getElementById('cfg-match-rx').value),
             r2: Number(document.getElementById('cfg-match-r2').value)

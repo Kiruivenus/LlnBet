@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { simulation } from '../simulation.js';
-import { getMaterialIcon, formatOdds, formatDate } from '../utils.js';
+import { getMaterialIcon, formatOdds, formatDate, getMatchCategoryLabel } from '../utils.js';
 
 let activeFilter = 'All Markets';
 
@@ -63,7 +63,7 @@ export function renderMatchDetailsView() {
       <button class="header-icon-btn" id="details-back-btn" aria-label="Go Back">
         ${getMaterialIcon('back')}
       </button>
-      <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-secondary);">${match.country || 'World'}, ${match.league || 'International Championship'}</span>
+      <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-secondary);">${getMatchCategoryLabel(match)}</span>
     </div>
 
     <!-- Match Scoreboard Hero Card -->

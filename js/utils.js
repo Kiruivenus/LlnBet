@@ -31,6 +31,28 @@ export function formatDate(dateString) {
   }
 }
 
+export function getMatchCategoryLabel(match) {
+  if (!match) return 'Soccer League';
+  let country = (match.country || '').trim();
+  let league = (match.league || '').trim();
+
+  // Strip duplicate leading country names if present in league string
+  if (country && league.toLowerCase().startsWith(country.toLowerCase() + ',')) {
+    league = league.substring(country.length + 1).trim();
+  }
+
+  if (!country || ['global', 'world', 'international'].includes(country.toLowerCase())) {
+    return league || 'Soccer League';
+  }
+  if (!league) return country;
+
+  if (league.toLowerCase().includes(country.toLowerCase())) {
+    return league;
+  }
+
+  return `${country}, ${league}`;
+}
+
 // Google Material Icons Round Provider
 export function getMaterialIcon(name, className = '') {
   const iconMap = {
